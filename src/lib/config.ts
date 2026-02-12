@@ -1,6 +1,6 @@
 /**
- * Configuration file management for Atlas CLI
- * Stores credentials in ~/.atlas/config.json
+ * Configuration file management for DealMachine CLI
+ * Stores credentials in ~/.dealmachine/config.json
  */
 
 import * as fs from 'node:fs';
@@ -9,7 +9,7 @@ import * as os from 'node:os';
 
 export type ApiEnvironment = 'local' | 'production';
 
-export interface AtlasConfig {
+export interface DealMachineConfig {
   apiKey: string;
   keyId: string;
   organizationId: number;
@@ -19,7 +19,7 @@ export interface AtlasConfig {
   apiEnvironment?: ApiEnvironment;
 }
 
-const CONFIG_DIR = path.join(os.homedir(), '.atlas');
+const CONFIG_DIR = path.join(os.homedir(), '.dealmachine');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
 
 function ensureConfigDir(): void {
@@ -28,19 +28,19 @@ function ensureConfigDir(): void {
   }
 }
 
-export function readConfig(): AtlasConfig | null {
+export function readConfig(): DealMachineConfig | null {
   try {
     if (!fs.existsSync(CONFIG_FILE)) {
       return null;
     }
     const content = fs.readFileSync(CONFIG_FILE, 'utf-8');
-    return JSON.parse(content) as AtlasConfig;
+    return JSON.parse(content) as DealMachineConfig;
   } catch {
     return null;
   }
 }
 
-export function writeConfig(config: AtlasConfig): void {
+export function writeConfig(config: DealMachineConfig): void {
   ensureConfigDir();
   fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), {
     mode: 0o600,
@@ -68,14 +68,14 @@ export function configExists(): boolean {
   return fs.existsSync(CONFIG_FILE);
 }
 
-export function getConfigValue<K extends keyof AtlasConfig>(key: K): AtlasConfig[K] | null {
+export function getConfigValue<K extends keyof DealMachineConfig>(key: K): DealMachineConfig[K] | null {
   const config = readConfig();
   return config ? config[key] : null;
 }
 
-export function setConfigValue<K extends keyof AtlasConfig>(
+export function setConfigValue<K extends keyof DealMachineConfig>(
   key: K,
-  value: AtlasConfig[K]
+  value: DealMachineConfig[K]
 ): boolean {
   const config = readConfig();
   if (!config) {

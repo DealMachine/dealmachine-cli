@@ -8,7 +8,7 @@ import open from 'open';
 import { writeConfig, readConfig } from '../lib/config.js';
 import { requestDeviceCode, pollForToken } from '../lib/api.js';
 
-const CLIENT_ID = 'atlas-cli';
+const CLIENT_ID = 'dealmachine-next-cli';
 
 interface LoginOptions {
   noBrowser?: boolean;
@@ -20,7 +20,7 @@ export async function login(options: LoginOptions): Promise<void> {
     console.log(chalk.yellow('You are already logged in as:'));
     console.log(`  Organization: ${chalk.cyan(existingConfig.organizationName)}`);
     console.log('');
-    console.log(`Run ${chalk.cyan('atlas logout')} first to switch accounts.`);
+    console.log(`Run ${chalk.cyan('dealmachine logout')} first to switch accounts.`);
     return;
   }
 
@@ -81,7 +81,7 @@ export async function login(options: LoginOptions): Promise<void> {
         console.log('');
         console.log(`  Organization: ${chalk.cyan(result.data.organization.name)}`);
         console.log('');
-        console.log(`Run ${chalk.cyan('atlas whoami')} to verify your credentials.`);
+        console.log(`Run ${chalk.cyan('dealmachine whoami')} to verify your credentials.`);
         return;
 
       case 'pending':

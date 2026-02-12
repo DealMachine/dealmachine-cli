@@ -1,12 +1,12 @@
 {
   "name": "@dealmachine/cli",
   "version": "0.1.0",
-  "description": "Atlas CLI - DealMachine developer tools",
+  "description": "DealMachine CLI - DealMachine developer tools",
   "author": "DealMachine",
   "license": "MIT",
   "type": "module",
   "bin": {
-    "atlas": "./dist/index.js"
+    "dealmachine": "./dist/index.js"
   },
   "files": [
     "dist"
@@ -31,7 +31,7 @@
     "node": ">=18"
   },
   "keywords": [
-    "atlas",
+    "dealmachine",
     "dealmachine",
     "cli",
     "api"

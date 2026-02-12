@@ -10,8 +10,8 @@ import { account } from './commands/account.js';
 const program = new Command();
 
 program
-  .name('atlas')
-  .description('Atlas CLI - DealMachine developer tools')
+  .name('dealmachine')
+  .description('DealMachine CLI - DealMachine developer tools')
   .version('0.1.0');
 
 // Auth commands

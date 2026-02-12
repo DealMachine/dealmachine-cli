@@ -3,9 +3,9 @@
  */
 
 import chalk from 'chalk';
-import { readConfig, getConfigPath, setConfigValue, type AtlasConfig, type ApiEnvironment } from '../lib/config.js';
+import { readConfig, getConfigPath, setConfigValue, type DealMachineConfig, type ApiEnvironment } from '../lib/config.js';
 
-type ConfigKey = keyof AtlasConfig;
+type ConfigKey = keyof DealMachineConfig;
 
 const EDITABLE_KEYS: ConfigKey[] = ['apiEnvironment'];
 const ALL_KEYS: ConfigKey[] = [
@@ -24,7 +24,7 @@ export async function configGet(key?: string): Promise<void> {
 
   if (!config) {
     console.log(chalk.yellow('Not logged in. No configuration to show.'));
-    console.log(`Run ${chalk.cyan('atlas login')} to authenticate.`);
+    console.log(`Run ${chalk.cyan('dealmachine login')} to authenticate.`);
     process.exit(1);
   }
 
@@ -63,7 +63,7 @@ export async function configSet(key: string, value: string): Promise<void> {
 
   if (!config) {
     console.log(chalk.yellow('Not logged in. No configuration to modify.'));
-    console.log(`Run ${chalk.cyan('atlas login')} to authenticate.`);
+    console.log(`Run ${chalk.cyan('dealmachine login')} to authenticate.`);
     process.exit(1);
   }
 
@@ -80,7 +80,7 @@ export async function configSet(key: string, value: string): Promise<void> {
     }
   }
 
-  const success = setConfigValue(key as ConfigKey, value as AtlasConfig[ConfigKey]);
+  const success = setConfigValue(key as ConfigKey, value as DealMachineConfig[ConfigKey]);
 
   if (success) {
     console.log(chalk.green(`Set ${key} = ${value}`));

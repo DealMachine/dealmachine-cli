@@ -1,5 +1,5 @@
 /**
- * API client for Atlas device auth flow
+ * API client for DealMachine device auth flow
  */
 
 import { readConfig, type ApiEnvironment } from './config.js';
@@ -71,7 +71,7 @@ export async function requestDeviceCode(
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'User-Agent': 'Atlas-CLI/0.1.0',
+      'User-Agent': 'dealmachine-next-CLI/0.1.0',
     },
     body: JSON.stringify({
       client_id: clientId,
@@ -96,7 +96,7 @@ export async function pollForToken(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'User-Agent': 'Atlas-CLI/0.1.0',
+        'User-Agent': 'dealmachine-next-CLI/0.1.0',
       },
       body: JSON.stringify({
         device_code: deviceCode,
@@ -139,7 +139,7 @@ export async function verifyCredentials(apiKey: string): Promise<{
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
-        'User-Agent': 'Atlas-CLI/0.1.0',
+        'User-Agent': 'dealmachine-next-CLI/0.1.0',
       },
     });
 
