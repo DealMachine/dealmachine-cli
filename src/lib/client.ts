@@ -18,11 +18,11 @@ export interface ApiError {
 }
 
 export function getApiBaseUrl(): string {
-  if (process.env.ATLAS_API_URL) {
-    return process.env.ATLAS_API_URL;
+  if (process.env.DEALMACHINE_API_URL) {
+    return process.env.DEALMACHINE_API_URL;
   }
 
-  const envVar = process.env.ATLAS_ENVIRONMENT as ApiEnvironment | undefined;
+  const envVar = process.env.DEALMACHINE_ENVIRONMENT as ApiEnvironment | undefined;
   if (envVar && API_URLS[envVar]) {
     return API_URLS[envVar];
   }
