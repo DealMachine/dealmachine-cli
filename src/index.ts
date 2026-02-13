@@ -43,7 +43,7 @@ program
     if (options.env) {
       process.env.DM_ENV = options.env;
     }
-    await login({ noBrowser: options.browser === false, key: options.key });
+    await login({ noBrowser: options.browser === false, key: options.key, env: options.env });
   });
 
 program

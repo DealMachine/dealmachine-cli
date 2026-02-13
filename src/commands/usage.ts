@@ -29,7 +29,7 @@ interface UsageResponse {
 }
 
 export async function usage(options: { json?: boolean }): Promise<void> {
-  const data = await apiRequest<UsageResponse>('/account/usage');
+  const data = await apiRequest<UsageResponse>('/usage');
 
   if (options.json) {
     printJson(data);

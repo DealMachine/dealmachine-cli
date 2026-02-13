@@ -5,7 +5,7 @@
 import chalk from 'chalk';
 import ora from 'ora';
 import open from 'open';
-import { writeConfig, readConfig } from '../lib/config.js';
+import { writeConfig, readConfig, setConfigValue } from '../lib/config.js';
 import { requestDeviceCode, pollForToken, verifyCredentials } from '../lib/api.js';
 import { getApiBaseUrl } from '../lib/client.js';
 
@@ -14,11 +14,19 @@ const CLIENT_ID = 'dealmachine-next-cli';
 interface LoginOptions {
   noBrowser?: boolean;
   key?: string;
+  env?: 'local' | 'production';
 }
 
 export async function login(options: LoginOptions): Promise<void> {
   const existingConfig = readConfig();
   if (existingConfig) {
+    // If --env was passed, just update the environment without requiring logout
+    if (options.env) {
+      setConfigValue('apiEnvironment', options.env);
+      console.log(chalk.green(`Switched to ${chalk.bold(options.env)} environment`));
+      console.log(`  API: ${chalk.dim(getApiBaseUrl())}`);
+      return;
+    }
     console.log(chalk.yellow('You are already logged in as:'));
     console.log(`  Organization: ${chalk.cyan(existingConfig.organizationName)}`);
     console.log('');
@@ -28,7 +36,7 @@ export async function login(options: LoginOptions): Promise<void> {
 
   // Direct API key login (for local dev / CI)
   if (options.key) {
-    await loginWithKey(options.key);
+    await loginWithKey(options.key, options.env);
     return;
   }
 
@@ -83,6 +91,7 @@ export async function login(options: LoginOptions): Promise<void> {
           organizationId: result.data.organization.id,
           organizationName: result.data.organization.name,
           organizationSlug: result.data.organization.slug,
+          ...(options.env && { apiEnvironment: options.env }),
         });
 
         console.log('');
@@ -131,7 +140,7 @@ export async function login(options: LoginOptions): Promise<void> {
  * Login with a raw API key (skips browser flow).
  * Verifies the key against the API, then stores it.
  */
-async function loginWithKey(apiKey: string): Promise<void> {
+async function loginWithKey(apiKey: string, env?: 'local' | 'production'): Promise<void> {
   const baseUrl = getApiBaseUrl();
   console.log(chalk.dim(`Verifying key against ${baseUrl}...`));
 
@@ -153,6 +162,7 @@ async function loginWithKey(apiKey: string): Promise<void> {
     organizationId: result.organization.id,
     organizationName: result.organization.name,
     organizationSlug: '',
+    ...(env && { apiEnvironment: env }),
   });
 
   console.log('');
