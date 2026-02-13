@@ -24,7 +24,7 @@ export async function configGet(key?: string): Promise<void> {
 
   if (!config) {
     console.log(chalk.yellow('Not logged in. No configuration to show.'));
-    console.log(`Run ${chalk.cyan('dealmachine login')} to authenticate.`);
+    console.log(`Run ${chalk.cyan('dm login')} to authenticate.`);
     process.exit(1);
   }
 
@@ -63,7 +63,7 @@ export async function configSet(key: string, value: string): Promise<void> {
 
   if (!config) {
     console.log(chalk.yellow('Not logged in. No configuration to modify.'));
-    console.log(`Run ${chalk.cyan('dealmachine login')} to authenticate.`);
+    console.log(`Run ${chalk.cyan('dm login')} to authenticate.`);
     process.exit(1);
   }
 

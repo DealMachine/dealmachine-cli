@@ -6,7 +6,7 @@
   "license": "MIT",
   "type": "module",
   "bin": {
-    "dealmachine": "./dist/index.js"
+    "dm": "./dist/index.js"
   },
   "files": [
     "dist"

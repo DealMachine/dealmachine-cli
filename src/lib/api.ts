@@ -10,11 +10,12 @@ const API_URLS: Record<ApiEnvironment, string> = {
 } as const;
 
 function getApiBaseUrl(): string {
-  if (process.env.DEALMACHINE_API_URL) {
-    return process.env.DEALMACHINE_API_URL;
+  const apiUrlOverride = process.env.DM_API_URL || process.env.DEALMACHINE_API_URL;
+  if (apiUrlOverride) {
+    return apiUrlOverride;
   }
 
-  const envVar = process.env.DEALMACHINE_ENVIRONMENT as ApiEnvironment | undefined;
+  const envVar = (process.env.DM_ENV || process.env.DEALMACHINE_ENVIRONMENT) as ApiEnvironment | undefined;
   if (envVar && API_URLS[envVar]) {
     return API_URLS[envVar];
   }
@@ -26,8 +27,6 @@ function getApiBaseUrl(): string {
 
   return API_URLS.production;
 }
-
-const API_BASE_URL = getApiBaseUrl();
 
 export interface DeviceCodeResponse {
   device_code: string;
@@ -67,11 +66,11 @@ export async function requestDeviceCode(
   clientId: string,
   deviceName?: string
 ): Promise<DeviceCodeResponse> {
-  const response = await fetch(`${API_BASE_URL}/auth/device/code`, {
+  const response = await fetch(`${getApiBaseUrl()}/auth/device/code`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'User-Agent': 'dealmachine-next-CLI/0.1.0',
+      'User-Agent': 'dm-cli/0.1.0',
     },
     body: JSON.stringify({
       client_id: clientId,
@@ -92,11 +91,11 @@ export async function pollForToken(
   clientId: string
 ): Promise<PollResult> {
   try {
-    const response = await fetch(`${API_BASE_URL}/auth/device/token`, {
+    const response = await fetch(`${getApiBaseUrl()}/auth/device/token`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'User-Agent': 'dealmachine-next-CLI/0.1.0',
+        'User-Agent': 'dm-cli/0.1.0',
       },
       body: JSON.stringify({
         device_code: deviceCode,
@@ -135,11 +134,11 @@ export async function verifyCredentials(apiKey: string): Promise<{
   organization?: { id: number; name: string };
 }> {
   try {
-    const response = await fetch(`${API_BASE_URL}/account`, {
+    const response = await fetch(`${getApiBaseUrl()}/account`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
-        'User-Agent': 'dealmachine-next-CLI/0.1.0',
+        'User-Agent': 'dm-cli/0.1.0',
       },
     });
 

@@ -18,11 +18,12 @@ export interface ApiError {
 }
 
 export function getApiBaseUrl(): string {
-  if (process.env.DEALMACHINE_API_URL) {
-    return process.env.DEALMACHINE_API_URL;
+  const apiUrlOverride = process.env.DM_API_URL || process.env.DEALMACHINE_API_URL;
+  if (apiUrlOverride) {
+    return apiUrlOverride;
   }
 
-  const envVar = process.env.DEALMACHINE_ENVIRONMENT as ApiEnvironment | undefined;
+  const envVar = (process.env.DM_ENV || process.env.DEALMACHINE_ENVIRONMENT) as ApiEnvironment | undefined;
   if (envVar && API_URLS[envVar]) {
     return API_URLS[envVar];
   }
@@ -38,7 +39,7 @@ export function getApiBaseUrl(): string {
 export function getApiKey(): string {
   const config = readConfig();
   if (!config?.apiKey) {
-    console.error(chalk.red('Not logged in. Run `dealmachine login` first.'));
+    console.error(chalk.red('Not logged in. Run `dm login` first.'));
     process.exit(1);
   }
   return config.apiKey;
@@ -75,7 +76,7 @@ export async function apiRequest<T>(
     headers: {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
-      'User-Agent': 'dealmachine-next-CLI/0.1.0',
+      'User-Agent': 'dm-cli/0.1.0',
     },
     ...(body && { body: JSON.stringify(body) }),
   });

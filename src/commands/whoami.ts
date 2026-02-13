@@ -17,7 +17,7 @@ export async function whoami(options: WhoamiOptions): Promise<void> {
   if (!config) {
     console.log(chalk.yellow('Not logged in.'));
     console.log('');
-    console.log(`Run ${chalk.cyan('dealmachine login')} to authenticate.`);
+    console.log(`Run ${chalk.cyan('dm login')} to authenticate.`);
     process.exit(1);
   }
 
@@ -42,7 +42,7 @@ export async function whoami(options: WhoamiOptions): Promise<void> {
       spinner.fail('Credentials are invalid or expired');
       console.log('');
       console.log(chalk.red('Your API key may have been revoked.'));
-      console.log(`Run ${chalk.cyan('dealmachine logout && dealmachine login')} to re-authenticate.`);
+      console.log(`Run ${chalk.cyan('dm logout && dm login')} to re-authenticate.`);
       process.exit(1);
     }
   }

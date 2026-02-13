@@ -6,21 +6,44 @@ import { logout } from './commands/logout.js';
 import { whoami } from './commands/whoami.js';
 import { configGet, configSet, configPath } from './commands/config.js';
 import { account } from './commands/account.js';
+import { usage } from './commands/usage.js';
+import { propertiesSearch, propertiesCount, propertiesGet, propertiesIds } from './commands/properties.js';
+import { peopleSearch, peopleCount, peopleGet, peopleIds } from './commands/people.js';
+import {
+  enrichAddress,
+  enrichLatLng,
+  enrichApn,
+  enrichEmail,
+  enrichPhone,
+  enrichName,
+} from './commands/enrich.js';
+import { filters } from './commands/filters.js';
+import { fields } from './commands/fields.js';
+import { activitySearch, activityGet } from './commands/activity.js';
+import { addressesValidate } from './commands/addresses.js';
 
 const program = new Command();
 
 program
-  .name('dealmachine')
-  .description('DealMachine CLI - DealMachine developer tools')
+  .name('dm')
+  .description('DealMachine CLI — Property intelligence from the command line')
   .version('0.1.0');
 
+// ============================================================================
 // Auth commands
+// ============================================================================
+
 program
   .command('login')
   .description('Authenticate with your DealMachine account')
   .option('--no-browser', 'Do not automatically open the browser')
+  .option('--key <api-key>', 'Login directly with an API key (skips browser)')
+  .option('--env <environment>', 'API environment: local or production (default: production)')
   .action(async (options) => {
-    await login({ noBrowser: options.browser === false });
+    if (options.env) {
+      process.env.DM_ENV = options.env;
+    }
+    await login({ noBrowser: options.browser === false, key: options.key });
   });
 
 program
@@ -38,7 +61,10 @@ program
     await whoami(options);
   });
 
+// ============================================================================
 // Config commands
+// ============================================================================
+
 const configCmd = program
   .command('config')
   .description('View and modify configuration');
@@ -64,12 +90,280 @@ configCmd
     await configPath();
   });
 
-// Account command
+// ============================================================================
+// Account commands
+// ============================================================================
+
 program
   .command('account')
   .description('Show account information')
-  .action(async () => {
+  .option('--json', 'Output as JSON')
+  .action(async (options) => {
     await account();
   });
+
+program
+  .command('usage')
+  .description('Show credit usage for current billing cycle')
+  .option('--json', 'Output as JSON')
+  .action(async (options) => {
+    await usage(options);
+  });
+
+// ============================================================================
+// Properties commands
+// ============================================================================
+
+const propertiesCmd = program
+  .command('properties')
+  .description('Search and look up properties');
+
+propertiesCmd
+  .command('search')
+  .description('Search properties with filters and locations')
+  .option('--body <json>', 'Request body as JSON string')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--json', 'Output as JSON')
+  .action(async (options) => {
+    await propertiesSearch(options);
+  });
+
+propertiesCmd
+  .command('count')
+  .description('Count properties matching filters (no credits consumed)')
+  .option('--body <json>', 'Request body as JSON string')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--json', 'Output as JSON')
+  .action(async (options) => {
+    await propertiesCount(options);
+  });
+
+propertiesCmd
+  .command('get <id>')
+  .description('Get a property by ID (e.g., prop_12345)')
+  .option('--contact-audience <audience>', 'Include contacts: owners, owners_and_family, renters, residents, all')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await propertiesGet(id, options);
+  });
+
+propertiesCmd
+  .command('ids [ids...]')
+  .description('Get multiple properties by IDs')
+  .option('--body <json>', 'Request body as JSON string')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--contact-audience <audience>', 'Include contacts: owners, owners_and_family, renters, residents, all')
+  .option('--json', 'Output as JSON')
+  .action(async (ids, options) => {
+    await propertiesIds({ ...options, ids: ids.length > 0 ? ids : undefined });
+  });
+
+// ============================================================================
+// People commands
+// ============================================================================
+
+const peopleCmd = program
+  .command('people')
+  .description('Search and look up people');
+
+peopleCmd
+  .command('search')
+  .description('Search people with filters and locations')
+  .option('--body <json>', 'Request body as JSON string')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--json', 'Output as JSON')
+  .action(async (options) => {
+    await peopleSearch(options);
+  });
+
+peopleCmd
+  .command('count')
+  .description('Count people matching filters (no credits consumed)')
+  .option('--body <json>', 'Request body as JSON string')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--json', 'Output as JSON')
+  .action(async (options) => {
+    await peopleCount(options);
+  });
+
+peopleCmd
+  .command('get <id>')
+  .description('Get a person by ID (e.g., per_12345)')
+  .option('--include-properties', 'Include associated properties')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await peopleGet(id, options);
+  });
+
+peopleCmd
+  .command('ids [ids...]')
+  .description('Get multiple people by IDs')
+  .option('--body <json>', 'Request body as JSON string')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--include-properties', 'Include associated properties')
+  .option('--json', 'Output as JSON')
+  .action(async (ids, options) => {
+    await peopleIds({ ...options, ids: ids.length > 0 ? ids : undefined });
+  });
+
+// ============================================================================
+// Enrichment commands
+// ============================================================================
+
+const enrichCmd = program
+  .command('enrich')
+  .description('Enrich data by address, coordinates, email, phone, or name');
+
+enrichCmd
+  .command('address [address]')
+  .description('Look up a property by street address')
+  .option('--body <json>', 'Request body as JSON string')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--contact-audience <audience>', 'Include contacts: owners, owners_and_family, renters, residents')
+  .option('--json', 'Output as JSON')
+  .action(async (address, options) => {
+    await enrichAddress(address, options);
+  });
+
+enrichCmd
+  .command('latlng [coords]')
+  .description('Look up a property by lat,lng coordinates')
+  .option('--body <json>', 'Request body as JSON string')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--contact-audience <audience>', 'Include contacts: owners, owners_and_family, renters, residents')
+  .option('--json', 'Output as JSON')
+  .action(async (coords, options) => {
+    await enrichLatLng(coords, options);
+  });
+
+enrichCmd
+  .command('apn [apn]')
+  .description("Look up a property by Assessor's Parcel Number")
+  .option('--body <json>', 'Request body as JSON string')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--contact-audience <audience>', 'Include contacts: owners, owners_and_family, renters, residents')
+  .option('--json', 'Output as JSON')
+  .action(async (apn, options) => {
+    await enrichApn(apn, options);
+  });
+
+enrichCmd
+  .command('email [email]')
+  .description('Look up a person by email address')
+  .option('--body <json>', 'Request body as JSON string')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--include-properties', 'Include associated properties')
+  .option('--json', 'Output as JSON')
+  .action(async (email, options) => {
+    await enrichEmail(email, options);
+  });
+
+enrichCmd
+  .command('phone [phone]')
+  .description('Look up a person by phone number')
+  .option('--body <json>', 'Request body as JSON string')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--include-properties', 'Include associated properties')
+  .option('--json', 'Output as JSON')
+  .action(async (phone, options) => {
+    await enrichPhone(phone, options);
+  });
+
+enrichCmd
+  .command('name [name]')
+  .description('Look up people by name (e.g., "David Oster")')
+  .option('--body <json>', 'Request body as JSON string')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--state <code>', 'Narrow by state (e.g., TX)')
+  .option('--zip <code>', 'Narrow by ZIP code')
+  .option('--include-properties', 'Include associated properties')
+  .option('--page <n>', 'Page number')
+  .option('--per-page <n>', 'Results per page')
+  .option('--json', 'Output as JSON')
+  .action(async (name, options) => {
+    await enrichName(name, options);
+  });
+
+// ============================================================================
+// Filters & Fields
+// ============================================================================
+
+program
+  .command('filters')
+  .description('List available filters for search queries')
+  .option('--source-type <type>', 'Filter by source: properties or people')
+  .option('--group-id <id>', 'Filter by group ID')
+  .option('--search <term>', 'Search filters by name')
+  .option('--page <n>', 'Page number')
+  .option('--per-page <n>', 'Results per page')
+  .option('--json', 'Output as JSON')
+  .action(async (options) => {
+    await filters(options);
+  });
+
+program
+  .command('fields')
+  .description('List available data fields')
+  .option('--source-type <type>', 'Filter by source: properties or people')
+  .option('--group-id <id>', 'Filter by group ID')
+  .option('--search <term>', 'Search fields by name')
+  .option('--page <n>', 'Page number')
+  .option('--per-page <n>', 'Results per page')
+  .option('--json', 'Output as JSON')
+  .action(async (options) => {
+    await fields(options);
+  });
+
+// ============================================================================
+// Activity commands
+// ============================================================================
+
+const activityCmd = program
+  .command('activity')
+  .description('View API activity history');
+
+activityCmd
+  .command('search')
+  .description('Search past API activity')
+  .option('--body <json>', 'Request body as JSON string')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('-t, --types <types...>', 'Filter by activity types (e.g., search_properties enrich_address)')
+  .option('-q, --query <text>', 'Free-text search across activity')
+  .option('--page <n>', 'Page number')
+  .option('--per-page <n>', 'Results per page')
+  .option('--json', 'Output as JSON')
+  .action(async (options) => {
+    await activitySearch(options);
+  });
+
+activityCmd
+  .command('get <id>')
+  .description('Get details of a specific activity record')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await activityGet(id, options);
+  });
+
+// ============================================================================
+// Address validation
+// ============================================================================
+
+const addressesCmd = program
+  .command('addresses')
+  .description('Validate and standardize addresses');
+
+addressesCmd
+  .command('validate [address]')
+  .description('Validate addresses via USPS')
+  .option('--body <json>', 'Request body as JSON string')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--json', 'Output as JSON')
+  .action(async (address, options) => {
+    await addressesValidate(address, options);
+  });
+
+// ============================================================================
+// Parse and execute
+// ============================================================================
 
 program.parse();

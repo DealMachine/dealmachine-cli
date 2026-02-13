@@ -1,17 +1,19 @@
 /**
- * Login command - Device auth flow
+ * Login command - Device auth flow or direct API key
  */
 
 import chalk from 'chalk';
 import ora from 'ora';
 import open from 'open';
 import { writeConfig, readConfig } from '../lib/config.js';
-import { requestDeviceCode, pollForToken } from '../lib/api.js';
+import { requestDeviceCode, pollForToken, verifyCredentials } from '../lib/api.js';
+import { getApiBaseUrl } from '../lib/client.js';
 
 const CLIENT_ID = 'dealmachine-next-cli';
 
 interface LoginOptions {
   noBrowser?: boolean;
+  key?: string;
 }
 
 export async function login(options: LoginOptions): Promise<void> {
@@ -20,10 +22,17 @@ export async function login(options: LoginOptions): Promise<void> {
     console.log(chalk.yellow('You are already logged in as:'));
     console.log(`  Organization: ${chalk.cyan(existingConfig.organizationName)}`);
     console.log('');
-    console.log(`Run ${chalk.cyan('dealmachine logout')} first to switch accounts.`);
+    console.log(`Run ${chalk.cyan('dm logout')} first to switch accounts.`);
     return;
   }
 
+  // Direct API key login (for local dev / CI)
+  if (options.key) {
+    await loginWithKey(options.key);
+    return;
+  }
+
+  // Device auth flow (browser-based)
   const hostname = process.env.HOSTNAME || process.env.COMPUTERNAME || 'CLI';
 
   const spinner = ora('Requesting device code...').start();
@@ -81,7 +90,7 @@ export async function login(options: LoginOptions): Promise<void> {
         console.log('');
         console.log(`  Organization: ${chalk.cyan(result.data.organization.name)}`);
         console.log('');
-        console.log(`Run ${chalk.cyan('dealmachine whoami')} to verify your credentials.`);
+        console.log(`Run ${chalk.cyan('dm whoami')} to verify your credentials.`);
         return;
 
       case 'pending':
@@ -116,4 +125,40 @@ export async function login(options: LoginOptions): Promise<void> {
   pollSpinner.fail('Timed out');
   console.log(chalk.red('\nAuthentication timed out. Please try again.'));
   process.exit(1);
+}
+
+/**
+ * Login with a raw API key (skips browser flow).
+ * Verifies the key against the API, then stores it.
+ */
+async function loginWithKey(apiKey: string): Promise<void> {
+  const baseUrl = getApiBaseUrl();
+  console.log(chalk.dim(`Verifying key against ${baseUrl}...`));
+
+  const spinner = ora('Verifying API key...').start();
+  const result = await verifyCredentials(apiKey);
+
+  if (!result.valid || !result.organization) {
+    spinner.fail('Invalid API key');
+    console.error(chalk.red('\nThe API key could not be verified.'));
+    console.log(chalk.dim(`Checked: ${baseUrl}`));
+    process.exit(1);
+  }
+
+  spinner.succeed('API key verified');
+
+  writeConfig({
+    apiKey,
+    keyId: 'manual',
+    organizationId: result.organization.id,
+    organizationName: result.organization.name,
+    organizationSlug: '',
+  });
+
+  console.log('');
+  console.log(chalk.green('Successfully authenticated!'));
+  console.log('');
+  console.log(`  Organization: ${chalk.cyan(result.organization.name)}`);
+  console.log(`  API:          ${chalk.dim(baseUrl)}`);
+  console.log('');
 }
