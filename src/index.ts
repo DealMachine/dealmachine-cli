@@ -241,6 +241,8 @@ enrichCmd
   .description("Look up a property by Assessor's Parcel Number")
   .option('--body <json>', 'Request body as JSON string')
   .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--state <code>', 'Narrow by state (e.g., TX)')
+  .option('--zip <code>', 'Narrow by ZIP code')
   .option('--contact-audience <audience>', 'Include contacts: owners, owners_and_family, renters, residents')
   .option('--json', 'Output as JSON')
   .action(async (apn, options) => {

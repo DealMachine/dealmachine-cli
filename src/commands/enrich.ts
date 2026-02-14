@@ -112,7 +112,7 @@ export async function enrichLatLng(
   }
 
   const spinner = ora('Enriching by coordinates...').start();
-  const data = await apiRequest<PropertyEnrichResponse>('/enrichment/latlng', {
+  const data = await apiRequest<PropertyEnrichResponse>('/enrichment/reverse-geocode', {
     method: 'POST',
     body: requestBody,
   });
@@ -135,6 +135,8 @@ export async function enrichApn(
   options: {
     body?: string;
     file?: string;
+    state?: string;
+    zip?: string;
     contactAudience?: string;
     json?: boolean;
   }
@@ -145,6 +147,14 @@ export async function enrichApn(
     requestBody = {
       apns: [{ apn }],
     };
+
+    // Add location if provided
+    if (options.state) {
+      requestBody.location = { type: 'state', code: options.state };
+    } else if (options.zip) {
+      requestBody.location = { type: 'zip_code', code: options.zip };
+    }
+
     if (options.contactAudience) requestBody.contact_audience = options.contactAudience;
   } else {
     requestBody = await parseRequestBody(options);
