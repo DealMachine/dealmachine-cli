@@ -21,6 +21,7 @@ import { filters } from './commands/filters.js';
 import { fields } from './commands/fields.js';
 import { activitySearch, activityGet } from './commands/activity.js';
 import { addressesValidate } from './commands/addresses.js';
+import { licenseAdd, licenseList, licenseRemove } from './commands/dev.js';
 
 const program = new Command();
 
@@ -362,6 +363,42 @@ addressesCmd
   .option('--json', 'Output as JSON')
   .action(async (address, options) => {
     await addressesValidate(address, options);
+  });
+
+// ============================================================================
+// Dev commands (local DB operations)
+// ============================================================================
+
+const devCmd = program
+  .command('dev')
+  .description('Local development utilities (requires Docker MySQL)');
+
+const devLicenseCmd = devCmd
+  .command('license')
+  .description('Manage API key licenses');
+
+devLicenseCmd
+  .command('add <key_id>')
+  .description('Add a license to an API key')
+  .requiredOption('--type <type>', 'License type: state, county, zip_code, or unlimited')
+  .option('--code <code>', 'Location code (state abbrev, FIPS, or ZIP)')
+  .option('--expires <date>', 'Expiration date (ISO format)')
+  .action(async (keyId, options) => {
+    await licenseAdd(keyId, options);
+  });
+
+devLicenseCmd
+  .command('list [key_id]')
+  .description('List licenses (optionally filter by key_id)')
+  .action(async (keyId) => {
+    await licenseList(keyId);
+  });
+
+devLicenseCmd
+  .command('remove <license_id>')
+  .description('Remove a license by ID')
+  .action(async (licenseId) => {
+    await licenseRemove(licenseId);
   });
 
 // ============================================================================
