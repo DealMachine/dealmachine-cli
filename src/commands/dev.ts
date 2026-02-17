@@ -30,10 +30,9 @@ function sqlWithHeaders(query: string): string {
 export async function licenseAdd(keyId: string, options: {
   type: string;
   code?: string;
-  covers?: string[];
   expires?: string;
 }) {
-  const { type, code, covers, expires } = options;
+  const { type, code, expires } = options;
 
   const validTypes = ['state', 'county', 'zip_code', 'unlimited'];
   if (!validTypes.includes(type)) {
@@ -51,19 +50,6 @@ export async function licenseAdd(keyId: string, options: {
     process.exit(1);
   }
 
-  // Parse --covers flag (default: properties + contacts)
-  const validCovers = ['properties', 'contacts', 'companies'];
-  const coverSet = new Set(covers ?? ['properties', 'contacts']);
-  for (const c of coverSet) {
-    if (!validCovers.includes(c)) {
-      console.error(`Invalid --covers value "${c}". Must be one of: ${validCovers.join(', ')}`);
-      process.exit(1);
-    }
-  }
-  const coversProperties = coverSet.has('properties') ? 1 : 0;
-  const coversContacts = coverSet.has('contacts') ? 1 : 0;
-  const coversCompanies = coverSet.has('companies') ? 1 : 0;
-
   // Verify the key exists
   const keyExists = sql(`SELECT COUNT(*) FROM api_keys WHERE key_id = '${keyId}' AND revoked_at IS NULL`);
   if (keyExists === '0') {
@@ -75,13 +61,12 @@ export async function licenseAdd(keyId: string, options: {
   const expiresValue = expires ? `'${expires}'` : 'NULL';
 
   sql(
-    `INSERT INTO api_key_licenses (key_id, location_type, location_code, covers_properties, covers_contacts, covers_companies, expires_at)
-     VALUES ('${keyId}', '${type}', ${codeValue}, ${coversProperties}, ${coversContacts}, ${coversCompanies}, ${expiresValue})`
+    `INSERT INTO api_key_licenses (key_id, location_type, location_code, expires_at)
+     VALUES ('${keyId}', '${type}', ${codeValue}, ${expiresValue})`
   );
 
   const newId = sql(`SELECT MAX(id) FROM api_key_licenses WHERE key_id = '${keyId}'`);
 
-  const coversList = [...coverSet].join(', ');
   console.log('');
   console.log('  License created');
   console.log('  ───────────────────────────────────');
@@ -89,13 +74,12 @@ export async function licenseAdd(keyId: string, options: {
   console.log(`  Key ID:   ${keyId}`);
   console.log(`  Type:     ${type}`);
   console.log(`  Code:     ${code ?? '(unlimited)'}`);
-  console.log(`  Covers:   ${coversList}`);
   console.log(`  Expires:  ${expires ?? 'never'}`);
   console.log('');
 }
 
 export async function licenseList(keyId?: string) {
-  let query = `SELECT id, key_id, location_type, location_code, covers_properties AS props, covers_contacts AS contacts, covers_companies AS companies, is_active, expires_at, created_at FROM api_key_licenses`;
+  let query = `SELECT id, key_id, location_type, location_code, is_active, expires_at, created_at FROM api_key_licenses`;
   if (keyId) {
     query += ` WHERE key_id = '${keyId}'`;
   }

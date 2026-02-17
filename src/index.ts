@@ -402,7 +402,6 @@ devLicenseCmd
   .description('Add a license to an API key')
   .requiredOption('--type <type>', 'License type: state, county, zip_code, or unlimited')
   .option('--code <code>', 'Location code (state abbrev, FIPS, or ZIP)')
-  .option('--covers <entities...>', 'Entity types to cover: properties, contacts, companies (default: properties contacts)')
   .option('--expires <date>', 'Expiration date (ISO format)')
   .action(async (keyId, options) => {
     await licenseAdd(keyId, options);
