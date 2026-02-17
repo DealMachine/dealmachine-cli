@@ -33,7 +33,7 @@ export function getApiBaseUrl(): string {
     return API_URLS[config.apiEnvironment];
   }
 
-  return API_URLS.production;
+  return API_URLS.local;
 }
 
 export function getApiKey(): string {

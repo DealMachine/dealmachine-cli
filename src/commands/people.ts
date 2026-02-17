@@ -1,5 +1,5 @@
 /**
- * People commands — search, get, ids, count
+ * People commands — search, get, ids, count, export
  */
 
 import chalk from 'chalk';
@@ -52,6 +52,22 @@ interface BatchResponse {
   totals: { submitted: number; found: number; not_found: number };
   credits: { used: number; properties: number; people: number; deduplicated: number };
   warning?: string;
+}
+
+interface ExportResponse {
+  export_id: string;
+  record_count: number;
+  file_count: number;
+  total_file_size: number;
+  execution_time: number;
+  download_urls: { filename: string; url: string; size: number }[];
+  credits: { used: number; people: number };
+  usage?: {
+    credits_used: number;
+    credits_remaining: number;
+    export_cap: number;
+    billing_cycle_end: string;
+  };
 }
 
 // ============================================================================
@@ -244,8 +260,59 @@ export async function peopleIds(options: {
 }
 
 // ============================================================================
+// Export
+// ============================================================================
+
+export async function peopleExport(options: {
+  body?: string;
+  file?: string;
+  json?: boolean;
+}): Promise<void> {
+  const requestBody = await parseRequestBody(options);
+
+  const spinner = ora('Exporting people (this may take 30-60 seconds)...').start();
+  const data = await apiRequest<ExportResponse>('/people/export', {
+    method: 'POST',
+    body: requestBody,
+  });
+  spinner.stop();
+
+  if (options.json) {
+    printJson(data);
+    return;
+  }
+
+  printHeader('People Export');
+  console.log(`  ${chalk.cyan('Export ID:')}       ${data.export_id}`);
+  console.log(`  ${chalk.cyan('Records:')}         ${data.record_count.toLocaleString()}`);
+  console.log(`  ${chalk.cyan('Files:')}           ${data.file_count}`);
+  console.log(`  ${chalk.cyan('Total size:')}      ${formatBytes(data.total_file_size)}`);
+  console.log(`  ${chalk.cyan('Execution time:')}  ${data.execution_time.toFixed(1)}s`);
+  console.log();
+
+  console.log(chalk.bold('  Download URLs:'));
+  console.log(chalk.dim('  ' + '─'.repeat(60)));
+  for (const file of data.download_urls) {
+    console.log(`  ${chalk.cyan(file.filename)} ${chalk.dim(`(${formatBytes(file.size)})`)}`);
+    console.log(`    ${file.url}`);
+  }
+  console.log();
+
+  printCredits(data.credits);
+  console.log();
+}
+
+// ============================================================================
 // Helpers
 // ============================================================================
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+  const value = bytes / Math.pow(1024, i);
+  return `${value.toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
+}
 
 function formatVal(val: unknown): string {
   if (val === null || val === undefined) return chalk.dim('—');

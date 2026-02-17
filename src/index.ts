@@ -7,8 +7,8 @@ import { whoami } from './commands/whoami.js';
 import { configGet, configSet, configPath } from './commands/config.js';
 import { account } from './commands/account.js';
 import { usage } from './commands/usage.js';
-import { propertiesSearch, propertiesCount, propertiesGet, propertiesIds } from './commands/properties.js';
-import { peopleSearch, peopleCount, peopleGet, peopleIds } from './commands/people.js';
+import { propertiesSearch, propertiesCount, propertiesGet, propertiesIds, propertiesExport } from './commands/properties.js';
+import { peopleSearch, peopleCount, peopleGet, peopleIds, peopleExport } from './commands/people.js';
 import {
   enrichAddress,
   enrichLatLng,
@@ -159,6 +159,16 @@ propertiesCmd
     await propertiesIds({ ...options, ids: ids.length > 0 ? ids : undefined });
   });
 
+propertiesCmd
+  .command('export')
+  .description('Export properties as CSV (up to 1,000,000 records)')
+  .option('--body <json>', 'Request body as JSON string')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--json', 'Output as JSON')
+  .action(async (options) => {
+    await propertiesExport(options);
+  });
+
 // ============================================================================
 // People commands
 // ============================================================================
@@ -205,6 +215,16 @@ peopleCmd
   .option('--json', 'Output as JSON')
   .action(async (ids, options) => {
     await peopleIds({ ...options, ids: ids.length > 0 ? ids : undefined });
+  });
+
+peopleCmd
+  .command('export')
+  .description('Export people as CSV (up to 1,000,000 records)')
+  .option('--body <json>', 'Request body as JSON string')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--json', 'Output as JSON')
+  .action(async (options) => {
+    await peopleExport(options);
   });
 
 // ============================================================================
