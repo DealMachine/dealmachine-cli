@@ -164,6 +164,11 @@ propertiesCmd
   .description('Export properties as CSV (up to 1,000,000 records)')
   .option('--body <json>', 'Request body as JSON string')
   .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--require-phone', 'Only include records where the contact has a phone number')
+  .option('--require-email', 'Only include records where the contact has an email address')
+  .option('--mobile-only', 'Only include mobile phone numbers')
+  .option('--landline-only', 'Only include landline phone numbers')
+  .option('--scrub-dnc', 'Exclude contacts on the Do Not Call registry')
   .option('--json', 'Output as JSON')
   .action(async (options) => {
     await propertiesExport(options);
@@ -222,6 +227,11 @@ peopleCmd
   .description('Export people as CSV (up to 1,000,000 records)')
   .option('--body <json>', 'Request body as JSON string')
   .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--require-phone', 'Only include records where the contact has a phone number')
+  .option('--require-email', 'Only include records where the contact has an email address')
+  .option('--mobile-only', 'Only include mobile phone numbers')
+  .option('--landline-only', 'Only include landline phone numbers')
+  .option('--scrub-dnc', 'Exclude contacts on the Do Not Call registry')
   .option('--json', 'Output as JSON')
   .action(async (options) => {
     await peopleExport(options);
