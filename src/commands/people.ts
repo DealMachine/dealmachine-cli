@@ -267,8 +267,20 @@ export async function peopleExport(options: {
   body?: string;
   file?: string;
   json?: boolean;
+  requirePhone?: boolean;
+  requireEmail?: boolean;
+  mobileOnly?: boolean;
+  landlineOnly?: boolean;
+  scrubDnc?: boolean;
 }): Promise<void> {
   const requestBody = await parseRequestBody(options);
+
+  // Merge CLI contact filter flags into the request body
+  if (options.requirePhone) requestBody.require_phone = true;
+  if (options.requireEmail) requestBody.require_email = true;
+  if (options.mobileOnly) requestBody.mobile_only = true;
+  if (options.landlineOnly) requestBody.landline_only = true;
+  if (options.scrubDnc) requestBody.scrub_dnc = true;
 
   const spinner = ora('Exporting people (this may take 30-60 seconds)...').start();
   const data = await apiRequest<ExportResponse>('/people/export', {
