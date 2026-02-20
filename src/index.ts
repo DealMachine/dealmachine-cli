@@ -22,6 +22,7 @@ import { fields } from './commands/fields.js';
 import { activitySearch, activityGet } from './commands/activity.js';
 import { addressesValidate } from './commands/addresses.js';
 import { licenseAdd, licenseList, licenseRemove } from './commands/dev.js';
+import { comps } from './commands/comps.js';
 
 const program = new Command();
 
@@ -172,6 +173,26 @@ propertiesCmd
   .option('--json', 'Output as JSON')
   .action(async (options) => {
     await propertiesExport(options);
+  });
+
+// ============================================================================
+// Comps commands
+// ============================================================================
+
+program
+  .command('comps [property_ids...]')
+  .description('Find comparable properties (sales comps) for one or more properties')
+  .option('--body <json>', 'Request body as JSON string')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--radius <miles>', 'Search radius in miles (default: 1)')
+  .option('--timeframe <period>', 'Timeframe: 3months, 6months, 12months, all (default: 6months)')
+  .option('--limit <n>', 'Max comps per property (default: 25, max: 100)')
+  .option('--sort-by <field>', 'Sort by: distance, price, date, match (default: match)')
+  .option('--sort-direction <dir>', 'Sort direction: asc, desc (default: desc)')
+  .option('--include-foreclosures', 'Include foreclosure sales')
+  .option('--json', 'Output as JSON')
+  .action(async (propertyIds, options) => {
+    await comps(propertyIds || [], options);
   });
 
 // ============================================================================
