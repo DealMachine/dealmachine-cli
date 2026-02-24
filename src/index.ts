@@ -234,6 +234,7 @@ listsCmd
   .description('Create a new list')
   .requiredOption('--name <name>', 'List name')
   .option('--source-type <type>', 'Source type: properties or people')
+  .option('--ids <csv>', 'Comma-separated record IDs to pre-populate (max 250)')
   .option('--body <json>', 'Request body as JSON (filters/locations)')
   .option('-f, --file <path>', 'Read request body from a JSON file')
   .option('--json', 'Output as JSON')

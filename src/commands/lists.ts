@@ -122,6 +122,7 @@ export async function listsList(options: {
 export async function listsCreate(options: {
   name: string;
   sourceType?: string;
+  ids?: string;
   body?: string;
   file?: string;
   json?: boolean;
@@ -130,6 +131,11 @@ export async function listsCreate(options: {
 
   if (options.sourceType) {
     requestBody.source_type = options.sourceType;
+  }
+
+  // Parse --ids into record_ids array
+  if (options.ids) {
+    requestBody.record_ids = options.ids.split(',').map((id) => parseInt(id.trim(), 10));
   }
 
   // Merge in filters/locations from --body or -f
