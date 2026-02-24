@@ -23,6 +23,19 @@ import { activitySearch, activityGet } from './commands/activity.js';
 import { addressesValidate } from './commands/addresses.js';
 import { licenseAdd, licenseList, licenseRemove } from './commands/dev.js';
 import { comps } from './commands/comps.js';
+import {
+  listsList,
+  listsCreate,
+  listsGet,
+  listsUpdate,
+  listsDelete,
+  listsBuild,
+  listsImport,
+  listsItems,
+  listsAdd,
+  listsRemove,
+  listsExport,
+} from './commands/lists.js';
 
 const program = new Command();
 
@@ -193,6 +206,126 @@ program
   .option('--json', 'Output as JSON')
   .action(async (propertyIds, options) => {
     await comps(propertyIds || [], options);
+  });
+
+// ============================================================================
+// Lists commands
+// ============================================================================
+
+const listsCmd = program
+  .command('lists')
+  .description('Manage saved lists');
+
+listsCmd
+  .command('search')
+  .description('Search and list all saved lists')
+  .option('--search <term>', 'Search lists by name')
+  .option('--source-type <type>', 'Filter by source type: properties or people')
+  .option('--sort <order>', 'Sort order: newest, oldest, name, count')
+  .option('-p, --page <n>', 'Page number')
+  .option('--per-page <n>', 'Results per page')
+  .option('--json', 'Output as JSON')
+  .action(async (options) => {
+    await listsList(options);
+  });
+
+listsCmd
+  .command('create')
+  .description('Create a new list')
+  .requiredOption('--name <name>', 'List name')
+  .option('--source-type <type>', 'Source type: properties or people')
+  .option('--body <json>', 'Request body as JSON (filters/locations)')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--json', 'Output as JSON')
+  .action(async (options) => {
+    await listsCreate(options);
+  });
+
+listsCmd
+  .command('get <id>')
+  .description('Get details of a specific list')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await listsGet(id, options);
+  });
+
+listsCmd
+  .command('update <id>')
+  .description('Update a list')
+  .option('--name <name>', 'New list name')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await listsUpdate(id, options);
+  });
+
+listsCmd
+  .command('delete <id>')
+  .description('Delete a list and all its items')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await listsDelete(id, options);
+  });
+
+listsCmd
+  .command('build <id>')
+  .description('Build a list from search filters')
+  .option('--body <json>', 'Request body as JSON (filters/locations)')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await listsBuild(id, options);
+  });
+
+listsCmd
+  .command('import <id>')
+  .description('Import IDs into a list')
+  .option('--ids <csv>', 'Comma-separated list of IDs')
+  .option('--source-type <type>', 'Source type: properties or people')
+  .option('--body <json>', 'Request body as JSON')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await listsImport(id, options);
+  });
+
+listsCmd
+  .command('items <id>')
+  .description('List items in a list')
+  .option('-p, --page <n>', 'Page number')
+  .option('--per-page <n>', 'Results per page')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await listsItems(id, options);
+  });
+
+listsCmd
+  .command('add <id>')
+  .description('Add items to a list')
+  .requiredOption('--ids <csv>', 'Comma-separated list of IDs to add')
+  .option('--id-type <type>', 'ID type: internal_property_id or internal_person_id')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await listsAdd(id, options);
+  });
+
+listsCmd
+  .command('remove <id>')
+  .description('Remove items from a list')
+  .requiredOption('--ids <csv>', 'Comma-separated list of IDs to remove')
+  .option('--id-type <type>', 'ID type: internal_property_id or internal_person_id')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await listsRemove(id, options);
+  });
+
+listsCmd
+  .command('export <id>')
+  .description('Export list items (credits charged per record)')
+  .option('--fields <csv>', 'Comma-separated list of fields to export')
+  .option('--anchor <type>', 'Anchor type: property or person')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await listsExport(id, options);
   });
 
 // ============================================================================
