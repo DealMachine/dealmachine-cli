@@ -5,6 +5,7 @@
 import chalk from 'chalk';
 import ora from 'ora';
 import open from 'open';
+import os from 'os';
 import { writeConfig, readConfig, setConfigValue } from '../lib/config.js';
 import { requestDeviceCode, pollForToken, verifyCredentials } from '../lib/api.js';
 import { getApiBaseUrl } from '../lib/client.js';
@@ -41,7 +42,7 @@ export async function login(options: LoginOptions): Promise<void> {
   }
 
   // Device auth flow (browser-based)
-  const hostname = process.env.HOSTNAME || process.env.COMPUTERNAME || 'CLI';
+  const hostname = os.hostname().replace(/\.(lan|local|home|localdomain)$/i, '') || 'CLI';
 
   const spinner = ora('Requesting device code...').start();
 

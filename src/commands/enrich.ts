@@ -185,7 +185,7 @@ export async function enrichAddress(
 
     const merged = await runBatchEnrichment({
       items,
-      arrayKey: 'addresses',
+      arrayKey: 'data',
       endpoint: '/enrichment/address',
       label: 'addresses',
       extraBody,
@@ -198,20 +198,20 @@ export async function enrichAddress(
 
   let requestBody: Record<string, unknown>;
   if (address) {
-    requestBody = { addresses: [{ full_address: address }] };
+    requestBody = { data: [{ full_address: address }] };
     if (options.contactAudience) requestBody.contact_audience = options.contactAudience;
   } else {
     requestBody = await parseRequestBody(options);
   }
 
   // Auto-batch large JSON input
-  const addrItems = (requestBody as any).addresses;
+  const addrItems = (requestBody as any).data;
   if (addrItems && addrItems.length > API_BATCH_LIMIT) {
     const extraBody = { ...requestBody };
-    delete extraBody.addresses;
+    delete extraBody.data;
     const merged = await runBatchEnrichment({
       items: addrItems,
-      arrayKey: 'addresses',
+      arrayKey: 'data',
       endpoint: '/enrichment/address',
       label: 'addresses',
       extraBody,
@@ -360,7 +360,7 @@ export async function enrichApn(
 
     const merged = await runBatchEnrichment({
       items,
-      arrayKey: 'apns',
+      arrayKey: 'data',
       endpoint: '/enrichment/apn',
       label: 'APNs',
       extraBody,
@@ -373,7 +373,7 @@ export async function enrichApn(
 
   let requestBody: Record<string, unknown>;
   if (apn) {
-    requestBody = { apns: [{ apn }] };
+    requestBody = { data: [{ apn }] };
     if (options.state) requestBody.location = { type: 'state', code: options.state };
     else if (options.zip) requestBody.location = { type: 'zip_code', code: options.zip };
     if (options.contactAudience) requestBody.contact_audience = options.contactAudience;
@@ -382,13 +382,13 @@ export async function enrichApn(
   }
 
   // Auto-batch large JSON input
-  const apnItems = (requestBody as any).apns;
+  const apnItems = (requestBody as any).data;
   if (apnItems && apnItems.length > API_BATCH_LIMIT) {
     const extraBody = { ...requestBody };
-    delete extraBody.apns;
+    delete extraBody.data;
     const merged = await runBatchEnrichment({
       items: apnItems,
-      arrayKey: 'apns',
+      arrayKey: 'data',
       endpoint: '/enrichment/apn',
       label: 'APNs',
       extraBody,
@@ -443,7 +443,7 @@ export async function enrichEmail(
 
     const merged = await runBatchEnrichment({
       items,
-      arrayKey: 'emails',
+      arrayKey: 'data',
       endpoint: '/enrichment/email',
       label: 'emails',
       extraBody,
@@ -456,20 +456,20 @@ export async function enrichEmail(
 
   let requestBody: Record<string, unknown>;
   if (email) {
-    requestBody = { emails: [{ email }] };
+    requestBody = { data: [{ email }] };
     if (options.includeProperties) requestBody.include_properties = true;
   } else {
     requestBody = await parseRequestBody(options);
   }
 
   // Auto-batch large JSON input
-  const emailItems = (requestBody as any).emails;
+  const emailItems = (requestBody as any).data;
   if (emailItems && emailItems.length > API_BATCH_LIMIT) {
     const extraBody = { ...requestBody };
-    delete extraBody.emails;
+    delete extraBody.data;
     const merged = await runBatchEnrichment({
       items: emailItems,
-      arrayKey: 'emails',
+      arrayKey: 'data',
       endpoint: '/enrichment/email',
       label: 'emails',
       extraBody,
@@ -524,7 +524,7 @@ export async function enrichPhone(
 
     const merged = await runBatchEnrichment({
       items,
-      arrayKey: 'phones',
+      arrayKey: 'data',
       endpoint: '/enrichment/phone',
       label: 'phones',
       extraBody,
@@ -537,20 +537,20 @@ export async function enrichPhone(
 
   let requestBody: Record<string, unknown>;
   if (phone) {
-    requestBody = { phones: [{ phone }] };
+    requestBody = { data: [{ phone }] };
     if (options.includeProperties) requestBody.include_properties = true;
   } else {
     requestBody = await parseRequestBody(options);
   }
 
   // Auto-batch large JSON input
-  const phoneItems = (requestBody as any).phones;
+  const phoneItems = (requestBody as any).data;
   if (phoneItems && phoneItems.length > API_BATCH_LIMIT) {
     const extraBody = { ...requestBody };
-    delete extraBody.phones;
+    delete extraBody.data;
     const merged = await runBatchEnrichment({
       items: phoneItems,
-      arrayKey: 'phones',
+      arrayKey: 'data',
       endpoint: '/enrichment/phone',
       label: 'phones',
       extraBody,
@@ -602,7 +602,7 @@ export async function enrichName(
     }
 
     requestBody = {
-      names: [nameObj],
+      data: [nameObj],
     };
 
     // Add location if provided
