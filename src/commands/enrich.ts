@@ -121,8 +121,8 @@ async function runBatchEnrichment(opts: {
     });
     responses.push(data);
 
-    if (data.warning && data.warning.includes('Export limit reached')) {
-      spinner.warn(`Export limit reached at batch ${batchNum}/${totalBatches}`);
+    if (data.warning && data.warning.includes('credit limit reached')) {
+      spinner.warn(`Enrichment credit limit reached at batch ${batchNum}/${totalBatches}`);
       break;
     }
   }
