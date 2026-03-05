@@ -65,7 +65,7 @@ interface ExportResponse {
   usage?: {
     credits_used: number;
     credits_remaining: number;
-    export_cap: number;
+    enrichment_credit_cap: number;
     billing_cycle_end: string;
   };
 }
