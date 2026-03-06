@@ -36,6 +36,29 @@ import {
   listsRemove,
   listsExport,
 } from './commands/lists.js';
+import {
+  crmPipelines,
+  crmOpportunitiesList,
+  crmOpportunitiesGet,
+  crmOpportunitiesCreate,
+  crmOpportunitiesUpdate,
+  crmOpportunitiesDelete,
+  crmOpportunitiesMove,
+  crmTasksList,
+  crmTasksCreate,
+  crmTasksUpdate,
+  crmNotesList,
+  crmNotesCreate,
+  crmNotesUpdate,
+  crmRecordsList,
+  crmRecordsLink,
+  crmRecordsUnlink,
+  crmLabelsList,
+  crmLabelsCreate,
+  crmLabelsUpdate,
+  crmLabelsDelete,
+  crmActivity,
+} from './commands/crm.js';
 
 const program = new Command();
 
@@ -548,6 +571,235 @@ addressesCmd
   .option('--json', 'Output as JSON')
   .action(async (address, options) => {
     await addressesValidate(address, options);
+  });
+
+// ============================================================================
+// CRM commands
+// ============================================================================
+
+const crmCmd = program
+  .command('crm')
+  .description('Manage CRM pipelines, opportunities, tasks, notes, records, and labels');
+
+crmCmd
+  .command('pipelines')
+  .description('List pipelines with stages and opportunity counts')
+  .option('--json', 'Output as JSON')
+  .action(async (options) => {
+    await crmPipelines(options);
+  });
+
+const crmOppCmd = crmCmd
+  .command('opportunities')
+  .description('Manage CRM opportunities');
+
+crmOppCmd
+  .command('list')
+  .description('List/search opportunities')
+  .option('--pipeline-id <id>', 'Filter by pipeline ID')
+  .option('--stage-id <id>', 'Filter by stage ID')
+  .option('--search <term>', 'Search by name')
+  .option('--priority <level>', 'Filter by priority: low, medium, high, urgent')
+  .option('-p, --page <n>', 'Page number')
+  .option('--per-page <n>', 'Results per page')
+  .option('--json', 'Output as JSON')
+  .action(async (options) => {
+    await crmOpportunitiesList(options);
+  });
+
+crmOppCmd
+  .command('get <id>')
+  .description('Get opportunity details')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await crmOpportunitiesGet(id, options);
+  });
+
+crmOppCmd
+  .command('create')
+  .description('Create an opportunity')
+  .option('--body <json>', 'Request body as JSON string')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--json', 'Output as JSON')
+  .action(async (options) => {
+    await crmOpportunitiesCreate(options);
+  });
+
+crmOppCmd
+  .command('update <id>')
+  .description('Update an opportunity')
+  .option('--body <json>', 'Request body as JSON string')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await crmOpportunitiesUpdate(id, options);
+  });
+
+crmOppCmd
+  .command('delete <id>')
+  .description('Delete an opportunity')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await crmOpportunitiesDelete(id, options);
+  });
+
+crmOppCmd
+  .command('move <id>')
+  .description('Move opportunity to a different stage')
+  .option('--body <json>', 'Request body as JSON string (stage_id required)')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await crmOpportunitiesMove(id, options);
+  });
+
+const crmTaskCmd = crmCmd
+  .command('tasks')
+  .description('Manage CRM tasks');
+
+crmTaskCmd
+  .command('list <opportunityId>')
+  .description('List tasks for an opportunity')
+  .option('-p, --page <n>', 'Page number')
+  .option('--per-page <n>', 'Results per page')
+  .option('--json', 'Output as JSON')
+  .action(async (opportunityId, options) => {
+    await crmTasksList(opportunityId, options);
+  });
+
+crmTaskCmd
+  .command('create <opportunityId>')
+  .description('Create a task on an opportunity')
+  .option('--body <json>', 'Request body as JSON string')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--json', 'Output as JSON')
+  .action(async (opportunityId, options) => {
+    await crmTasksCreate(opportunityId, options);
+  });
+
+crmTaskCmd
+  .command('update <opportunityId> <taskId>')
+  .description('Update a task')
+  .option('--body <json>', 'Request body as JSON string')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--json', 'Output as JSON')
+  .action(async (opportunityId, taskId, options) => {
+    await crmTasksUpdate(opportunityId, taskId, options);
+  });
+
+const crmNoteCmd = crmCmd
+  .command('notes')
+  .description('Manage CRM notes');
+
+crmNoteCmd
+  .command('list <opportunityId>')
+  .description('List notes for an opportunity')
+  .option('-p, --page <n>', 'Page number')
+  .option('--per-page <n>', 'Results per page')
+  .option('--json', 'Output as JSON')
+  .action(async (opportunityId, options) => {
+    await crmNotesList(opportunityId, options);
+  });
+
+crmNoteCmd
+  .command('create <opportunityId>')
+  .description('Create a note on an opportunity')
+  .option('--body <json>', 'Request body as JSON string')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--json', 'Output as JSON')
+  .action(async (opportunityId, options) => {
+    await crmNotesCreate(opportunityId, options);
+  });
+
+crmNoteCmd
+  .command('update <opportunityId> <noteId>')
+  .description('Update a note')
+  .option('--body <json>', 'Request body as JSON string')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--json', 'Output as JSON')
+  .action(async (opportunityId, noteId, options) => {
+    await crmNotesUpdate(opportunityId, noteId, options);
+  });
+
+const crmRecordCmd = crmCmd
+  .command('records')
+  .description('Manage linked records on opportunities');
+
+crmRecordCmd
+  .command('list <opportunityId>')
+  .description('List records linked to an opportunity')
+  .option('--json', 'Output as JSON')
+  .action(async (opportunityId, options) => {
+    await crmRecordsList(opportunityId, options);
+  });
+
+crmRecordCmd
+  .command('link <opportunityId>')
+  .description('Link a record to an opportunity')
+  .option('--body <json>', 'Request body as JSON string')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--json', 'Output as JSON')
+  .action(async (opportunityId, options) => {
+    await crmRecordsLink(opportunityId, options);
+  });
+
+crmRecordCmd
+  .command('unlink <opportunityId> <recordId>')
+  .description('Unlink a record from an opportunity')
+  .option('--json', 'Output as JSON')
+  .action(async (opportunityId, recordId, options) => {
+    await crmRecordsUnlink(opportunityId, recordId, options);
+  });
+
+const crmLabelCmd = crmCmd
+  .command('labels')
+  .description('Manage CRM labels');
+
+crmLabelCmd
+  .command('list')
+  .description('List all CRM labels')
+  .option('--json', 'Output as JSON')
+  .action(async (options) => {
+    await crmLabelsList(options);
+  });
+
+crmLabelCmd
+  .command('create')
+  .description('Create a label')
+  .option('--body <json>', 'Request body as JSON string')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--json', 'Output as JSON')
+  .action(async (options) => {
+    await crmLabelsCreate(options);
+  });
+
+crmLabelCmd
+  .command('update <id>')
+  .description('Update a label')
+  .option('--body <json>', 'Request body as JSON string')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await crmLabelsUpdate(id, options);
+  });
+
+crmLabelCmd
+  .command('delete <id>')
+  .description('Delete a label')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await crmLabelsDelete(id, options);
+  });
+
+crmCmd
+  .command('activity <opportunityId>')
+  .description('View activity feed for an opportunity')
+  .option('--cursor <cursor>', 'Cursor for pagination')
+  .option('--limit <n>', 'Items per page')
+  .option('--category <cat>', 'Filter by category')
+  .option('--json', 'Output as JSON')
+  .action(async (opportunityId, options) => {
+    await crmActivity(opportunityId, options);
   });
 
 // ============================================================================
