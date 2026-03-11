@@ -37,6 +37,13 @@ import {
   listsExport,
 } from './commands/lists.js';
 import {
+  tasksList,
+  tasksGet,
+  tasksCreate,
+  tasksUpdate,
+  tasksDelete,
+} from './commands/tasks.js';
+import {
   crmPipelines,
   crmOpportunitiesList,
   crmOpportunitiesGet,
@@ -59,6 +66,25 @@ import {
   crmLabelsDelete,
   crmActivity,
 } from './commands/crm.js';
+import {
+  dialerCallsList,
+  dialerCallsGet,
+  dialerCallsStats,
+  dialerNotesList,
+  dialerNotesCreate,
+  dialerNotesDelete,
+  dialerQueuesList,
+  dialerQueuesCreate,
+  dialerQueuesDelete,
+  dialerQueueItemsList,
+  dialerQueueItemsAdd,
+  dialerQueueItemsUpdate,
+  dialerQueueItemsRemove,
+  dialerDispositions,
+  dialerSuppressionList,
+  dialerSuppressionCheck,
+  dialerSuppressionAdd,
+} from './commands/dialer.js';
 
 const program = new Command();
 
@@ -574,6 +600,70 @@ addressesCmd
   });
 
 // ============================================================================
+// Tasks commands
+// ============================================================================
+
+const tasksCmd = program
+  .command('tasks')
+  .description('Manage tasks (create, list, update, complete, delete)');
+
+tasksCmd
+  .command('list')
+  .description('List tasks')
+  .option('--status <status>', 'Filter by status: open, completed, all')
+  .option('--search <term>', 'Search tasks by title')
+  .option('--assigned-to <userId>', 'Filter by assigned user ID')
+  .option('-p, --page <n>', 'Page number')
+  .option('--per-page <n>', 'Results per page')
+  .option('--json', 'Output as JSON')
+  .action(async (options) => {
+    await tasksList({
+      status: options.status,
+      search: options.search,
+      assignedToUserId: options.assignedTo,
+      page: options.page,
+      perPage: options.perPage,
+      json: options.json,
+    });
+  });
+
+tasksCmd
+  .command('get <id>')
+  .description('Get task details')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await tasksGet(id, options);
+  });
+
+tasksCmd
+  .command('create')
+  .description('Create a task')
+  .option('--body <json>', 'Request body as JSON string')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--json', 'Output as JSON')
+  .action(async (options) => {
+    await tasksCreate(options);
+  });
+
+tasksCmd
+  .command('update <id>')
+  .description('Update a task')
+  .option('--body <json>', 'Request body as JSON string')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await tasksUpdate(id, options);
+  });
+
+tasksCmd
+  .command('delete <id>')
+  .description('Delete a task')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await tasksDelete(id, options);
+  });
+
+// ============================================================================
 // CRM commands
 // ============================================================================
 
@@ -800,6 +890,206 @@ crmCmd
   .option('--json', 'Output as JSON')
   .action(async (opportunityId, options) => {
     await crmActivity(opportunityId, options);
+  });
+
+// ============================================================================
+// Dialer commands
+// ============================================================================
+
+const dialerCmd = program
+  .command('dialer')
+  .description('Manage dialer queues, calls, dispositions, and suppression');
+
+// ── Calls ──
+
+const dialerCallsCmd = dialerCmd
+  .command('calls')
+  .description('View call history and stats');
+
+dialerCallsCmd
+  .command('list')
+  .description('List call history')
+  .option('--status <status>', 'Filter by status: initiating, ringing, answered, completed, failed, busy, no_answer, cancelled')
+  .option('--search <term>', 'Search by contact name or phone number')
+  .option('--date-from <date>', 'Filter from date (ISO 8601)')
+  .option('--date-to <date>', 'Filter to date (ISO 8601)')
+  .option('-p, --page <n>', 'Page number')
+  .option('--per-page <n>', 'Results per page')
+  .option('--json', 'Output as JSON')
+  .action(async (options) => {
+    await dialerCallsList(options);
+  });
+
+dialerCallsCmd
+  .command('get <uuid>')
+  .description('Get call details by UUID')
+  .option('--json', 'Output as JSON')
+  .action(async (uuid, options) => {
+    await dialerCallsGet(uuid, options);
+  });
+
+dialerCallsCmd
+  .command('stats')
+  .description('Get call statistics')
+  .option('--date-from <date>', 'Filter from date (ISO 8601)')
+  .option('--date-to <date>', 'Filter to date (ISO 8601)')
+  .option('--json', 'Output as JSON')
+  .action(async (options) => {
+    await dialerCallsStats(options);
+  });
+
+// ── Call Notes ──
+
+const dialerNotesCmd = dialerCmd
+  .command('notes')
+  .description('Manage call notes');
+
+dialerNotesCmd
+  .command('list <callUuid>')
+  .description('List notes for a call')
+  .option('--json', 'Output as JSON')
+  .action(async (callUuid, options) => {
+    await dialerNotesList(callUuid, options);
+  });
+
+dialerNotesCmd
+  .command('create <callUuid>')
+  .description('Add a note to a call')
+  .option('--body <json>', 'Request body as JSON string')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--json', 'Output as JSON')
+  .action(async (callUuid, options) => {
+    await dialerNotesCreate(callUuid, options);
+  });
+
+dialerNotesCmd
+  .command('delete <callUuid> <noteId>')
+  .description('Delete a call note')
+  .option('--json', 'Output as JSON')
+  .action(async (callUuid, noteId, options) => {
+    await dialerNotesDelete(callUuid, noteId, options);
+  });
+
+// ── Queues ──
+
+const dialerQueuesCmd = dialerCmd
+  .command('queues')
+  .description('Manage dialer queues');
+
+dialerQueuesCmd
+  .command('list')
+  .description('List all dialer queues')
+  .option('--json', 'Output as JSON')
+  .action(async (options) => {
+    await dialerQueuesList(options);
+  });
+
+dialerQueuesCmd
+  .command('create')
+  .description('Create a new queue')
+  .option('--body <json>', 'Request body as JSON string')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--json', 'Output as JSON')
+  .action(async (options) => {
+    await dialerQueuesCreate(options);
+  });
+
+dialerQueuesCmd
+  .command('delete <id>')
+  .description('Delete a queue')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await dialerQueuesDelete(id, options);
+  });
+
+// ── Queue Items ──
+
+const dialerItemsCmd = dialerCmd
+  .command('items')
+  .description('Manage queue items');
+
+dialerItemsCmd
+  .command('list <queueId>')
+  .description('List items in a queue')
+  .option('--status <status>', 'Filter by status: pending, in_progress, completed, skipped, deferred')
+  .option('-p, --page <n>', 'Page number')
+  .option('--per-page <n>', 'Results per page')
+  .option('--json', 'Output as JSON')
+  .action(async (queueId, options) => {
+    await dialerQueueItemsList(queueId, options);
+  });
+
+dialerItemsCmd
+  .command('add <queueId>')
+  .description('Add items to a queue')
+  .option('--body <json>', 'Request body as JSON string')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--json', 'Output as JSON')
+  .action(async (queueId, options) => {
+    await dialerQueueItemsAdd(queueId, options);
+  });
+
+dialerItemsCmd
+  .command('update <queueId> <itemId>')
+  .description('Update a queue item')
+  .option('--body <json>', 'Request body as JSON string')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--json', 'Output as JSON')
+  .action(async (queueId, itemId, options) => {
+    await dialerQueueItemsUpdate(queueId, itemId, options);
+  });
+
+dialerItemsCmd
+  .command('remove <queueId> <itemId>')
+  .description('Remove an item from a queue')
+  .option('--json', 'Output as JSON')
+  .action(async (queueId, itemId, options) => {
+    await dialerQueueItemsRemove(queueId, itemId, options);
+  });
+
+// ── Dispositions ──
+
+dialerCmd
+  .command('dispositions')
+  .description('List call dispositions')
+  .option('--json', 'Output as JSON')
+  .action(async (options) => {
+    await dialerDispositions(options);
+  });
+
+// ── Suppression ──
+
+const dialerSuppCmd = dialerCmd
+  .command('suppression')
+  .description('Manage suppression list (Do Not Call)');
+
+dialerSuppCmd
+  .command('list')
+  .description('List suppressed phone numbers')
+  .option('--search <term>', 'Search by phone number')
+  .option('-p, --page <n>', 'Page number')
+  .option('--per-page <n>', 'Results per page')
+  .option('--json', 'Output as JSON')
+  .action(async (options) => {
+    await dialerSuppressionList(options);
+  });
+
+dialerSuppCmd
+  .command('check <phoneNumber>')
+  .description('Check if a phone number is suppressed')
+  .option('--json', 'Output as JSON')
+  .action(async (phoneNumber, options) => {
+    await dialerSuppressionCheck(phoneNumber, options);
+  });
+
+dialerSuppCmd
+  .command('add')
+  .description('Add a phone number to the suppression list')
+  .option('--body <json>', 'Request body as JSON string')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--json', 'Output as JSON')
+  .action(async (options) => {
+    await dialerSuppressionAdd(options);
   });
 
 // ============================================================================
