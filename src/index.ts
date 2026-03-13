@@ -23,6 +23,9 @@ import { activitySearch, activityGet } from './commands/activity.js';
 import { addressesValidate } from './commands/addresses.js';
 import { licenseAdd, licenseList, licenseRemove } from './commands/dev.js';
 import { comps } from './commands/comps.js';
+import { signup } from './commands/signup.js';
+import { plans } from './commands/plans.js';
+import { subscribe } from './commands/subscribe.js';
 import {
   listsList,
   listsCreate,
@@ -123,6 +126,44 @@ program
   .option('--verify', 'Verify credentials with the API')
   .action(async (options) => {
     await whoami(options);
+  });
+
+program
+  .command('signup')
+  .description('Create a new DealMachine account')
+  .requiredOption('--email <email>', 'Email address for the new account')
+  .option('--first-name <name>', 'First name')
+  .option('--last-name <name>', 'Last name')
+  .option('--env <environment>', 'API environment: local or production')
+  .action(async (options) => {
+    if (options.env) {
+      process.env.DM_ENV = options.env;
+    }
+    await signup({
+      email: options.email,
+      firstName: options.firstName,
+      lastName: options.lastName,
+      env: options.env,
+    });
+  });
+
+program
+  .command('plans')
+  .description('List available subscription plans')
+  .option('--type <type>', 'Filter by plan type: solo or scale')
+  .option('--json', 'Output as JSON')
+  .action(async (options) => {
+    await plans(options);
+  });
+
+program
+  .command('subscribe')
+  .description('Subscribe to a plan (opens Stripe checkout in browser)')
+  .requiredOption('--plan <name>', 'Plan name: solo, solo-pro, scale, scale-pro')
+  .option('--quantity <seats>', 'Number of seats (for scale plans)')
+  .option('--interval <period>', 'Billing interval: monthly or annual (default: monthly)')
+  .action(async (options) => {
+    await subscribe(options);
   });
 
 // ============================================================================
