@@ -3,7 +3,7 @@
  */
 
 import chalk from 'chalk';
-import ora from 'ora';
+
 import { apiRequest, formatDate } from '../lib/client.js';
 import {
   parseRequestBody,
@@ -12,6 +12,7 @@ import {
   printTable,
   printKeyValue,
   truncate,
+  createSpinner,
 } from '../lib/output.js';
 
 // ============================================================================
@@ -27,7 +28,7 @@ export async function dialerCallsList(options: {
   perPage?: string;
   json?: boolean;
 }): Promise<void> {
-  const spinner = ora('Fetching calls...').start();
+  const spinner = createSpinner('Fetching calls...').start();
   const data = await apiRequest<{ data: any[]; pagination: any }>('/dialer/calls', {
     query: {
       ...(options.status && { status: options.status }),
@@ -66,7 +67,7 @@ export async function dialerCallsList(options: {
 }
 
 export async function dialerCallsGet(uuid: string, options: { json?: boolean }): Promise<void> {
-  const spinner = ora('Fetching call...').start();
+  const spinner = createSpinner('Fetching call...').start();
   const data = await apiRequest<{ data: any }>(`/dialer/calls/${uuid}`);
   spinner.stop();
 
@@ -99,7 +100,7 @@ export async function dialerCallsStats(options: {
   dateTo?: string;
   json?: boolean;
 }): Promise<void> {
-  const spinner = ora('Fetching call stats...').start();
+  const spinner = createSpinner('Fetching call stats...').start();
   const data = await apiRequest<{ data: any }>('/dialer/calls/stats', {
     query: {
       ...(options.dateFrom && { date_from: options.dateFrom }),
@@ -131,7 +132,7 @@ export async function dialerCallsStats(options: {
 // ============================================================================
 
 export async function dialerNotesList(callUuid: string, options: { json?: boolean }): Promise<void> {
-  const spinner = ora('Fetching call notes...').start();
+  const spinner = createSpinner('Fetching call notes...').start();
   const data = await apiRequest<{ data: any[] }>(`/dialer/calls/${callUuid}/notes`);
   spinner.stop();
 
@@ -156,7 +157,7 @@ export async function dialerNotesList(callUuid: string, options: { json?: boolea
 
 export async function dialerNotesCreate(callUuid: string, options: { body?: string; file?: string; json?: boolean }): Promise<void> {
   const requestBody = await parseRequestBody(options);
-  const spinner = ora('Creating call note...').start();
+  const spinner = createSpinner('Creating call note...').start();
   const data = await apiRequest<{ data: any }>(`/dialer/calls/${callUuid}/notes`, { method: 'POST', body: requestBody });
   spinner.stop();
 
@@ -168,7 +169,7 @@ export async function dialerNotesCreate(callUuid: string, options: { body?: stri
 }
 
 export async function dialerNotesDelete(callUuid: string, noteId: string, options: { json?: boolean }): Promise<void> {
-  const spinner = ora('Deleting call note...').start();
+  const spinner = createSpinner('Deleting call note...').start();
   const data = await apiRequest<{ data: { deleted: boolean } }>(`/dialer/calls/${callUuid}/notes/${noteId}`, { method: 'DELETE' });
   spinner.stop();
 
@@ -182,7 +183,7 @@ export async function dialerNotesDelete(callUuid: string, noteId: string, option
 // ============================================================================
 
 export async function dialerQueuesList(options: { json?: boolean }): Promise<void> {
-  const spinner = ora('Fetching queues...').start();
+  const spinner = createSpinner('Fetching queues...').start();
   const data = await apiRequest<{ data: any[] }>('/dialer/queues');
   spinner.stop();
 
@@ -210,7 +211,7 @@ export async function dialerQueuesList(options: { json?: boolean }): Promise<voi
 
 export async function dialerQueuesCreate(options: { body?: string; file?: string; json?: boolean }): Promise<void> {
   const requestBody = await parseRequestBody(options);
-  const spinner = ora('Creating queue...').start();
+  const spinner = createSpinner('Creating queue...').start();
   const data = await apiRequest<{ data: any }>('/dialer/queues', { method: 'POST', body: requestBody });
   spinner.stop();
 
@@ -222,7 +223,7 @@ export async function dialerQueuesCreate(options: { body?: string; file?: string
 }
 
 export async function dialerQueuesDelete(id: string, options: { json?: boolean }): Promise<void> {
-  const spinner = ora('Deleting queue...').start();
+  const spinner = createSpinner('Deleting queue...').start();
   const data = await apiRequest<{ data: { deleted: boolean } }>(`/dialer/queues/${id}`, { method: 'DELETE' });
   spinner.stop();
 
@@ -241,7 +242,7 @@ export async function dialerQueueItemsList(queueId: string, options: {
   perPage?: string;
   json?: boolean;
 }): Promise<void> {
-  const spinner = ora('Fetching queue items...').start();
+  const spinner = createSpinner('Fetching queue items...').start();
   const data = await apiRequest<{ data: any[]; pagination: any }>(`/dialer/queues/${queueId}/items`, {
     query: {
       ...(options.status && { status: options.status }),
@@ -278,7 +279,7 @@ export async function dialerQueueItemsList(queueId: string, options: {
 
 export async function dialerQueueItemsAdd(queueId: string, options: { body?: string; file?: string; json?: boolean }): Promise<void> {
   const requestBody = await parseRequestBody(options);
-  const spinner = ora('Adding items to queue...').start();
+  const spinner = createSpinner('Adding items to queue...').start();
   const data = await apiRequest<{ data: any }>(`/dialer/queues/${queueId}/items`, { method: 'POST', body: requestBody });
   spinner.stop();
 
@@ -295,7 +296,7 @@ export async function dialerQueueItemsAdd(queueId: string, options: { body?: str
 
 export async function dialerQueueItemsUpdate(queueId: string, itemId: string, options: { body?: string; file?: string; json?: boolean }): Promise<void> {
   const requestBody = await parseRequestBody(options);
-  const spinner = ora('Updating queue item...').start();
+  const spinner = createSpinner('Updating queue item...').start();
   const data = await apiRequest<{ data: any }>(`/dialer/queues/${queueId}/items/${itemId}`, { method: 'PATCH', body: requestBody });
   spinner.stop();
 
@@ -306,7 +307,7 @@ export async function dialerQueueItemsUpdate(queueId: string, itemId: string, op
 }
 
 export async function dialerQueueItemsRemove(queueId: string, itemId: string, options: { json?: boolean }): Promise<void> {
-  const spinner = ora('Removing queue item...').start();
+  const spinner = createSpinner('Removing queue item...').start();
   const data = await apiRequest<{ data: { deleted: boolean } }>(`/dialer/queues/${queueId}/items/${itemId}`, { method: 'DELETE' });
   spinner.stop();
 
@@ -320,7 +321,7 @@ export async function dialerQueueItemsRemove(queueId: string, itemId: string, op
 // ============================================================================
 
 export async function dialerDispositions(options: { json?: boolean }): Promise<void> {
-  const spinner = ora('Fetching dispositions...').start();
+  const spinner = createSpinner('Fetching dispositions...').start();
   const data = await apiRequest<{ data: any[] }>('/dialer/dispositions');
   spinner.stop();
 
@@ -355,7 +356,7 @@ export async function dialerSuppressionList(options: {
   perPage?: string;
   json?: boolean;
 }): Promise<void> {
-  const spinner = ora('Fetching suppression list...').start();
+  const spinner = createSpinner('Fetching suppression list...').start();
   const data = await apiRequest<{ data: any[]; pagination: any }>('/dialer/suppression', {
     query: {
       ...(options.search && { search: options.search }),
@@ -390,7 +391,7 @@ export async function dialerSuppressionList(options: {
 }
 
 export async function dialerSuppressionCheck(phoneNumber: string, options: { json?: boolean }): Promise<void> {
-  const spinner = ora('Checking suppression...').start();
+  const spinner = createSpinner('Checking suppression...').start();
   const data = await apiRequest<{ data: { phone_number: string; is_suppressed: boolean } }>('/dialer/suppression/check', {
     query: { phone_number: phoneNumber },
   });
@@ -409,7 +410,7 @@ export async function dialerSuppressionCheck(phoneNumber: string, options: { jso
 
 export async function dialerSuppressionAdd(options: { body?: string; file?: string; json?: boolean }): Promise<void> {
   const requestBody = await parseRequestBody(options);
-  const spinner = ora('Adding to suppression list...').start();
+  const spinner = createSpinner('Adding to suppression list...').start();
   const data = await apiRequest<{ data: any }>('/dialer/suppression', { method: 'POST', body: requestBody });
   spinner.stop();
 

@@ -5,7 +5,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import chalk from 'chalk';
-import ora from 'ora';
+
 import { apiRequest } from '../lib/client.js';
 import {
   parseRequestBody,
@@ -17,6 +17,7 @@ import {
   printWarning,
   printPagination,
   truncate,
+  createSpinner,
 } from '../lib/output.js';
 
 // ============================================================================
@@ -107,7 +108,7 @@ async function runBatchEnrichment(opts: {
   const { items, arrayKey, endpoint, label, extraBody } = opts;
   const responses: EnrichResponse[] = [];
   const totalBatches = Math.ceil(items.length / API_BATCH_LIMIT);
-  const spinner = ora(`Enriching ${items.length} ${label} (batch 1/${totalBatches})...`).start();
+  const spinner = createSpinner(`Enriching ${items.length} ${label} (batch 1/${totalBatches})...`).start();
 
   for (let i = 0; i < items.length; i += API_BATCH_LIMIT) {
     const batch = items.slice(i, i + API_BATCH_LIMIT);
@@ -221,7 +222,7 @@ export async function enrichAddress(
     return;
   }
 
-  const spinner = ora('Enriching by address...').start();
+  const spinner = createSpinner('Enriching by address...').start();
   const data = await apiRequest<PropertyEnrichResponse>('/enrichment/address', {
     method: 'POST',
     body: requestBody,
@@ -311,7 +312,7 @@ export async function enrichLatLng(
     return;
   }
 
-  const spinner = ora('Enriching by coordinates...').start();
+  const spinner = createSpinner('Enriching by coordinates...').start();
   const data = await apiRequest<PropertyEnrichResponse>('/enrichment/reverse-geocode', {
     method: 'POST',
     body: requestBody,
@@ -398,7 +399,7 @@ export async function enrichApn(
     return;
   }
 
-  const spinner = ora('Enriching by APN...').start();
+  const spinner = createSpinner('Enriching by APN...').start();
   const data = await apiRequest<PropertyEnrichResponse>('/enrichment/apn', {
     method: 'POST',
     body: requestBody,
@@ -479,7 +480,7 @@ export async function enrichEmail(
     return;
   }
 
-  const spinner = ora('Enriching by email...').start();
+  const spinner = createSpinner('Enriching by email...').start();
   const data = await apiRequest<PersonEnrichResponse>('/enrichment/email', {
     method: 'POST',
     body: requestBody,
@@ -560,7 +561,7 @@ export async function enrichPhone(
     return;
   }
 
-  const spinner = ora('Enriching by phone...').start();
+  const spinner = createSpinner('Enriching by phone...').start();
   const data = await apiRequest<PersonEnrichResponse>('/enrichment/phone', {
     method: 'POST',
     body: requestBody,
@@ -619,7 +620,7 @@ export async function enrichName(
     requestBody = await parseRequestBody(options);
   }
 
-  const spinner = ora('Enriching by name...').start();
+  const spinner = createSpinner('Enriching by name...').start();
   const data = await apiRequest<NameEnrichResponse>('/enrichment/name', {
     method: 'POST',
     body: requestBody,

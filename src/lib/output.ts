@@ -4,6 +4,27 @@
 
 import chalk from 'chalk';
 import * as fs from 'node:fs';
+import ora, { type Ora } from 'ora';
+
+// ============================================================================
+// Quiet Mode — suppress spinners for non-interactive (agent) usage
+// ============================================================================
+
+/** Returns true if --quiet was passed or DM_QUIET=1 is set. */
+export function isQuiet(): boolean {
+  return process.argv.includes('--quiet') || process.env.DM_QUIET === '1';
+}
+
+/**
+ * Create a spinner that respects quiet mode.
+ * In quiet mode, returns a no-op spinner so callers don't need conditionals.
+ */
+export function createSpinner(text: string): Ora {
+  if (isQuiet()) {
+    return ora({ text, isSilent: true });
+  }
+  return ora(text);
+}
 
 // ============================================================================
 // Body Parsing — supports --body JSON, -f file, or stdin pipe
@@ -53,7 +74,10 @@ export async function parseRequestBody(options: {
   }
 
   console.error(chalk.red('Error: No request body provided.'));
-  console.log(chalk.dim('Provide JSON via --body, -f <file>, or pipe from stdin.'));
+  console.error(chalk.dim('Provide JSON via one of:'));
+  console.error(chalk.dim('  --body \'{"key":"value"}\''));
+  console.error(chalk.dim('  -f request.json'));
+  console.error(chalk.dim('  echo \'{"key":"value"}\' | dm <command>'));
   process.exit(1);
 }
 

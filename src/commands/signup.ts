@@ -4,7 +4,7 @@
  */
 
 import chalk from 'chalk';
-import ora from 'ora';
+import { createSpinner } from '../lib/output.js';
 import { writeConfig } from '../lib/config.js';
 import { getApiBaseUrl } from '../lib/client.js';
 
@@ -18,7 +18,7 @@ interface SignupOptions {
 export async function signup(options: SignupOptions): Promise<void> {
   const baseUrl = getApiBaseUrl();
 
-  const spinner = ora('Creating account...').start();
+  const spinner = createSpinner('Creating account...').start();
 
   const body: Record<string, string> = { email: options.email };
   if (options.firstName) body.first_name = options.firstName;

@@ -3,7 +3,7 @@
  */
 
 import chalk from 'chalk';
-import ora from 'ora';
+import { createSpinner } from '../lib/output.js';
 import { readConfig, getConfigPath } from '../lib/config.js';
 import { verifyCredentials } from '../lib/api.js';
 
@@ -32,7 +32,7 @@ export async function whoami(options: WhoamiOptions): Promise<void> {
 
   if (options.verify) {
     console.log('');
-    const spinner = ora('Verifying credentials...').start();
+    const spinner = createSpinner('Verifying credentials...').start();
 
     const result = await verifyCredentials(config.apiKey);
 

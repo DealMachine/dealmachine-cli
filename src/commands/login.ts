@@ -3,7 +3,7 @@
  */
 
 import chalk from 'chalk';
-import ora from 'ora';
+import { createSpinner } from '../lib/output.js';
 import open from 'open';
 import os from 'os';
 import { writeConfig, readConfig, setConfigValue } from '../lib/config.js';
@@ -44,7 +44,7 @@ export async function login(options: LoginOptions): Promise<void> {
   // Device auth flow (browser-based)
   const hostname = os.hostname().replace(/\.(lan|local|home|localdomain)$/i, '') || 'CLI';
 
-  const spinner = ora('Requesting device code...').start();
+  const spinner = createSpinner('Requesting device code...').start();
 
   let deviceCode: Awaited<ReturnType<typeof requestDeviceCode>>;
   try {
@@ -73,7 +73,7 @@ export async function login(options: LoginOptions): Promise<void> {
     }
   }
 
-  const pollSpinner = ora('Waiting for authorization...').start();
+  const pollSpinner = createSpinner('Waiting for authorization...').start();
 
   let interval = deviceCode.interval * 1000;
   const maxTime = deviceCode.expires_in * 1000;
@@ -145,7 +145,7 @@ async function loginWithKey(apiKey: string, env?: 'local' | 'production'): Promi
   const baseUrl = getApiBaseUrl();
   console.log(chalk.dim(`Verifying key against ${baseUrl}...`));
 
-  const spinner = ora('Verifying API key...').start();
+  const spinner = createSpinner('Verifying API key...').start();
   const result = await verifyCredentials(apiKey);
 
   if (!result.valid || !result.organization) {

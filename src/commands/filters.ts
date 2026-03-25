@@ -3,9 +3,9 @@
  */
 
 import chalk from 'chalk';
-import ora from 'ora';
+
 import { apiRequest } from '../lib/client.js';
-import { printJson, printHeader, printTable, printPagination, truncate } from '../lib/output.js';
+import { printJson, printHeader, printTable, printPagination, truncate, createSpinner } from '../lib/output.js';
 
 interface FilterItem {
   filter_id: string;
@@ -45,7 +45,7 @@ export async function filters(options: {
   if (options.page) query.page = options.page;
   if (options.perPage) query.per_page = options.perPage;
 
-  const spinner = ora('Fetching filters...').start();
+  const spinner = createSpinner('Fetching filters...').start();
   const data = await apiRequest<FiltersResponse>('/filters', { query });
   spinner.stop();
 
