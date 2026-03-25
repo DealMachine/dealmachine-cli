@@ -85,6 +85,34 @@ import {
   dialerSuppressionCheck,
   dialerSuppressionAdd,
 } from './commands/dialer.js';
+import {
+  mailCampaignsList,
+  mailCampaignsCreate,
+  mailCampaignsGet,
+  mailCampaignsUpdate,
+  mailCampaignsDelete,
+  mailCampaignsSend,
+  mailCampaignsPause,
+  mailCampaignsResume,
+  mailCampaignsRecipients,
+  mailCampaignsAnalytics,
+  mailCampaignsCostEstimate,
+  mailDesignsList,
+  mailDesignsCreate,
+  mailDesignsGet,
+  mailDesignsUpdate,
+  mailDesignsDelete,
+  mailReturnAddressesList,
+  mailReturnAddressesCreate,
+  mailReturnAddressesGet,
+  mailReturnAddressesUpdate,
+  mailReturnAddressesDelete,
+  mailReturnAddressesSetDefault,
+  mailWalletBalance,
+  mailWalletAddFunds,
+  mailWalletTransactions,
+  mailWalletPricing,
+} from './commands/mail.js';
 
 const program = new Command();
 
@@ -1499,6 +1527,415 @@ Examples:
   dm dialer suppression add --body '{"phone_number":"5125551234","reason":"Do not contact"}' --json`)
   .action(async (options) => {
     await dialerSuppressionAdd(options);
+  });
+
+// ============================================================================
+// Mail commands
+// ============================================================================
+
+const mailCmd = program
+  .command('mail')
+  .description('Manage direct mail campaigns, designs, return addresses, and wallet');
+
+// ── Campaigns ──
+
+const mailCampaignsCmd = mailCmd
+  .command('campaigns')
+  .alias('camp')
+  .description('Manage mail campaigns');
+
+mailCampaignsCmd
+  .command('list')
+  .alias('ls')
+  .description('List mail campaigns')
+  .option('--status <status>', 'Filter by status: draft, active, paused, completed, cancelled')
+  .option('--search <term>', 'Search by campaign name')
+  .option('-p, --page <n>', 'Page number')
+  .option('--per-page <n>', 'Results per page')
+  .option('--json', 'Output as JSON')
+  .addHelpText('after', `
+Examples:
+  dm mail campaigns list --json
+  dm mail camp ls --status active
+  dm mail campaigns list --search "Austin" --per-page 50`)
+  .action(async (options) => {
+    await mailCampaignsList(options);
+  });
+
+mailCampaignsCmd
+  .command('create')
+  .description('Create a mail campaign')
+  .option('--body <json>', 'Request body as JSON string')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--json', 'Output as JSON')
+  .addHelpText('after', `
+Examples:
+  dm mail campaigns create -f campaign.json --json
+  dm mail campaigns create --body '{"name":"Austin Owners","property_ids":[123],"address_to":"owner","steps":[{"design_prompt":"Professional postcard"}]}'
+
+Note: Set "launch": true in body to send immediately, or leave as draft.`)
+  .action(async (options) => {
+    await mailCampaignsCreate(options);
+  });
+
+mailCampaignsCmd
+  .command('get <id>')
+  .description('Get campaign details')
+  .option('--json', 'Output as JSON')
+  .addHelpText('after', `
+Examples:
+  dm mail campaigns get camp_abc123 --json`)
+  .action(async (id, options) => {
+    await mailCampaignsGet(id, options);
+  });
+
+mailCampaignsCmd
+  .command('update <id>')
+  .description('Update a draft campaign')
+  .option('--body <json>', 'Request body as JSON string')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--json', 'Output as JSON')
+  .addHelpText('after', `
+Examples:
+  dm mail campaigns update camp_abc123 --body '{"name":"Updated Name"}' --json
+
+Note: Only draft campaigns can be updated.`)
+  .action(async (id, options) => {
+    await mailCampaignsUpdate(id, options);
+  });
+
+mailCampaignsCmd
+  .command('delete <id>')
+  .description('Cancel a campaign')
+  .option('--dry-run', 'Preview what would be cancelled without making changes')
+  .option('--json', 'Output as JSON')
+  .addHelpText('after', `
+Examples:
+  dm mail campaigns delete camp_abc123
+  dm mail campaigns delete camp_abc123 --dry-run
+
+Note: Active campaigns will stop sending. Already-submitted mail cannot be recalled.`)
+  .action(async (id, options) => {
+    if (options.dryRun) {
+      console.log(`Would cancel campaign ${id}. Already-submitted mail cannot be recalled.`);
+      console.log('No changes made (--dry-run).');
+      return;
+    }
+    await mailCampaignsDelete(id, options);
+  });
+
+mailCampaignsCmd
+  .command('send <id>')
+  .description('Launch a draft campaign')
+  .option('--dry-run', 'Check cost estimate without launching')
+  .option('--json', 'Output as JSON')
+  .addHelpText('after', `
+Examples:
+  dm mail campaigns send camp_abc123 --json
+  dm mail campaigns send camp_abc123 --dry-run   Check cost before sending
+
+Note: Verify wallet balance first with: dm mail wallet balance`)
+  .action(async (id, options) => {
+    if (options.dryRun) {
+      await mailCampaignsCostEstimate(id, options);
+      return;
+    }
+    await mailCampaignsSend(id, options);
+  });
+
+mailCampaignsCmd
+  .command('pause <id>')
+  .description('Pause an active campaign')
+  .option('--json', 'Output as JSON')
+  .addHelpText('after', `
+Examples:
+  dm mail campaigns pause camp_abc123`)
+  .action(async (id, options) => {
+    await mailCampaignsPause(id, options);
+  });
+
+mailCampaignsCmd
+  .command('resume <id>')
+  .description('Resume a paused campaign')
+  .option('--json', 'Output as JSON')
+  .addHelpText('after', `
+Examples:
+  dm mail campaigns resume camp_abc123`)
+  .action(async (id, options) => {
+    await mailCampaignsResume(id, options);
+  });
+
+mailCampaignsCmd
+  .command('recipients <id>')
+  .description('List campaign recipients')
+  .option('-p, --page <n>', 'Page number')
+  .option('--per-page <n>', 'Results per page')
+  .option('--json', 'Output as JSON')
+  .addHelpText('after', `
+Examples:
+  dm mail campaigns recipients camp_abc123 --json
+  dm mail campaigns recipients camp_abc123 --per-page 100`)
+  .action(async (id, options) => {
+    await mailCampaignsRecipients(id, options);
+  });
+
+mailCampaignsCmd
+  .command('analytics <id>')
+  .description('Get campaign delivery and response analytics')
+  .option('--json', 'Output as JSON')
+  .addHelpText('after', `
+Examples:
+  dm mail campaigns analytics camp_abc123 --json`)
+  .action(async (id, options) => {
+    await mailCampaignsAnalytics(id, options);
+  });
+
+mailCampaignsCmd
+  .command('cost-estimate <id>')
+  .description('Estimate campaign cost before sending')
+  .option('--json', 'Output as JSON')
+  .addHelpText('after', `
+Examples:
+  dm mail campaigns cost-estimate camp_abc123 --json`)
+  .action(async (id, options) => {
+    await mailCampaignsCostEstimate(id, options);
+  });
+
+// ── Designs ──
+
+const mailDesignsCmd = mailCmd
+  .command('designs')
+  .description('Manage postcard designs');
+
+mailDesignsCmd
+  .command('list')
+  .alias('ls')
+  .description('List designs')
+  .option('--status <status>', 'Filter by status: draft, active, archived')
+  .option('--size <size>', 'Filter by size: 4x6, 6x9, 6x11')
+  .option('--search <term>', 'Search by name')
+  .option('-p, --page <n>', 'Page number')
+  .option('--per-page <n>', 'Results per page')
+  .option('--json', 'Output as JSON')
+  .addHelpText('after', `
+Examples:
+  dm mail designs list --json
+  dm mail designs list --status active --size 4x6
+  dm mail designs list --search "professional"`)
+  .action(async (options) => {
+    await mailDesignsList(options);
+  });
+
+mailDesignsCmd
+  .command('create')
+  .description('Create a postcard design')
+  .option('--body <json>', 'Request body as JSON string')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--json', 'Output as JSON')
+  .addHelpText('after', `
+Examples:
+  dm mail designs create --body '{"name":"My Card","prompt":"Professional real estate postcard","size":"4x6"}' --json
+  dm mail designs create -f design.json
+
+Note: Provide either "prompt" (AI-generated) or "html_front" (custom HTML).`)
+  .action(async (options) => {
+    await mailDesignsCreate(options);
+  });
+
+mailDesignsCmd
+  .command('get <id>')
+  .description('Get design details')
+  .option('--json', 'Output as JSON')
+  .addHelpText('after', `
+Examples:
+  dm mail designs get des_abc123 --json`)
+  .action(async (id, options) => {
+    await mailDesignsGet(id, options);
+  });
+
+mailDesignsCmd
+  .command('update <id>')
+  .description('Update a design')
+  .option('--body <json>', 'Request body as JSON string')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--json', 'Output as JSON')
+  .addHelpText('after', `
+Examples:
+  dm mail designs update des_abc123 --body '{"name":"Updated Name","publish":true}' --json
+
+Note: Set "publish": true to promote draft HTML to active.`)
+  .action(async (id, options) => {
+    await mailDesignsUpdate(id, options);
+  });
+
+mailDesignsCmd
+  .command('delete <id>')
+  .description('Delete a design')
+  .option('--dry-run', 'Preview what would be deleted without making changes')
+  .option('--json', 'Output as JSON')
+  .addHelpText('after', `
+Examples:
+  dm mail designs delete des_abc123
+  dm mail designs delete des_abc123 --dry-run
+
+Note: Designs used in active campaigns cannot be deleted.`)
+  .action(async (id, options) => {
+    if (options.dryRun) {
+      console.log(`Would delete design ${id}.`);
+      console.log('No changes made (--dry-run).');
+      return;
+    }
+    await mailDesignsDelete(id, options);
+  });
+
+// ── Return Addresses ──
+
+const mailAddressesCmd = mailCmd
+  .command('return-addresses')
+  .alias('addr')
+  .description('Manage return addresses for mail campaigns');
+
+mailAddressesCmd
+  .command('list')
+  .alias('ls')
+  .description('List return addresses')
+  .option('--json', 'Output as JSON')
+  .addHelpText('after', `
+Examples:
+  dm mail return-addresses list --json
+  dm mail addr ls --json`)
+  .action(async (options) => {
+    await mailReturnAddressesList(options);
+  });
+
+mailAddressesCmd
+  .command('create')
+  .description('Create a return address (USPS-validated)')
+  .option('--body <json>', 'Request body as JSON string')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--json', 'Output as JSON')
+  .addHelpText('after', `
+Examples:
+  dm mail addr create --body '{"name":"DealMachine","address_1":"123 Main St","city":"Austin","state":"TX","zip":"78704"}' --json
+  dm mail addr create --body '{"name":"Office","label":"HQ","address_1":"456 Oak","city":"Dallas","state":"TX","zip":"75201","set_as_default":true}'`)
+  .action(async (options) => {
+    await mailReturnAddressesCreate(options);
+  });
+
+mailAddressesCmd
+  .command('get <id>')
+  .description('Get return address details')
+  .option('--json', 'Output as JSON')
+  .addHelpText('after', `
+Examples:
+  dm mail addr get addr_abc123 --json`)
+  .action(async (id, options) => {
+    await mailReturnAddressesGet(id, options);
+  });
+
+mailAddressesCmd
+  .command('update <id>')
+  .description('Update a return address (re-validated by USPS)')
+  .option('--body <json>', 'Request body as JSON string')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--json', 'Output as JSON')
+  .addHelpText('after', `
+Examples:
+  dm mail addr update addr_abc123 --body '{"name":"New Name"}' --json`)
+  .action(async (id, options) => {
+    await mailReturnAddressesUpdate(id, options);
+  });
+
+mailAddressesCmd
+  .command('delete <id>')
+  .description('Delete a return address')
+  .option('--dry-run', 'Preview what would be deleted without making changes')
+  .option('--json', 'Output as JSON')
+  .addHelpText('after', `
+Examples:
+  dm mail addr delete addr_abc123
+  dm mail addr delete addr_abc123 --dry-run
+
+Note: Cannot delete the default address. Set another as default first.`)
+  .action(async (id, options) => {
+    if (options.dryRun) {
+      console.log(`Would delete return address ${id}.`);
+      console.log('No changes made (--dry-run).');
+      return;
+    }
+    await mailReturnAddressesDelete(id, options);
+  });
+
+mailAddressesCmd
+  .command('set-default <id>')
+  .description('Set a return address as the default')
+  .option('--json', 'Output as JSON')
+  .addHelpText('after', `
+Examples:
+  dm mail addr set-default addr_abc123`)
+  .action(async (id, options) => {
+    await mailReturnAddressesSetDefault(id, options);
+  });
+
+// ── Wallet ──
+
+const mailWalletCmd = mailCmd
+  .command('wallet')
+  .description('Manage mail wallet balance and transactions');
+
+mailWalletCmd
+  .command('balance')
+  .description('Get wallet balance')
+  .option('--json', 'Output as JSON')
+  .addHelpText('after', `
+Examples:
+  dm mail wallet balance --json`)
+  .action(async (options) => {
+    await mailWalletBalance(options);
+  });
+
+mailWalletCmd
+  .command('add-funds')
+  .description('Add credits to your mail wallet ($50–$10,000)')
+  .option('--body <json>', 'Request body as JSON string')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--json', 'Output as JSON')
+  .addHelpText('after', `
+Examples:
+  dm mail wallet add-funds --body '{"amount_cents":5000}' --json                      Add $50
+  dm mail wallet add-funds --body '{"amount_cents":10000,"payment_method_id":"pm_..."}' --json`)
+  .action(async (options) => {
+    await mailWalletAddFunds(options);
+  });
+
+mailWalletCmd
+  .command('transactions')
+  .alias('txns')
+  .description('List wallet transactions')
+  .option('--type <type>', 'Filter by type: purchase, spend, refund')
+  .option('--reference-type <type>', 'Filter by reference type: campaign, stripe_payment')
+  .option('--campaign-id <id>', 'Filter by campaign ID')
+  .option('-p, --page <n>', 'Page number')
+  .option('--per-page <n>', 'Results per page')
+  .option('--json', 'Output as JSON')
+  .addHelpText('after', `
+Examples:
+  dm mail wallet transactions --json
+  dm mail wallet txns --type spend --campaign-id camp_abc123
+  dm mail wallet transactions --type purchase --per-page 50`)
+  .action(async (options) => {
+    await mailWalletTransactions(options);
+  });
+
+mailWalletCmd
+  .command('pricing')
+  .description('Get postcard pricing for your plan')
+  .option('--json', 'Output as JSON')
+  .addHelpText('after', `
+Examples:
+  dm mail wallet pricing --json`)
+  .action(async (options) => {
+    await mailWalletPricing(options);
   });
 
 // ============================================================================
