@@ -3,7 +3,7 @@
  */
 
 import chalk from 'chalk';
-import ora from 'ora';
+
 import { apiRequest } from '../lib/client.js';
 import {
   parseRequestBody,
@@ -15,6 +15,7 @@ import {
   printCredits,
   printWarning,
   truncate,
+  createSpinner,
 } from '../lib/output.js';
 
 // ============================================================================
@@ -81,7 +82,7 @@ export async function propertiesSearch(options: {
 }): Promise<void> {
   const requestBody = await parseRequestBody(options);
 
-  const spinner = ora('Searching properties...').start();
+  const spinner = createSpinner('Searching properties...').start();
   const data = await apiRequest<SearchResponse>('/properties/search', {
     method: 'POST',
     body: requestBody,
@@ -127,7 +128,7 @@ export async function propertiesCount(options: {
 }): Promise<void> {
   const requestBody = await parseRequestBody(options);
 
-  const spinner = ora('Counting properties...').start();
+  const spinner = createSpinner('Counting properties...').start();
   const data = await apiRequest<CountResponse>('/properties/search/count', {
     method: 'POST',
     body: requestBody,
@@ -157,7 +158,7 @@ export async function propertiesGet(
   const query: Record<string, string> = {};
   if (options.contactAudience) query.contact_audience = options.contactAudience;
 
-  const spinner = ora('Fetching property...').start();
+  const spinner = createSpinner('Fetching property...').start();
   const data = await apiRequest<GetPropertyResponse>(`/properties/${id}`, { query });
   spinner.stop();
 
@@ -214,7 +215,7 @@ export async function propertiesIds(options: {
     requestBody = await parseRequestBody(options);
   }
 
-  const spinner = ora('Fetching properties...').start();
+  const spinner = createSpinner('Fetching properties...').start();
   const data = await apiRequest<BatchResponse>('/properties/ids', {
     method: 'POST',
     body: requestBody,
@@ -270,7 +271,7 @@ export async function propertiesExport(options: {
   if (options.landlineOnly) requestBody.landline_only = true;
   if (options.scrubDnc) requestBody.scrub_dnc = true;
 
-  const spinner = ora('Exporting properties (this may take 30-60 seconds)...').start();
+  const spinner = createSpinner('Exporting properties (this may take 30-60 seconds)...').start();
   const data = await apiRequest<ExportResponse>('/properties/export', {
     method: 'POST',
     body: requestBody,

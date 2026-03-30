@@ -3,7 +3,7 @@
  */
 
 import chalk from 'chalk';
-import ora from 'ora';
+
 import { apiRequest, formatDate } from '../lib/client.js';
 import {
   parseRequestBody,
@@ -12,6 +12,7 @@ import {
   printTable,
   printPagination,
   truncate,
+  createSpinner,
 } from '../lib/output.js';
 
 // ============================================================================
@@ -86,7 +87,7 @@ export async function activitySearch(options: {
     requestBody = await parseRequestBody(options);
   }
 
-  const spinner = ora('Searching activity...').start();
+  const spinner = createSpinner('Searching activity...').start();
   const data = await apiRequest<SearchResponse>('/activity/search', {
     method: 'POST',
     body: requestBody,
@@ -126,7 +127,7 @@ export async function activityGet(
   activityId: string,
   options: { json?: boolean }
 ): Promise<void> {
-  const spinner = ora('Fetching activity...').start();
+  const spinner = createSpinner('Fetching activity...').start();
   const data = await apiRequest<GetResponse>(`/activity/${activityId}`);
   spinner.stop();
 

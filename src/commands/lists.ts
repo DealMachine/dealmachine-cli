@@ -3,7 +3,7 @@
  */
 
 import chalk from 'chalk';
-import ora from 'ora';
+
 import { apiRequest, formatDate } from '../lib/client.js';
 import {
   parseRequestBody,
@@ -12,6 +12,7 @@ import {
   printTable,
   printKeyValue,
   truncate,
+  createSpinner,
 } from '../lib/output.js';
 
 // ============================================================================
@@ -75,7 +76,7 @@ export async function listsList(options: {
   perPage?: string;
   json?: boolean;
 }): Promise<void> {
-  const spinner = ora('Fetching lists...').start();
+  const spinner = createSpinner('Fetching lists...').start();
   const data = await apiRequest<ListListsResponse>('/lists', {
     query: {
       ...(options.search && { search: options.search }),
@@ -144,7 +145,7 @@ export async function listsCreate(options: {
     requestBody = { ...requestBody, ...extra };
   }
 
-  const spinner = ora('Creating list...').start();
+  const spinner = createSpinner('Creating list...').start();
   const data = await apiRequest<SingleListResponse>('/lists', {
     method: 'POST',
     body: requestBody,
@@ -177,7 +178,7 @@ export async function listsGet(
   listId: string,
   options: { json?: boolean }
 ): Promise<void> {
-  const spinner = ora('Fetching list...').start();
+  const spinner = createSpinner('Fetching list...').start();
   const data = await apiRequest<SingleListResponse>(`/lists/${listId}`);
   spinner.stop();
 
@@ -216,7 +217,7 @@ export async function listsUpdate(
     process.exit(1);
   }
 
-  const spinner = ora('Updating list...').start();
+  const spinner = createSpinner('Updating list...').start();
   const data = await apiRequest<SingleListResponse>(`/lists/${listId}`, {
     method: 'PATCH',
     body: { name: options.name },
@@ -246,7 +247,7 @@ export async function listsDelete(
   listId: string,
   options: { json?: boolean }
 ): Promise<void> {
-  const spinner = ora('Deleting list...').start();
+  const spinner = createSpinner('Deleting list...').start();
   const data = await apiRequest<{ data: { deleted: boolean } }>(`/lists/${listId}`, {
     method: 'DELETE',
   });
@@ -271,7 +272,7 @@ export async function listsBuild(
 ): Promise<void> {
   const requestBody = await parseRequestBody(options);
 
-  const spinner = ora('Starting list build...').start();
+  const spinner = createSpinner('Starting list build...').start();
   const data = await apiRequest<SingleListResponse>(`/lists/${listId}/build`, {
     method: 'POST',
     body: requestBody,
@@ -319,7 +320,7 @@ export async function listsImport(
     requestBody = await parseRequestBody(options);
   }
 
-  const spinner = ora('Starting import...').start();
+  const spinner = createSpinner('Starting import...').start();
   const data = await apiRequest<SingleListResponse>(`/lists/${listId}/import`, {
     method: 'POST',
     body: requestBody,
@@ -351,7 +352,7 @@ export async function listsItems(
   listId: string,
   options: { page?: string; perPage?: string; json?: boolean }
 ): Promise<void> {
-  const spinner = ora('Fetching list items...').start();
+  const spinner = createSpinner('Fetching list items...').start();
   const data = await apiRequest<ListItemsResponse>(`/lists/${listId}/items`, {
     query: {
       ...(options.page && { page: parseInt(options.page, 10) }),
@@ -403,7 +404,7 @@ export async function listsAdd(
   const requestBody: Record<string, unknown> = { ids };
   if (options.idType) requestBody.id_type = options.idType;
 
-  const spinner = ora('Adding items...').start();
+  const spinner = createSpinner('Adding items...').start();
   const data = await apiRequest<{ data: { added: number } }>(`/lists/${listId}/items`, {
     method: 'POST',
     body: requestBody,
@@ -436,7 +437,7 @@ export async function listsRemove(
   const requestBody: Record<string, unknown> = { ids };
   if (options.idType) requestBody.id_type = options.idType;
 
-  const spinner = ora('Removing items...').start();
+  const spinner = createSpinner('Removing items...').start();
   const data = await apiRequest<{ data: { removed: number } }>(`/lists/${listId}/items`, {
     method: 'DELETE',
     body: requestBody,
@@ -468,7 +469,7 @@ export async function listsExport(
     requestBody.anchor = options.anchor;
   }
 
-  const spinner = ora('Starting export...').start();
+  const spinner = createSpinner('Starting export...').start();
   const data = await apiRequest<{ data: { export_id: string; status: string; record_count: number } }>(
     `/lists/${listId}/export`,
     { method: 'POST', body: requestBody }

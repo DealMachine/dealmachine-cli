@@ -3,7 +3,7 @@
  */
 
 import chalk from 'chalk';
-import ora from 'ora';
+
 import { apiRequest } from '../lib/client.js';
 import {
   parseRequestBody,
@@ -15,6 +15,7 @@ import {
   printCredits,
   printWarning,
   truncate,
+  createSpinner,
 } from '../lib/output.js';
 
 // ============================================================================
@@ -81,7 +82,7 @@ export async function peopleSearch(options: {
 }): Promise<void> {
   const requestBody = await parseRequestBody(options);
 
-  const spinner = ora('Searching people...').start();
+  const spinner = createSpinner('Searching people...').start();
   const data = await apiRequest<SearchResponse>('/people/search', {
     method: 'POST',
     body: requestBody,
@@ -124,7 +125,7 @@ export async function peopleCount(options: {
 }): Promise<void> {
   const requestBody = await parseRequestBody(options);
 
-  const spinner = ora('Counting people...').start();
+  const spinner = createSpinner('Counting people...').start();
   const data = await apiRequest<CountResponse>('/people/search/count', {
     method: 'POST',
     body: requestBody,
@@ -154,7 +155,7 @@ export async function peopleGet(
   const query: Record<string, string> = {};
   if (options.includeProperties) query.include_properties = 'true';
 
-  const spinner = ora('Fetching person...').start();
+  const spinner = createSpinner('Fetching person...').start();
   const data = await apiRequest<GetPersonResponse>(`/people/${id}`, { query });
   spinner.stop();
 
@@ -227,7 +228,7 @@ export async function peopleIds(options: {
     requestBody = await parseRequestBody(options);
   }
 
-  const spinner = ora('Fetching people...').start();
+  const spinner = createSpinner('Fetching people...').start();
   const data = await apiRequest<BatchResponse>('/people/ids', {
     method: 'POST',
     body: requestBody,
@@ -282,7 +283,7 @@ export async function peopleExport(options: {
   if (options.landlineOnly) requestBody.landline_only = true;
   if (options.scrubDnc) requestBody.scrub_dnc = true;
 
-  const spinner = ora('Exporting people (this may take 30-60 seconds)...').start();
+  const spinner = createSpinner('Exporting people (this may take 30-60 seconds)...').start();
   const data = await apiRequest<ExportResponse>('/people/export', {
     method: 'POST',
     body: requestBody,

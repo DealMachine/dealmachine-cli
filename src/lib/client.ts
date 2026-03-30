@@ -84,7 +84,18 @@ export async function apiRequest<T>(
   if (!response.ok) {
     const error = (await response.json().catch(() => ({}))) as ApiError;
     const message = error.error?.message || `Request failed with status ${response.status}`;
-    console.error(chalk.red(`Error: ${message}`));
+    const code = error.error?.code ? ` [${error.error.code}]` : '';
+    console.error(chalk.red(`Error: ${message}${code}`));
+    console.error(chalk.dim(`  ${method} ${path} -> ${response.status}`));
+    if (response.status === 401) {
+      console.error(chalk.dim('  Run `dm login` to re-authenticate.'));
+    } else if (response.status === 422) {
+      console.error(chalk.dim('  Check your request body. Use --body or -f with valid JSON.'));
+    } else if (response.status === 404) {
+      console.error(chalk.dim('  Resource not found. Verify the ID is correct.'));
+    } else if (response.status === 429) {
+      console.error(chalk.dim('  Rate limited. Wait a moment and retry.'));
+    }
     process.exit(1);
   }
 

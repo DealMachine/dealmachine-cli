@@ -3,7 +3,7 @@
  */
 
 import chalk from 'chalk';
-import ora from 'ora';
+
 import { apiRequest } from '../lib/client.js';
 import {
   parseRequestBody,
@@ -12,6 +12,7 @@ import {
   printTotals,
   printCredits,
   printWarning,
+  createSpinner,
 } from '../lib/output.js';
 
 interface ValidateResponse {
@@ -45,7 +46,7 @@ export async function addressesValidate(
     requestBody = await parseRequestBody(options);
   }
 
-  const spinner = ora('Validating addresses...').start();
+  const spinner = createSpinner('Validating addresses...').start();
   const data = await apiRequest<ValidateResponse>('/addresses/validate', {
     method: 'POST',
     body: requestBody,

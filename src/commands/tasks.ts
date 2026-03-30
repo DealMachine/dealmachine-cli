@@ -3,7 +3,7 @@
  */
 
 import chalk from 'chalk';
-import ora from 'ora';
+
 import { apiRequest, formatDate } from '../lib/client.js';
 import {
   parseRequestBody,
@@ -12,6 +12,7 @@ import {
   printTable,
   printKeyValue,
   truncate,
+  createSpinner,
 } from '../lib/output.js';
 
 // ============================================================================
@@ -26,7 +27,7 @@ export async function tasksList(options: {
   perPage?: string;
   json?: boolean;
 }): Promise<void> {
-  const spinner = ora('Fetching tasks...').start();
+  const spinner = createSpinner('Fetching tasks...').start();
   const data = await apiRequest<{ data: any[]; pagination: any }>('/tasks', {
     query: {
       ...(options.status && { status: options.status }),
@@ -68,7 +69,7 @@ export async function tasksList(options: {
 // ============================================================================
 
 export async function tasksGet(id: string, options: { json?: boolean }): Promise<void> {
-  const spinner = ora('Fetching task...').start();
+  const spinner = createSpinner('Fetching task...').start();
   const data = await apiRequest<{ data: any }>(`/tasks/${id}`);
   spinner.stop();
 
@@ -97,7 +98,7 @@ export async function tasksGet(id: string, options: { json?: boolean }): Promise
 
 export async function tasksCreate(options: { body?: string; file?: string; json?: boolean }): Promise<void> {
   const requestBody = await parseRequestBody(options);
-  const spinner = ora('Creating task...').start();
+  const spinner = createSpinner('Creating task...').start();
   const data = await apiRequest<{ data: any }>('/tasks', { method: 'POST', body: requestBody });
   spinner.stop();
 
@@ -120,7 +121,7 @@ export async function tasksCreate(options: { body?: string; file?: string; json?
 
 export async function tasksUpdate(id: string, options: { body?: string; file?: string; json?: boolean }): Promise<void> {
   const requestBody = await parseRequestBody(options);
-  const spinner = ora('Updating task...').start();
+  const spinner = createSpinner('Updating task...').start();
   const data = await apiRequest<{ data: any }>(`/tasks/${id}`, { method: 'PATCH', body: requestBody });
   spinner.stop();
 
@@ -136,7 +137,7 @@ export async function tasksUpdate(id: string, options: { body?: string; file?: s
 // ============================================================================
 
 export async function tasksDelete(id: string, options: { json?: boolean }): Promise<void> {
-  const spinner = ora('Deleting task...').start();
+  const spinner = createSpinner('Deleting task...').start();
   const data = await apiRequest<{ data: { deleted: boolean } }>(`/tasks/${id}`, { method: 'DELETE' });
   spinner.stop();
 

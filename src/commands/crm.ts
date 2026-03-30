@@ -3,7 +3,7 @@
  */
 
 import chalk from 'chalk';
-import ora from 'ora';
+
 import { apiRequest, formatDate } from '../lib/client.js';
 import {
   parseRequestBody,
@@ -12,6 +12,7 @@ import {
   printTable,
   printKeyValue,
   truncate,
+  createSpinner,
 } from '../lib/output.js';
 
 // ============================================================================
@@ -19,7 +20,7 @@ import {
 // ============================================================================
 
 export async function crmPipelines(options: { json?: boolean }): Promise<void> {
-  const spinner = ora('Fetching pipelines...').start();
+  const spinner = createSpinner('Fetching pipelines...').start();
   const data = await apiRequest<{ data: any[] }>('/crm/pipelines');
   spinner.stop();
 
@@ -56,7 +57,7 @@ export async function crmOpportunitiesList(options: {
   perPage?: string;
   json?: boolean;
 }): Promise<void> {
-  const spinner = ora('Fetching opportunities...').start();
+  const spinner = createSpinner('Fetching opportunities...').start();
   const data = await apiRequest<{ data: any[]; pagination: any }>('/crm/opportunities', {
     query: {
       ...(options.pipelineId && { pipeline_id: options.pipelineId }),
@@ -95,7 +96,7 @@ export async function crmOpportunitiesList(options: {
 }
 
 export async function crmOpportunitiesGet(id: string, options: { json?: boolean }): Promise<void> {
-  const spinner = ora('Fetching opportunity...').start();
+  const spinner = createSpinner('Fetching opportunity...').start();
   const data = await apiRequest<{ data: any }>(`/crm/opportunities/${id}`);
   spinner.stop();
 
@@ -122,7 +123,7 @@ export async function crmOpportunitiesGet(id: string, options: { json?: boolean 
 
 export async function crmOpportunitiesCreate(options: { body?: string; file?: string; json?: boolean }): Promise<void> {
   const requestBody = await parseRequestBody(options);
-  const spinner = ora('Creating opportunity...').start();
+  const spinner = createSpinner('Creating opportunity...').start();
   const data = await apiRequest<{ data: any }>('/crm/opportunities', { method: 'POST', body: requestBody });
   spinner.stop();
 
@@ -136,7 +137,7 @@ export async function crmOpportunitiesCreate(options: { body?: string; file?: st
 
 export async function crmOpportunitiesUpdate(id: string, options: { body?: string; file?: string; json?: boolean }): Promise<void> {
   const requestBody = await parseRequestBody(options);
-  const spinner = ora('Updating opportunity...').start();
+  const spinner = createSpinner('Updating opportunity...').start();
   const data = await apiRequest<{ data: any }>(`/crm/opportunities/${id}`, { method: 'PATCH', body: requestBody });
   spinner.stop();
 
@@ -149,7 +150,7 @@ export async function crmOpportunitiesUpdate(id: string, options: { body?: strin
 }
 
 export async function crmOpportunitiesDelete(id: string, options: { json?: boolean }): Promise<void> {
-  const spinner = ora('Deleting opportunity...').start();
+  const spinner = createSpinner('Deleting opportunity...').start();
   const data = await apiRequest<{ data: { deleted: boolean } }>(`/crm/opportunities/${id}`, { method: 'DELETE' });
   spinner.stop();
 
@@ -160,7 +161,7 @@ export async function crmOpportunitiesDelete(id: string, options: { json?: boole
 
 export async function crmOpportunitiesMove(id: string, options: { body?: string; file?: string; json?: boolean }): Promise<void> {
   const requestBody = await parseRequestBody(options);
-  const spinner = ora('Moving opportunity...').start();
+  const spinner = createSpinner('Moving opportunity...').start();
   const data = await apiRequest<{ data: any }>(`/crm/opportunities/${id}/move`, { method: 'POST', body: requestBody });
   spinner.stop();
 
@@ -177,7 +178,7 @@ export async function crmOpportunitiesMove(id: string, options: { body?: string;
 // ============================================================================
 
 export async function crmTasksList(opportunityId: string, options: { page?: string; perPage?: string; json?: boolean }): Promise<void> {
-  const spinner = ora('Fetching tasks...').start();
+  const spinner = createSpinner('Fetching tasks...').start();
   const data = await apiRequest<{ data: any[]; pagination: any }>(`/crm/opportunities/${opportunityId}/tasks`, {
     query: {
       ...(options.page && { page: parseInt(options.page, 10) }),
@@ -207,7 +208,7 @@ export async function crmTasksList(opportunityId: string, options: { page?: stri
 
 export async function crmTasksCreate(opportunityId: string, options: { body?: string; file?: string; json?: boolean }): Promise<void> {
   const requestBody = await parseRequestBody(options);
-  const spinner = ora('Creating task...').start();
+  const spinner = createSpinner('Creating task...').start();
   const data = await apiRequest<{ data: any }>(`/crm/opportunities/${opportunityId}/tasks`, { method: 'POST', body: requestBody });
   spinner.stop();
 
@@ -220,7 +221,7 @@ export async function crmTasksCreate(opportunityId: string, options: { body?: st
 
 export async function crmTasksUpdate(opportunityId: string, taskId: string, options: { body?: string; file?: string; json?: boolean }): Promise<void> {
   const requestBody = await parseRequestBody(options);
-  const spinner = ora('Updating task...').start();
+  const spinner = createSpinner('Updating task...').start();
   const data = await apiRequest<{ data: any }>(`/crm/opportunities/${opportunityId}/tasks/${taskId}`, { method: 'PATCH', body: requestBody });
   spinner.stop();
 
@@ -236,7 +237,7 @@ export async function crmTasksUpdate(opportunityId: string, taskId: string, opti
 // ============================================================================
 
 export async function crmNotesList(opportunityId: string, options: { page?: string; perPage?: string; json?: boolean }): Promise<void> {
-  const spinner = ora('Fetching notes...').start();
+  const spinner = createSpinner('Fetching notes...').start();
   const data = await apiRequest<{ data: any[]; pagination: any }>(`/crm/opportunities/${opportunityId}/notes`, {
     query: {
       ...(options.page && { page: parseInt(options.page, 10) }),
@@ -266,7 +267,7 @@ export async function crmNotesList(opportunityId: string, options: { page?: stri
 
 export async function crmNotesCreate(opportunityId: string, options: { body?: string; file?: string; json?: boolean }): Promise<void> {
   const requestBody = await parseRequestBody(options);
-  const spinner = ora('Creating note...').start();
+  const spinner = createSpinner('Creating note...').start();
   const data = await apiRequest<{ data: any }>(`/crm/opportunities/${opportunityId}/notes`, { method: 'POST', body: requestBody });
   spinner.stop();
 
@@ -279,7 +280,7 @@ export async function crmNotesCreate(opportunityId: string, options: { body?: st
 
 export async function crmNotesUpdate(opportunityId: string, noteId: string, options: { body?: string; file?: string; json?: boolean }): Promise<void> {
   const requestBody = await parseRequestBody(options);
-  const spinner = ora('Updating note...').start();
+  const spinner = createSpinner('Updating note...').start();
   const data = await apiRequest<{ data: any }>(`/crm/opportunities/${opportunityId}/notes/${noteId}`, { method: 'PATCH', body: requestBody });
   spinner.stop();
 
@@ -295,7 +296,7 @@ export async function crmNotesUpdate(opportunityId: string, noteId: string, opti
 // ============================================================================
 
 export async function crmRecordsList(opportunityId: string, options: { json?: boolean }): Promise<void> {
-  const spinner = ora('Fetching records...').start();
+  const spinner = createSpinner('Fetching records...').start();
   const data = await apiRequest<{ data: any[] }>(`/crm/opportunities/${opportunityId}/records`);
   spinner.stop();
 
@@ -321,7 +322,7 @@ export async function crmRecordsList(opportunityId: string, options: { json?: bo
 
 export async function crmRecordsLink(opportunityId: string, options: { body?: string; file?: string; json?: boolean }): Promise<void> {
   const requestBody = await parseRequestBody(options);
-  const spinner = ora('Linking record...').start();
+  const spinner = createSpinner('Linking record...').start();
   const data = await apiRequest<{ data: any }>(`/crm/opportunities/${opportunityId}/records`, { method: 'POST', body: requestBody });
   spinner.stop();
 
@@ -333,7 +334,7 @@ export async function crmRecordsLink(opportunityId: string, options: { body?: st
 }
 
 export async function crmRecordsUnlink(opportunityId: string, recordId: string, options: { json?: boolean }): Promise<void> {
-  const spinner = ora('Unlinking record...').start();
+  const spinner = createSpinner('Unlinking record...').start();
   const data = await apiRequest<{ data: { deleted: boolean } }>(`/crm/opportunities/${opportunityId}/records/${recordId}`, { method: 'DELETE' });
   spinner.stop();
 
@@ -347,7 +348,7 @@ export async function crmRecordsUnlink(opportunityId: string, recordId: string, 
 // ============================================================================
 
 export async function crmLabelsList(options: { json?: boolean }): Promise<void> {
-  const spinner = ora('Fetching labels...').start();
+  const spinner = createSpinner('Fetching labels...').start();
   const data = await apiRequest<{ data: any[] }>('/crm/labels');
   spinner.stop();
 
@@ -372,7 +373,7 @@ export async function crmLabelsList(options: { json?: boolean }): Promise<void> 
 
 export async function crmLabelsCreate(options: { body?: string; file?: string; json?: boolean }): Promise<void> {
   const requestBody = await parseRequestBody(options);
-  const spinner = ora('Creating label...').start();
+  const spinner = createSpinner('Creating label...').start();
   const data = await apiRequest<{ data: any }>('/crm/labels', { method: 'POST', body: requestBody });
   spinner.stop();
 
@@ -385,7 +386,7 @@ export async function crmLabelsCreate(options: { body?: string; file?: string; j
 
 export async function crmLabelsUpdate(id: string, options: { body?: string; file?: string; json?: boolean }): Promise<void> {
   const requestBody = await parseRequestBody(options);
-  const spinner = ora('Updating label...').start();
+  const spinner = createSpinner('Updating label...').start();
   const data = await apiRequest<{ data: any }>(`/crm/labels/${id}`, { method: 'PATCH', body: requestBody });
   spinner.stop();
 
@@ -397,7 +398,7 @@ export async function crmLabelsUpdate(id: string, options: { body?: string; file
 }
 
 export async function crmLabelsDelete(id: string, options: { json?: boolean }): Promise<void> {
-  const spinner = ora('Deleting label...').start();
+  const spinner = createSpinner('Deleting label...').start();
   const data = await apiRequest<{ data: { deleted: boolean } }>(`/crm/labels/${id}`, { method: 'DELETE' });
   spinner.stop();
 
@@ -411,7 +412,7 @@ export async function crmLabelsDelete(id: string, options: { json?: boolean }): 
 // ============================================================================
 
 export async function crmActivity(opportunityId: string, options: { cursor?: string; limit?: string; category?: string; json?: boolean }): Promise<void> {
-  const spinner = ora('Fetching activity...').start();
+  const spinner = createSpinner('Fetching activity...').start();
   const data = await apiRequest<{ data: any[]; next_cursor: string | null; has_more: boolean }>(
     `/crm/opportunities/${opportunityId}/activity`,
     {

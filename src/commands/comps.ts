@@ -3,7 +3,7 @@
  */
 
 import chalk from 'chalk';
-import ora from 'ora';
+
 import { apiRequest } from '../lib/client.js';
 import {
   parseRequestBody,
@@ -13,6 +13,7 @@ import {
   printCredits,
   printKeyValue,
   truncate,
+  createSpinner,
 } from '../lib/output.js';
 
 // ============================================================================
@@ -90,7 +91,7 @@ export async function comps(
     }
   }
 
-  const spinner = ora('Finding comparable properties...').start();
+  const spinner = createSpinner('Finding comparable properties...').start();
   const data = await apiRequest<CompsResponse>('/comps', {
     method: 'POST',
     body: requestBody,
