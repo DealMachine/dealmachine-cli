@@ -69,7 +69,9 @@ export async function subscriptionStatus(options: { json?: boolean }): Promise<v
   printKeyValue({
     'Status': statusColor(data.status),
     'Plan': `${data.plan.name}${data.plan.is_paid ? '' : chalk.dim(' (free)')}`,
-    'Trialing': data.trial.is_trialing ? `Yes — ends ${formatDate(data.trial.trial_end!)}` : 'No',
+    'Trialing': data.trial.is_trialing
+      ? `Yes — ends ${data.trial.trial_end ? formatDate(data.trial.trial_end) : 'Unknown'}`
+      : 'No',
     'Billing Cycle': `${formatDate(data.billing_cycle.start)} → ${formatDate(data.billing_cycle.end)}`,
     'Enrichment Cap': data.credits.enrichment_cap.toLocaleString(),
     'AI Cap': data.credits.ai_cap.toLocaleString(),
