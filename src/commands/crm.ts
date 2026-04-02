@@ -408,6 +408,121 @@ export async function crmLabelsDelete(id: string, options: { json?: boolean }): 
 }
 
 // ============================================================================
+// Opportunity Labels (add/remove labels on opportunities)
+// ============================================================================
+
+export async function crmOpportunityLabelsAdd(
+  opportunityId: string,
+  options: { body?: string; file?: string; labelId?: string; json?: boolean }
+): Promise<void> {
+  let requestBody: Record<string, unknown>;
+
+  if (options.labelId) {
+    requestBody = { label_id: options.labelId };
+  } else {
+    requestBody = await parseRequestBody(options);
+  }
+
+  const spinner = createSpinner('Adding label...').start();
+  const data = await apiRequest<{ data: { success: boolean } }>(
+    `/crm/opportunities/${opportunityId}/labels`,
+    { method: 'POST', body: requestBody },
+  );
+  spinner.stop();
+
+  if (options.json) { printJson(data); return; }
+  console.log(chalk.green(`  Label added to opportunity ${opportunityId}.`));
+  console.log();
+}
+
+export async function crmOpportunityLabelsRemove(
+  opportunityId: string,
+  labelId: string,
+  options: { json?: boolean }
+): Promise<void> {
+  const spinner = createSpinner('Removing label...').start();
+  const data = await apiRequest<{ data: { success: boolean } }>(
+    `/crm/opportunities/${opportunityId}/labels/${labelId}`,
+    { method: 'DELETE' },
+  );
+  spinner.stop();
+
+  if (options.json) { printJson(data); return; }
+  console.log(chalk.green(`  Label ${labelId} removed from opportunity ${opportunityId}.`));
+  console.log();
+}
+
+// ============================================================================
+// Subscribers (subscribe/unsubscribe/list on opportunities)
+// ============================================================================
+
+export async function crmSubscribersList(
+  opportunityId: string,
+  options: { json?: boolean }
+): Promise<void> {
+  const spinner = createSpinner('Fetching subscribers...').start();
+  const data = await apiRequest<{ data: any[] }>(`/crm/opportunities/${opportunityId}/subscribers`);
+  spinner.stop();
+
+  if (options.json) { printJson(data); return; }
+
+  printHeader(`Subscribers for ${opportunityId}`);
+  console.log();
+
+  if (data.data.length > 0) {
+    const rows = data.data.map((s: any) => ({
+      user_id: s.user_id,
+      name: truncate(s.user_name || '—', 30),
+      subscribed: s.created_at ? formatDate(s.created_at) : '—',
+    }));
+    printTable(rows, ['user_id', 'name', 'subscribed']);
+  } else {
+    console.log(chalk.dim('  No subscribers found.'));
+  }
+  console.log();
+}
+
+export async function crmSubscribersAdd(
+  opportunityId: string,
+  options: { body?: string; file?: string; userId?: string; json?: boolean }
+): Promise<void> {
+  let requestBody: Record<string, unknown>;
+
+  if (options.userId) {
+    requestBody = { user_id: parseInt(options.userId, 10) };
+  } else {
+    requestBody = await parseRequestBody(options);
+  }
+
+  const spinner = createSpinner('Subscribing...').start();
+  const data = await apiRequest<{ data: any }>(
+    `/crm/opportunities/${opportunityId}/subscribers`,
+    { method: 'POST', body: requestBody },
+  );
+  spinner.stop();
+
+  if (options.json) { printJson(data); return; }
+  console.log(chalk.green(`  Subscribed to opportunity ${opportunityId}.`));
+  console.log();
+}
+
+export async function crmSubscribersRemove(
+  opportunityId: string,
+  options: { userId: string; json?: boolean }
+): Promise<void> {
+  const spinner = createSpinner('Unsubscribing...').start();
+  const data = await apiRequest<{ data: { success: boolean } }>(
+    `/crm/opportunities/${opportunityId}/subscribers`,
+    { method: 'DELETE', query: { user_id: options.userId } },
+  );
+  spinner.stop();
+
+  if (options.json) { printJson(data); return; }
+  console.log(chalk.green(`  User ${options.userId} unsubscribed from opportunity ${opportunityId}.`));
+  console.log();
+}
+
+// ============================================================================
 // Activity
 // ============================================================================
 

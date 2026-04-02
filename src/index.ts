@@ -26,6 +26,10 @@ import { comps } from './commands/comps.js';
 import { signup } from './commands/signup.js';
 import { plans } from './commands/plans.js';
 import { subscribe } from './commands/subscribe.js';
+import { locationsSearch, locationsGet } from './commands/locations.js';
+import { phonesDnc } from './commands/phones.js';
+import { exportsList, exportsGet } from './commands/exports.js';
+import { subscriptionStatus, subscriptionEndTrial } from './commands/subscription.js';
 import {
   listsList,
   listsCreate,
@@ -67,6 +71,11 @@ import {
   crmLabelsCreate,
   crmLabelsUpdate,
   crmLabelsDelete,
+  crmOpportunityLabelsAdd,
+  crmOpportunityLabelsRemove,
+  crmSubscribersList,
+  crmSubscribersAdd,
+  crmSubscribersRemove,
   crmActivity,
 } from './commands/crm.js';
 import {
@@ -284,6 +293,141 @@ Examples:
   dm usage --json                        Show credit usage as JSON`)
   .action(async (options) => {
     await usage(options);
+  });
+
+// ============================================================================
+// Subscription commands
+// ============================================================================
+
+const subscriptionCmd = program
+  .command('subscription')
+  .alias('sub')
+  .description('View subscription status and manage trial');
+
+subscriptionCmd
+  .command('status')
+  .description('Show current subscription status, plan, trial, and credit caps')
+  .option('--json', 'Output as JSON')
+  .addHelpText('after', `
+Examples:
+  dm subscription status
+  dm subscription status --json
+  dm sub status --json`)
+  .action(async (options) => {
+    await subscriptionStatus(options);
+  });
+
+subscriptionCmd
+  .command('end-trial')
+  .description('End trial early and start paying (charges your card immediately)')
+  .option('--json', 'Output as JSON')
+  .addHelpText('after', `
+Examples:
+  dm subscription end-trial --json
+
+Note: This charges your card immediately and unlocks full plan credits.`)
+  .action(async (options) => {
+    await subscriptionEndTrial(options);
+  });
+
+// ============================================================================
+// Locations commands
+// ============================================================================
+
+const locationsCmd = program
+  .command('locations')
+  .alias('loc')
+  .description('Search and look up US locations (states, counties, zip codes)');
+
+locationsCmd
+  .command('search')
+  .alias('ls')
+  .description('Search locations by name')
+  .requiredOption('-q, --query <text>', 'Search query (e.g., "Harris", "78704")')
+  .option('--type <type>', 'Filter by type: state, county, zip_code')
+  .option('--state <code>', 'Filter by state (two-letter abbreviation, e.g., TX)')
+  .option('-p, --page <n>', 'Page number')
+  .option('--per-page <n>', 'Results per page (max 100)')
+  .option('--json', 'Output as JSON')
+  .addHelpText('after', `
+Examples:
+  dm locations search -q "Harris" --json
+  dm locations search -q "787" --type zip_code --state TX
+  dm loc search -q "California" --type state --json`)
+  .action(async (options) => {
+    await locationsSearch(options);
+  });
+
+locationsCmd
+  .command('get <locationId>')
+  .description('Get a location by ID (e.g., loc_county_48201)')
+  .option('--json', 'Output as JSON')
+  .addHelpText('after', `
+Examples:
+  dm locations get loc_county_48201 --json
+  dm locations get loc_state_TX
+  dm loc get loc_zip_code_78704 --json`)
+  .action(async (locationId, options) => {
+    await locationsGet(locationId, options);
+  });
+
+// ============================================================================
+// Phones commands
+// ============================================================================
+
+const phonesCmd = program
+  .command('phones')
+  .description('Phone number utilities (DNC check)');
+
+phonesCmd
+  .command('dnc [phoneNumber]')
+  .description('Check Do Not Call registry status for phone numbers')
+  .option('--body <json>', 'Request body as JSON string')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--json', 'Output as JSON')
+  .addHelpText('after', `
+Examples:
+  dm phones dnc "5125551234" --json
+  dm phones dnc --body '{"phones":[{"number":"5125551234"},{"number":"5125559876"}]}'
+  dm phones dnc -f phones.json --json`)
+  .action(async (phoneNumber, options) => {
+    await phonesDnc(phoneNumber, options);
+  });
+
+// ============================================================================
+// Exports commands
+// ============================================================================
+
+const exportsCmd = program
+  .command('exports')
+  .description('View past exports and download files');
+
+exportsCmd
+  .command('list')
+  .alias('ls')
+  .description('List past exports')
+  .option('--limit <n>', 'Number of exports to return (1-100, default 25)')
+  .option('--offset <n>', 'Number to skip (default 0)')
+  .option('--status <status>', 'Filter by status: pending, processing, completed, failed')
+  .option('--json', 'Output as JSON')
+  .addHelpText('after', `
+Examples:
+  dm exports list --json
+  dm exports list --status completed --limit 10
+  dm exports ls --status processing`)
+  .action(async (options) => {
+    await exportsList(options);
+  });
+
+exportsCmd
+  .command('get <exportId>')
+  .description('Get export details and download URLs')
+  .option('--json', 'Output as JSON')
+  .addHelpText('after', `
+Examples:
+  dm exports get abc-123 --json`)
+  .action(async (exportId, options) => {
+    await exportsGet(exportId, options);
   });
 
 // ============================================================================
@@ -1271,6 +1415,85 @@ Examples:
       return;
     }
     await crmLabelsDelete(id, options);
+  });
+
+// ── Opportunity Labels (add/remove on opportunities) ──
+
+const crmOppLabelCmd = crmOppCmd
+  .command('labels')
+  .description('Manage labels on an opportunity');
+
+crmOppLabelCmd
+  .command('add <opportunityId>')
+  .description('Add a label to an opportunity')
+  .option('--label-id <id>', 'Label ID to add')
+  .option('--body <json>', 'Request body as JSON string')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--json', 'Output as JSON')
+  .addHelpText('after', `
+Examples:
+  dm crm opp labels add opp_abc123 --label-id label_456
+  dm crm opp labels add opp_abc123 --body '{"label_id":"label_456"}' --json`)
+  .action(async (opportunityId, options) => {
+    await crmOpportunityLabelsAdd(opportunityId, options);
+  });
+
+crmOppLabelCmd
+  .command('remove <opportunityId> <labelId>')
+  .description('Remove a label from an opportunity')
+  .option('--json', 'Output as JSON')
+  .addHelpText('after', `
+Examples:
+  dm crm opp labels remove opp_abc123 label_456`)
+  .action(async (opportunityId, labelId, options) => {
+    await crmOpportunityLabelsRemove(opportunityId, labelId, options);
+  });
+
+// ── Opportunity Subscribers ──
+
+const crmSubCmd = crmOppCmd
+  .command('subscribers')
+  .alias('subs')
+  .description('Manage opportunity subscribers');
+
+crmSubCmd
+  .command('list <opportunityId>')
+  .alias('ls')
+  .description('List subscribers of an opportunity')
+  .option('--json', 'Output as JSON')
+  .addHelpText('after', `
+Examples:
+  dm crm opp subscribers list opp_abc123 --json
+  dm crm opp subs ls opp_abc123`)
+  .action(async (opportunityId, options) => {
+    await crmSubscribersList(opportunityId, options);
+  });
+
+crmSubCmd
+  .command('add <opportunityId>')
+  .description('Subscribe a user to an opportunity')
+  .option('--user-id <id>', 'User ID to subscribe')
+  .option('--body <json>', 'Request body as JSON string')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--json', 'Output as JSON')
+  .addHelpText('after', `
+Examples:
+  dm crm opp subscribers add opp_abc123 --user-id 42
+  dm crm opp subs add opp_abc123 --body '{"user_id":42}' --json`)
+  .action(async (opportunityId, options) => {
+    await crmSubscribersAdd(opportunityId, options);
+  });
+
+crmSubCmd
+  .command('remove <opportunityId>')
+  .description('Unsubscribe a user from an opportunity')
+  .requiredOption('--user-id <id>', 'User ID to unsubscribe')
+  .option('--json', 'Output as JSON')
+  .addHelpText('after', `
+Examples:
+  dm crm opp subscribers remove opp_abc123 --user-id 42`)
+  .action(async (opportunityId, options) => {
+    await crmSubscribersRemove(opportunityId, options);
   });
 
 crmCmd
