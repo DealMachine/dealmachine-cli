@@ -6,7 +6,7 @@ import { readConfig, type ApiEnvironment } from './config.js';
 
 const API_URLS: Record<ApiEnvironment, string> = {
   local: 'http://localhost:3001/v1',
-  production: 'https://api.dealmachine.com/v1',
+  production: 'https://dev.dealmachine.com/v1',
 } as const;
 
 function getApiBaseUrl(): string {

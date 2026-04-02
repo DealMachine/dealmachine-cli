@@ -110,7 +110,7 @@ If you are already logged in, you can switch the target API environment without 
 
 ```bash
 dm login --env local       # Switch to http://localhost:3001/v1
-dm login --env production  # Switch to https://api.dealmachine.com/v1
+dm login --env production  # Switch to https://dev.dealmachine.com/v1
 ```
 
 ### Logout
@@ -156,7 +156,7 @@ If none are set, the CLI falls back to the `apiEnvironment` field in the config 
 | Environment | URL |
 |-------------|-----|
 | `local` | `http://localhost:3001/v1` |
-| `production` | `https://api.dealmachine.com/v1` |
+| `production` | `https://dev.dealmachine.com/v1` |
 
 ---
 
