@@ -1,5 +1,5 @@
 /**
- * Subscription commands — status and end-trial
+ * Subscription commands — status
  */
 
 import chalk from 'chalk';
@@ -35,13 +35,6 @@ interface SubscriptionStatus {
     enrichment_cap: number;
     ai_cap: number;
   };
-}
-
-interface EndTrialResponse {
-  success: boolean;
-  subscription_id: string;
-  status: string;
-  message: string;
 }
 
 // ============================================================================
@@ -80,34 +73,8 @@ export async function subscriptionStatus(options: { json?: boolean }): Promise<v
   if (data.trial.is_trialing) {
     console.log();
     console.log(chalk.dim(`  Trial enrichment credits: ${data.trial.enrichment_credits}`));
-    console.log(chalk.dim(`  End trial early: dm subscription end-trial`));
   }
 
   console.log();
 }
 
-// ============================================================================
-// End Trial
-// ============================================================================
-
-export async function subscriptionEndTrial(options: { json?: boolean }): Promise<void> {
-  const spinner = createSpinner('Ending trial...').start();
-  const data = await apiRequest<EndTrialResponse>('/subscription/end-trial', {
-    method: 'POST',
-    body: {},
-  });
-  spinner.stop();
-
-  if (options.json) {
-    printJson(data);
-    return;
-  }
-
-  printHeader('Trial Ended');
-  printKeyValue({
-    'Status': chalk.green(data.status),
-    'Subscription ID': data.subscription_id,
-    'Message': data.message,
-  });
-  console.log();
-}

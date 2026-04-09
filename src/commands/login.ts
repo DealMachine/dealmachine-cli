@@ -57,22 +57,17 @@ export async function login(options: LoginOptions): Promise<void> {
     process.exit(1);
   }
 
-  // Override verification URLs — API may return localhost in non-prod environments
-  const verifyBase = 'https://next.dealmachine.com';
-  const verificationUri = `${verifyBase}/device/authorize`;
-  const verificationUriComplete = `${verifyBase}/device/authorize?code=${deviceCode.user_code}`;
-
   console.log('');
   console.log(chalk.bold('To complete authentication:'));
   console.log('');
-  console.log(`  1. Visit: ${chalk.cyan(verificationUri)}`);
+  console.log(`  1. Visit: ${chalk.cyan(deviceCode.verification_uri)}`);
   console.log(`  2. Enter code: ${chalk.bold.yellow(deviceCode.user_code)}`);
   console.log('');
 
   if (!options.noBrowser) {
     console.log(chalk.dim('Opening browser...'));
     try {
-      await open(verificationUriComplete);
+      await open(deviceCode.verification_uri_complete);
     } catch {
       console.log(chalk.dim('(Could not open browser automatically)'));
     }
