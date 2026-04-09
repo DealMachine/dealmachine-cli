@@ -25,7 +25,7 @@ function getApiBaseUrl(): string {
     return API_URLS[config.apiEnvironment];
   }
 
-  return API_URLS.local;
+  return API_URLS.production;
 }
 
 export interface DeviceCodeResponse {
