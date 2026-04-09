@@ -6,7 +6,7 @@ import { readConfig, type ApiEnvironment } from './config.js';
 
 const API_URLS: Record<ApiEnvironment, string> = {
   local: 'http://localhost:3001/v1',
-  production: 'https://dev.dealmachine.com/v1',
+  production: 'https://api.v2.dealmachine.com/v1',
 } as const;
 
 function getApiBaseUrl(): string {
@@ -25,7 +25,7 @@ function getApiBaseUrl(): string {
     return API_URLS[config.apiEnvironment];
   }
 
-  return API_URLS.local;
+  return API_URLS.production;
 }
 
 export interface DeviceCodeResponse {
