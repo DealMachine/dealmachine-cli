@@ -146,13 +146,24 @@ export async function verifyCredentials(apiKey: string): Promise<{
       return { valid: false };
     }
 
-    const data = await response.json() as { organization: { id: number; name: string } };
+    const data = await response.json() as {
+      data?: { organization?: { id?: number; name?: string } };
+    };
+    const organization = data.data?.organization;
+
+    if (
+      !organization ||
+      typeof organization.id !== 'number' ||
+      typeof organization.name !== 'string'
+    ) {
+      return { valid: false };
+    }
 
     return {
       valid: true,
       organization: {
-        id: data.organization.id,
-        name: data.organization.name,
+        id: organization.id,
+        name: organization.name,
       },
     };
   } catch {
