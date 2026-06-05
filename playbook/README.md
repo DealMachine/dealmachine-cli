@@ -78,4 +78,4 @@ The manifest is organized into these sections:
 
 **Depends on:** Nothing (pure markdown specification)
 
-**Requires at runtime:** `@dealmachine/cli` must be installed and authenticated (`dm login`)
+**Requires at runtime:** the `dealmachine` npm package must be installed and authenticated (`dm login`)

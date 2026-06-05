@@ -1,4 +1,4 @@
-# @dealmachine/cli
+# DealMachine CLI
 
 DealMachine CLI (`dm`) -- property intelligence from the command line.
 
