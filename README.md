@@ -43,14 +43,15 @@ This package has **zero** `@dealmachine/*` dependencies -- it is a self-containe
 ### From npm (global)
 
 ```bash
-npm install -g @dealmachine/cli
+npm install -g dealmachine
 dm login
 ```
+
+The canonical package is `@dealmachine/cli`. The `dealmachine` package is a short install alias that provides the same `dm` command.
 
 ### From source
 
 ```bash
-cd packages/cli
 npm run build
 node dist/index.js whoami
 ```
@@ -58,7 +59,6 @@ node dist/index.js whoami
 ### Link for local development
 
 ```bash
-cd packages/cli
 npm link
 dm --version
 ```
