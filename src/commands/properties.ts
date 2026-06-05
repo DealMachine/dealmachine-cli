@@ -17,6 +17,10 @@ import {
   truncate,
   createSpinner,
 } from '../lib/output.js';
+import {
+  applySearchProtocolOptions,
+  type SearchProtocolCliOptions,
+} from '../lib/searchProtocol.js';
 
 // ============================================================================
 // Types
@@ -75,12 +79,15 @@ interface ExportResponse {
 // Search
 // ============================================================================
 
-export async function propertiesSearch(options: {
-  body?: string;
-  file?: string;
-  json?: boolean;
-}): Promise<void> {
+export async function propertiesSearch(
+  options: {
+    body?: string;
+    file?: string;
+    json?: boolean;
+  } & SearchProtocolCliOptions
+): Promise<void> {
   const requestBody = await parseRequestBody(options);
+  applySearchProtocolOptions(requestBody, options, 'properties');
 
   const spinner = createSpinner('Searching properties...').start();
   const data = await apiRequest<SearchResponse>('/properties/search', {
@@ -121,12 +128,15 @@ export async function propertiesSearch(options: {
 // Count
 // ============================================================================
 
-export async function propertiesCount(options: {
-  body?: string;
-  file?: string;
-  json?: boolean;
-}): Promise<void> {
+export async function propertiesCount(
+  options: {
+    body?: string;
+    file?: string;
+    json?: boolean;
+  } & SearchProtocolCliOptions
+): Promise<void> {
   const requestBody = await parseRequestBody(options);
+  applySearchProtocolOptions(requestBody, options, 'properties');
 
   const spinner = createSpinner('Counting properties...').start();
   const data = await apiRequest<CountResponse>('/properties/search/count', {
@@ -252,17 +262,29 @@ export async function propertiesIds(options: {
 // Export
 // ============================================================================
 
-export async function propertiesExport(options: {
-  body?: string;
-  file?: string;
-  json?: boolean;
-  requirePhone?: boolean;
-  requireEmail?: boolean;
-  mobileOnly?: boolean;
-  landlineOnly?: boolean;
-  scrubDnc?: boolean;
-}): Promise<void> {
+export async function propertiesExport(
+  options: {
+    body?: string;
+    file?: string;
+    json?: boolean;
+    requirePhone?: boolean;
+    requireEmail?: boolean;
+    mobileOnly?: boolean;
+    landlineOnly?: boolean;
+    scrubDnc?: boolean;
+    contactAudience?: string;
+    anchor?: string;
+  } & SearchProtocolCliOptions
+): Promise<void> {
   const requestBody = await parseRequestBody(options);
+  applySearchProtocolOptions(requestBody, options, 'properties');
+
+  if (options.contactAudience) requestBody.contact_audience = options.contactAudience;
+  if (options.anchor) requestBody.anchor = options.anchor;
+  if (requestBody.contact_audience === undefined) requestBody.contact_audience = 'owners';
+  if (requestBody.anchor === undefined) {
+    requestBody.anchor = requestBody.contact_audience === 'none' ? 'property' : 'person';
+  }
 
   // Merge CLI contact filter flags into the request body
   if (options.requirePhone) requestBody.require_phone = true;

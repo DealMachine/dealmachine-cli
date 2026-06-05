@@ -17,6 +17,10 @@ import {
   truncate,
   createSpinner,
 } from '../lib/output.js';
+import {
+  applySearchProtocolOptions,
+  type SearchProtocolCliOptions,
+} from '../lib/searchProtocol.js';
 
 // ============================================================================
 // Types
@@ -75,12 +79,15 @@ interface ExportResponse {
 // Search
 // ============================================================================
 
-export async function peopleSearch(options: {
-  body?: string;
-  file?: string;
-  json?: boolean;
-}): Promise<void> {
+export async function peopleSearch(
+  options: {
+    body?: string;
+    file?: string;
+    json?: boolean;
+  } & SearchProtocolCliOptions
+): Promise<void> {
   const requestBody = await parseRequestBody(options);
+  applySearchProtocolOptions(requestBody, options, 'people');
 
   const spinner = createSpinner('Searching people...').start();
   const data = await apiRequest<SearchResponse>('/people/search', {
@@ -118,12 +125,15 @@ export async function peopleSearch(options: {
 // Count
 // ============================================================================
 
-export async function peopleCount(options: {
-  body?: string;
-  file?: string;
-  json?: boolean;
-}): Promise<void> {
+export async function peopleCount(
+  options: {
+    body?: string;
+    file?: string;
+    json?: boolean;
+  } & SearchProtocolCliOptions
+): Promise<void> {
   const requestBody = await parseRequestBody(options);
+  applySearchProtocolOptions(requestBody, options, 'people');
 
   const spinner = createSpinner('Counting people...').start();
   const data = await apiRequest<CountResponse>('/people/search/count', {
@@ -178,7 +188,9 @@ export async function peopleGet(
     console.log();
     console.log(chalk.bold(`  Phones (${phones.length})`));
     for (const ph of phones) {
-      console.log(`    ${ph.number || ph.phone || '—'}${ph.type ? chalk.dim(` (${ph.type})`) : ''}`);
+      console.log(
+        `    ${ph.number || ph.phone || '—'}${ph.type ? chalk.dim(` (${ph.type})`) : ''}`
+      );
     }
   }
 
@@ -264,17 +276,20 @@ export async function peopleIds(options: {
 // Export
 // ============================================================================
 
-export async function peopleExport(options: {
-  body?: string;
-  file?: string;
-  json?: boolean;
-  requirePhone?: boolean;
-  requireEmail?: boolean;
-  mobileOnly?: boolean;
-  landlineOnly?: boolean;
-  scrubDnc?: boolean;
-}): Promise<void> {
+export async function peopleExport(
+  options: {
+    body?: string;
+    file?: string;
+    json?: boolean;
+    requirePhone?: boolean;
+    requireEmail?: boolean;
+    mobileOnly?: boolean;
+    landlineOnly?: boolean;
+    scrubDnc?: boolean;
+  } & SearchProtocolCliOptions
+): Promise<void> {
   const requestBody = await parseRequestBody(options);
+  applySearchProtocolOptions(requestBody, options, 'people');
 
   // Merge CLI contact filter flags into the request body
   if (options.requirePhone) requestBody.require_phone = true;

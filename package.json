@@ -5,6 +5,14 @@
   "author": "DealMachine",
   "license": "MIT",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DealMachine/dealmachine-cli.git"
+  },
+  "homepage": "https://github.com/DealMachine/dealmachine-cli#readme",
+  "bugs": {
+    "url": "https://github.com/DealMachine/dealmachine-cli/issues"
+  },
   "bin": {
     "dm": "./dist/index.js"
   },
@@ -12,9 +20,10 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && node scripts/copy-agent-assets.mjs",
     "dev": "tsc --watch",
     "start": "node dist/index.js",
+    "test": "vitest run",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
@@ -25,10 +34,14 @@
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "vitest": "^4.1.8"
   },
   "engines": {
     "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "keywords": [
     "dealmachine",

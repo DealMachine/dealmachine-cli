@@ -5,7 +5,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    include: ['packages/cli/tests/**/*.{test,spec}.{ts,tsx}'],
+    include: ['tests/**/*.{test,spec}.{ts,tsx}', 'packages/cli/tests/**/*.{test,spec}.{ts,tsx}'],
     testTimeout: 10000,
   },
   resolve: {

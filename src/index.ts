@@ -7,8 +7,21 @@ import { whoami } from './commands/whoami.js';
 import { configGet, configSet, configPath } from './commands/config.js';
 import { account } from './commands/account.js';
 import { usage } from './commands/usage.js';
-import { propertiesSearch, propertiesCount, propertiesGet, propertiesIds, propertiesExport } from './commands/properties.js';
-import { peopleSearch, peopleCount, peopleGet, peopleIds, peopleExport } from './commands/people.js';
+import { agentsGuide, agentsPlaybook } from './commands/agents.js';
+import {
+  propertiesSearch,
+  propertiesCount,
+  propertiesGet,
+  propertiesIds,
+  propertiesExport,
+} from './commands/properties.js';
+import {
+  peopleSearch,
+  peopleCount,
+  peopleGet,
+  peopleIds,
+  peopleExport,
+} from './commands/people.js';
 import {
   enrichAddress,
   enrichLatLng,
@@ -40,13 +53,7 @@ import {
   listsRemove,
   listsExport,
 } from './commands/lists.js';
-import {
-  tasksList,
-  tasksGet,
-  tasksCreate,
-  tasksUpdate,
-  tasksDelete,
-} from './commands/tasks.js';
+import { tasksList, tasksGet, tasksCreate, tasksUpdate, tasksDelete } from './commands/tasks.js';
 import {
   crmPipelines,
   crmOpportunitiesList,
@@ -127,10 +134,12 @@ const program = new Command();
 
 program
   .name('dm')
-  .description('DealMachine CLI — Property intelligence from the command line')
+  .description('DealMachine CLI - Property intelligence from the command line')
   .version('0.1.0')
   .option('--quiet', 'Suppress spinners and decorative output (agent-friendly, also DM_QUIET=1)')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm login --key dm_sk_live_abc123       Login with an API key
   dm properties search -f query.json     Search properties from a file
@@ -140,7 +149,68 @@ Examples:
 
 Tip: Every subcommand supports --help with examples.
      Use --json on any command for machine-readable output.
-     Pipe JSON via stdin: echo '{}' | dm properties search`);
+     Pipe JSON via stdin: echo '{}' | dm properties search
+
+Agents:
+  dm agents guide                       Print concise agent usage guidance
+  dm agents playbook                    Print the full DealMachine Playbook
+
+Agent defaults: use --json and --quiet, fetch filters and fields before searches,
+and count before credit-consuming commands.`
+  );
+
+// ============================================================================
+// Agent commands
+// ============================================================================
+
+const agentsCmd = program
+  .command('agents')
+  .description('Agent bootstrap help and DealMachine Playbook contents')
+  .option('--json', 'Output as JSON')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  dm agents                              Print concise agent usage guidance
+  dm agents guide --json                 Print agent guidance as JSON
+  dm agents playbook                     Print the full DealMachine Playbook
+  dm agents skill                        Alias for dm agents playbook`
+  )
+  .action(async (options, command: Command) => {
+    await agentsGuide(command.optsWithGlobals<{ json?: boolean }>());
+  });
+
+agentsCmd
+  .command('guide')
+  .description('Print concise guidance for agents using the CLI')
+  .option('--json', 'Output as JSON')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  dm agents guide                        Print concise agent usage guidance
+  dm agents guide --json                 Print agent guidance as JSON`
+  )
+  .action(async (options, command: Command) => {
+    await agentsGuide(command.optsWithGlobals<{ json?: boolean }>());
+  });
+
+agentsCmd
+  .command('playbook')
+  .alias('skill')
+  .description('Print the bundled DealMachine Playbook for agent workflows')
+  .option('--json', 'Output as JSON')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  dm agents playbook                     Print the full Playbook Markdown
+  dm agents playbook --json              Print the Playbook as JSON
+  dm agents skill                        Alias for dm agents playbook`
+  )
+  .action(async (options, command: Command) => {
+    await agentsPlaybook(command.optsWithGlobals<{ json?: boolean }>());
+  });
 
 // ============================================================================
 // Auth commands
@@ -152,11 +222,14 @@ program
   .option('--no-browser', 'Do not automatically open the browser')
   .option('--key <api-key>', 'Login directly with an API key (skips browser)')
   .option('--env <environment>', 'API environment: local or production (default: production)')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm login                               Interactive browser login
   dm login --key dm_sk_live_abc123       Login with an API key (non-interactive)
-  dm login --env local --no-browser      Login to local env without opening browser`)
+  dm login --env local --no-browser      Login to local env without opening browser`
+  )
   .action(async (options) => {
     if (options.env) {
       process.env.DM_ENV = options.env;
@@ -167,9 +240,12 @@ Examples:
 program
   .command('logout')
   .description('Remove stored credentials')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  dm logout                              Remove stored API key and config`)
+  dm logout                              Remove stored API key and config`
+  )
   .action(async () => {
     await logout();
   });
@@ -178,30 +254,33 @@ program
   .command('whoami')
   .description('Show current authentication status')
   .option('--verify', 'Verify credentials with the API')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm whoami                              Show stored credentials
-  dm whoami --verify                     Verify credentials against the API`)
+  dm whoami --verify                     Verify credentials against the API`
+  )
   .action(async (options) => {
     await whoami(options);
   });
-
 
 // ============================================================================
 // Config commands
 // ============================================================================
 
-const configCmd = program
-  .command('config')
-  .description('View and modify configuration');
+const configCmd = program.command('config').description('View and modify configuration');
 
 configCmd
   .command('get [key]')
   .description('Get a configuration value (or all values)')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm config get                          Show all config values
-  dm config get apiEnvironment           Show a specific config value`)
+  dm config get apiEnvironment           Show a specific config value`
+  )
   .action(async (key?: string) => {
     await configGet(key);
   });
@@ -209,10 +288,13 @@ Examples:
 configCmd
   .command('set <key> <value>')
   .description('Set a configuration value')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm config set apiEnvironment production   Switch to production API
-  dm config set apiEnvironment local        Switch to local API`)
+  dm config set apiEnvironment local        Switch to local API`
+  )
   .action(async (key: string, value: string) => {
     await configSet(key, value);
   });
@@ -220,9 +302,12 @@ Examples:
 configCmd
   .command('path')
   .description('Show config file path')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  dm config path                         Print path to ~/.dealmachine/config.json`)
+  dm config path                         Print path to ~/.dealmachine/config.json`
+  )
   .action(async () => {
     await configPath();
   });
@@ -235,10 +320,13 @@ program
   .command('account')
   .description('Show account information')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm account                             Show account details
-  dm account --json                      Show account details as JSON`)
+  dm account --json                      Show account details as JSON`
+  )
   .action(async (options) => {
     await account();
   });
@@ -247,10 +335,13 @@ program
   .command('usage')
   .description('Show credit usage for current billing cycle')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm usage                               Show credit usage summary
-  dm usage --json                        Show credit usage as JSON`)
+  dm usage --json                        Show credit usage as JSON`
+  )
   .action(async (options) => {
     await usage(options);
   });
@@ -268,15 +359,17 @@ subscriptionCmd
   .command('status')
   .description('Show current subscription status, plan, trial, and credit caps')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm subscription status
   dm subscription status --json
-  dm sub status --json`)
+  dm sub status --json`
+  )
   .action(async (options) => {
     await subscriptionStatus(options);
   });
-
 
 // ============================================================================
 // Locations commands
@@ -297,11 +390,14 @@ locationsCmd
   .option('-p, --page <n>', 'Page number')
   .option('--per-page <n>', 'Results per page (max 100)')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm locations search -q "Harris" --json
   dm locations search -q "787" --type zip_code --state TX
-  dm loc search -q "California" --type state --json`)
+  dm loc search -q "California" --type state --json`
+  )
   .action(async (options) => {
     await locationsSearch(options);
   });
@@ -310,11 +406,14 @@ locationsCmd
   .command('get <locationId>')
   .description('Get a location by ID (e.g., loc_county_48201)')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm locations get loc_county_48201 --json
   dm locations get loc_state_TX
-  dm loc get loc_zip_code_78704 --json`)
+  dm loc get loc_zip_code_78704 --json`
+  )
   .action(async (locationId, options) => {
     await locationsGet(locationId, options);
   });
@@ -323,9 +422,7 @@ Examples:
 // Phones commands
 // ============================================================================
 
-const phonesCmd = program
-  .command('phones')
-  .description('Phone number utilities (DNC check)');
+const phonesCmd = program.command('phones').description('Phone number utilities (DNC check)');
 
 phonesCmd
   .command('dnc [phoneNumber]')
@@ -333,11 +430,14 @@ phonesCmd
   .option('--body <json>', 'Request body as JSON string')
   .option('-f, --file <path>', 'Read request body from a JSON file')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm phones dnc "5125551234" --json
   dm phones dnc --body '{"phones":[{"number":"5125551234"},{"number":"5125559876"}]}'
-  dm phones dnc -f phones.json --json`)
+  dm phones dnc -f phones.json --json`
+  )
   .action(async (phoneNumber, options) => {
     await phonesDnc(phoneNumber, options);
   });
@@ -346,9 +446,7 @@ Examples:
 // Exports commands
 // ============================================================================
 
-const exportsCmd = program
-  .command('exports')
-  .description('View past exports and download files');
+const exportsCmd = program.command('exports').description('View past exports and download files');
 
 exportsCmd
   .command('list')
@@ -358,11 +456,14 @@ exportsCmd
   .option('--offset <n>', 'Number to skip (default 0)')
   .option('--status <status>', 'Filter by status: pending, processing, completed, failed')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm exports list --json
   dm exports list --status completed --limit 10
-  dm exports ls --status processing`)
+  dm exports ls --status processing`
+  )
   .action(async (options) => {
     await exportsList(options);
   });
@@ -371,9 +472,12 @@ exportsCmd
   .command('get <exportId>')
   .description('Get export details and download URLs')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  dm exports get abc-123 --json`)
+  dm exports get abc-123 --json`
+  )
   .action(async (exportId, options) => {
     await exportsGet(exportId, options);
   });
@@ -392,13 +496,23 @@ propertiesCmd
   .description('Search properties with filters and locations')
   .option('--body <json>', 'Request body as JSON string')
   .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--include-lists <ids>', 'Comma-separated list IDs to include')
+  .option('--exclude-lists <ids>', 'Comma-separated list IDs to exclude')
+  .option('--exclude-previously-exported', 'Exclude records already exported by this organization')
+  .option(
+    '--bigquery-data-environment <n>',
+    'Query Builder data environment: 1 production, 2 staging, 3 development'
+  )
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm properties search --body '{"locations":[{"type":"zip_code","code":"78704"}]}'
   dm properties search -f search-query.json
   dm properties search -f query.json --json
-  cat query.json | dm properties search --json`)
+  cat query.json | dm properties search --json`
+  )
   .action(async (options) => {
     await propertiesSearch(options);
   });
@@ -408,11 +522,21 @@ propertiesCmd
   .description('Count properties matching filters (no credits consumed)')
   .option('--body <json>', 'Request body as JSON string')
   .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--include-lists <ids>', 'Comma-separated list IDs to include')
+  .option('--exclude-lists <ids>', 'Comma-separated list IDs to exclude')
+  .option('--exclude-previously-exported', 'Exclude records already exported by this organization')
+  .option(
+    '--bigquery-data-environment <n>',
+    'Query Builder data environment: 1 production, 2 staging, 3 development'
+  )
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm properties count --body '{"locations":[{"type":"zip_code","code":"78704"}]}'
-  dm properties count -f query.json --json`)
+  dm properties count -f query.json --json`
+  )
   .action(async (options) => {
     await propertiesCount(options);
   });
@@ -420,12 +544,18 @@ Examples:
 propertiesCmd
   .command('get <id>')
   .description('Get a property by ID (e.g., prop_12345)')
-  .option('--contact-audience <audience>', 'Include contacts: owners, owners_and_family, renters, residents, all')
+  .option(
+    '--contact-audience <audience>',
+    'Include contacts: owners, owners_and_family, renters, residents, all'
+  )
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm properties get prop_12345
-  dm properties get prop_12345 --contact-audience owners --json`)
+  dm properties get prop_12345 --contact-audience owners --json`
+  )
   .action(async (id, options) => {
     await propertiesGet(id, options);
   });
@@ -435,32 +565,57 @@ propertiesCmd
   .description('Get multiple properties by IDs')
   .option('--body <json>', 'Request body as JSON string')
   .option('-f, --file <path>', 'Read request body from a JSON file')
-  .option('--contact-audience <audience>', 'Include contacts: owners, owners_and_family, renters, residents, all')
+  .option(
+    '--contact-audience <audience>',
+    'Include contacts: owners, owners_and_family, renters, residents, all'
+  )
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm properties ids prop_111 prop_222 prop_333 --json
-  dm properties ids --body '{"ids":["prop_111","prop_222"]}'`)
+  dm properties ids --body '{"ids":["prop_111","prop_222"]}'`
+  )
   .action(async (ids, options) => {
     await propertiesIds({ ...options, ids: ids.length > 0 ? ids : undefined });
   });
 
 propertiesCmd
   .command('export')
-  .description('Export properties as CSV (up to 1,000,000 records)')
+  .description('Export property-owner contacts as CSV by default (up to 1,000,000 records)')
   .option('--body <json>', 'Request body as JSON string')
   .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--include-lists <ids>', 'Comma-separated list IDs to include')
+  .option('--exclude-lists <ids>', 'Comma-separated list IDs to exclude')
+  .option('--exclude-previously-exported', 'Exclude records already exported by this organization')
+  .option(
+    '--contact-audience <audience>',
+    'Contact audience: owners (default), owners_and_family, renters, residents, none'
+  )
+  .option(
+    '--anchor <type>',
+    'Row anchor: person (default owner contacts), phone, email, or property'
+  )
+  .option(
+    '--bigquery-data-environment <n>',
+    'Query Builder data environment: 1 production, 2 staging, 3 development'
+  )
   .option('--require-phone', 'Only include records where the contact has a phone number')
   .option('--require-email', 'Only include records where the contact has an email address')
   .option('--mobile-only', 'Only include mobile phone numbers')
   .option('--landline-only', 'Only include landline phone numbers')
   .option('--scrub-dnc', 'Exclude contacts on the Do Not Call registry')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm properties export -f query.json --json
   dm properties export -f query.json --require-phone --scrub-dnc
-  dm properties export --body '{"locations":[{"type":"state","code":"TX"}]}' --mobile-only`)
+  dm properties export --body '{"locations":[{"type":"state","code":"TX"}]}' --mobile-only
+  dm properties export -f query.json --anchor property --contact-audience none`
+  )
   .action(async (options) => {
     await propertiesExport(options);
   });
@@ -481,12 +636,15 @@ program
   .option('--sort-direction <dir>', 'Sort direction: asc, desc (default: desc)')
   .option('--include-foreclosures', 'Include foreclosure sales')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm comps prop_12345 --json
   dm comps prop_111 prop_222 --radius 0.5 --timeframe 3months
   dm comps prop_12345 --sort-by price --sort-direction asc --limit 10
-  dm comps --body '{"property_ids":["prop_12345"]}' --include-foreclosures`)
+  dm comps --body '{"property_ids":["prop_12345"]}' --include-foreclosures`
+  )
   .action(async (propertyIds, options) => {
     await comps(propertyIds || [], options);
   });
@@ -495,9 +653,7 @@ Examples:
 // Lists commands
 // ============================================================================
 
-const listsCmd = program
-  .command('lists')
-  .description('Manage saved lists');
+const listsCmd = program.command('lists').description('Manage saved lists');
 
 listsCmd
   .command('search')
@@ -509,11 +665,14 @@ listsCmd
   .option('-p, --page <n>', 'Page number')
   .option('--per-page <n>', 'Results per page')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm lists search                        List all lists
   dm lists search --source-type properties --sort newest --json
-  dm lists search --search "Austin" --per-page 50`)
+  dm lists search --search "Austin" --per-page 50`
+  )
   .action(async (options) => {
     await listsList(options);
   });
@@ -527,11 +686,14 @@ listsCmd
   .option('--body <json>', 'Request body as JSON (filters/locations)')
   .option('-f, --file <path>', 'Read request body from a JSON file')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm lists create --name "Austin Leads"
   dm lists create --name "TX Owners" --source-type properties --json
-  dm lists create --name "Import" --ids 100,200,300`)
+  dm lists create --name "Import" --ids 100,200,300`
+  )
   .action(async (options) => {
     await listsCreate(options);
   });
@@ -540,10 +702,13 @@ listsCmd
   .command('get <id>')
   .description('Get details of a specific list')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm lists get list_abc123
-  dm lists get list_abc123 --json`)
+  dm lists get list_abc123 --json`
+  )
   .action(async (id, options) => {
     await listsGet(id, options);
   });
@@ -553,9 +718,12 @@ listsCmd
   .description('Update a list')
   .option('--name <name>', 'New list name')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  dm lists update list_abc123 --name "Renamed List"`)
+  dm lists update list_abc123 --name "Renamed List"`
+  )
   .action(async (id, options) => {
     await listsUpdate(id, options);
   });
@@ -565,11 +733,14 @@ listsCmd
   .description('Delete a list and all its items')
   .option('--dry-run', 'Preview what would be deleted without making changes')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm lists delete list_abc123
   dm lists delete list_abc123 --dry-run   Preview deletion
-  dm lists delete list_abc123 --json`)
+  dm lists delete list_abc123 --json`
+  )
   .action(async (id, options) => {
     if (options.dryRun) {
       console.log(`Would delete list ${id} and all its items.`);
@@ -585,12 +756,15 @@ listsCmd
   .option('--body <json>', 'Request body as JSON (filters/locations)')
   .option('-f, --file <path>', 'Read request body from a JSON file')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm lists build list_abc123 -f filters.json
   dm lists build list_abc123 --body '{"locations":[{"type":"zip_code","code":"78704"}]}'
 
-Note: Building is async. Poll status with: dm lists get list_abc123`)
+Note: Building is async. Poll status with: dm lists get list_abc123`
+  )
   .action(async (id, options) => {
     await listsBuild(id, options);
   });
@@ -603,12 +777,15 @@ listsCmd
   .option('--body <json>', 'Request body as JSON')
   .option('-f, --file <path>', 'Read request body from a JSON file')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm lists import list_abc123 --ids 100,200,300 --source-type properties
   dm lists import list_abc123 -f import.json
 
-Note: Import is async. Poll status with: dm lists get list_abc123`)
+Note: Import is async. Poll status with: dm lists get list_abc123`
+  )
   .action(async (id, options) => {
     await listsImport(id, options);
   });
@@ -619,10 +796,13 @@ listsCmd
   .option('-p, --page <n>', 'Page number')
   .option('--per-page <n>', 'Results per page')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm lists items list_abc123
-  dm lists items list_abc123 --page 2 --per-page 100 --json`)
+  dm lists items list_abc123 --page 2 --per-page 100 --json`
+  )
   .action(async (id, options) => {
     await listsItems(id, options);
   });
@@ -633,10 +813,13 @@ listsCmd
   .requiredOption('--ids <csv>', 'Comma-separated list of IDs to add')
   .option('--id-type <type>', 'ID type: internal_property_id or internal_person_id')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm lists add list_abc123 --ids 100,200,300
-  dm lists add list_abc123 --ids 100,200 --id-type internal_property_id --json`)
+  dm lists add list_abc123 --ids 100,200 --id-type internal_property_id --json`
+  )
   .action(async (id, options) => {
     await listsAdd(id, options);
   });
@@ -648,10 +831,13 @@ listsCmd
   .option('--id-type <type>', 'ID type: internal_property_id or internal_person_id')
   .option('--dry-run', 'Preview what would be removed without making changes')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm lists remove list_abc123 --ids 100,200,300
-  dm lists remove list_abc123 --ids 100 --dry-run   Preview removal`)
+  dm lists remove list_abc123 --ids 100 --dry-run   Preview removal`
+  )
   .action(async (id, options) => {
     if (options.dryRun) {
       const ids = options.ids.split(',').map((s: string) => s.trim());
@@ -668,10 +854,13 @@ listsCmd
   .option('--fields <csv>', 'Comma-separated list of fields to export')
   .option('--anchor <type>', 'Anchor type: property or person')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm lists export list_abc123 --json
-  dm lists export list_abc123 --fields name,address,phone --anchor property`)
+  dm lists export list_abc123 --fields name,address,phone --anchor property`
+  )
   .action(async (id, options) => {
     await listsExport(id, options);
   });
@@ -680,20 +869,28 @@ Examples:
 // People commands
 // ============================================================================
 
-const peopleCmd = program
-  .command('people')
-  .description('Search and look up people');
+const peopleCmd = program.command('people').description('Search and look up people');
 
 peopleCmd
   .command('search')
   .description('Search people with filters and locations')
   .option('--body <json>', 'Request body as JSON string')
   .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--include-lists <ids>', 'Comma-separated list IDs to include')
+  .option('--exclude-lists <ids>', 'Comma-separated list IDs to exclude')
+  .option('--exclude-previously-exported', 'Exclude records already exported by this organization')
+  .option(
+    '--bigquery-data-environment <n>',
+    'Query Builder data environment: 1 production, 2 staging, 3 development'
+  )
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm people search -f people-query.json --json
-  dm people search --body '{"locations":[{"type":"zip_code","code":"78704"}]}'`)
+  dm people search --body '{"locations":[{"type":"zip_code","code":"78704"}]}'`
+  )
   .action(async (options) => {
     await peopleSearch(options);
   });
@@ -703,11 +900,21 @@ peopleCmd
   .description('Count people matching filters (no credits consumed)')
   .option('--body <json>', 'Request body as JSON string')
   .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--include-lists <ids>', 'Comma-separated list IDs to include')
+  .option('--exclude-lists <ids>', 'Comma-separated list IDs to exclude')
+  .option('--exclude-previously-exported', 'Exclude records already exported by this organization')
+  .option(
+    '--bigquery-data-environment <n>',
+    'Query Builder data environment: 1 production, 2 staging, 3 development'
+  )
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm people count -f query.json --json
-  dm people count --body '{"locations":[{"type":"state","code":"TX"}]}'`)
+  dm people count --body '{"locations":[{"type":"state","code":"TX"}]}'`
+  )
   .action(async (options) => {
     await peopleCount(options);
   });
@@ -717,10 +924,13 @@ peopleCmd
   .description('Get a person by ID (e.g., per_12345)')
   .option('--include-properties', 'Include associated properties')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm people get per_12345
-  dm people get per_12345 --include-properties --json`)
+  dm people get per_12345 --include-properties --json`
+  )
   .action(async (id, options) => {
     await peopleGet(id, options);
   });
@@ -732,10 +942,13 @@ peopleCmd
   .option('-f, --file <path>', 'Read request body from a JSON file')
   .option('--include-properties', 'Include associated properties')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm people ids per_111 per_222 per_333 --json
-  dm people ids --body '{"ids":["per_111","per_222"]}' --include-properties`)
+  dm people ids --body '{"ids":["per_111","per_222"]}' --include-properties`
+  )
   .action(async (ids, options) => {
     await peopleIds({ ...options, ids: ids.length > 0 ? ids : undefined });
   });
@@ -745,16 +958,26 @@ peopleCmd
   .description('Export people as CSV (up to 1,000,000 records)')
   .option('--body <json>', 'Request body as JSON string')
   .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--include-lists <ids>', 'Comma-separated list IDs to include')
+  .option('--exclude-lists <ids>', 'Comma-separated list IDs to exclude')
+  .option('--exclude-previously-exported', 'Exclude records already exported by this organization')
+  .option(
+    '--bigquery-data-environment <n>',
+    'Query Builder data environment: 1 production, 2 staging, 3 development'
+  )
   .option('--require-phone', 'Only include records where the contact has a phone number')
   .option('--require-email', 'Only include records where the contact has an email address')
   .option('--mobile-only', 'Only include mobile phone numbers')
   .option('--landline-only', 'Only include landline phone numbers')
   .option('--scrub-dnc', 'Exclude contacts on the Do Not Call registry')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm people export -f query.json --json
-  dm people export -f query.json --require-phone --scrub-dnc`)
+  dm people export -f query.json --require-phone --scrub-dnc`
+  )
   .action(async (options) => {
     await peopleExport(options);
   });
@@ -772,14 +995,20 @@ enrichCmd
   .description('Look up a property by street address')
   .option('--body <json>', 'Request body as JSON string')
   .option('-f, --file <path>', 'Read request body from a JSON file (JSON or CSV)')
-  .option('--contact-audience <audience>', 'Include contacts: owners, owners_and_family, renters, residents')
+  .option(
+    '--contact-audience <audience>',
+    'Include contacts: owners, owners_and_family, renters, residents'
+  )
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm enrich address "123 Main St, Austin, TX 78704" --json
   dm enrich address "123 Main St, Austin, TX" --contact-audience owners
   dm enrich address -f addresses.csv --json          Batch enrich from CSV
-  dm enrich address --body '{"addresses":[{"full_address":"123 Main St, Austin, TX"}]}'`)
+  dm enrich address --body '{"addresses":[{"full_address":"123 Main St, Austin, TX"}]}'`
+  )
   .action(async (address, options) => {
     await enrichAddress(address, options);
   });
@@ -789,12 +1018,18 @@ enrichCmd
   .description('Look up a property by lat,lng coordinates')
   .option('--body <json>', 'Request body as JSON string')
   .option('-f, --file <path>', 'Read request body from a JSON file (JSON or CSV)')
-  .option('--contact-audience <audience>', 'Include contacts: owners, owners_and_family, renters, residents')
+  .option(
+    '--contact-audience <audience>',
+    'Include contacts: owners, owners_and_family, renters, residents'
+  )
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm enrich latlng "30.2672,-97.7431" --json
-  dm enrich latlng -f coordinates.csv --contact-audience owners`)
+  dm enrich latlng -f coordinates.csv --contact-audience owners`
+  )
   .action(async (coords, options) => {
     await enrichLatLng(coords, options);
   });
@@ -806,12 +1041,18 @@ enrichCmd
   .option('-f, --file <path>', 'Read request body from a JSON file (JSON or CSV)')
   .option('--state <code>', 'Narrow by state (e.g., TX)')
   .option('--zip <code>', 'Narrow by ZIP code')
-  .option('--contact-audience <audience>', 'Include contacts: owners, owners_and_family, renters, residents')
+  .option(
+    '--contact-audience <audience>',
+    'Include contacts: owners, owners_and_family, renters, residents'
+  )
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm enrich apn "01-2345-0067" --state TX --json
-  dm enrich apn -f parcels.csv --state TX`)
+  dm enrich apn -f parcels.csv --state TX`
+  )
   .action(async (apn, options) => {
     await enrichApn(apn, options);
   });
@@ -823,11 +1064,14 @@ enrichCmd
   .option('-f, --file <path>', 'Read request body from a JSON file (JSON or CSV)')
   .option('--include-properties', 'Include associated properties')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm enrich email "john@example.com" --json
   dm enrich email "john@example.com" --include-properties
-  dm enrich email -f emails.csv --json               Batch enrich from CSV`)
+  dm enrich email -f emails.csv --json               Batch enrich from CSV`
+  )
   .action(async (email, options) => {
     await enrichEmail(email, options);
   });
@@ -839,10 +1083,13 @@ enrichCmd
   .option('-f, --file <path>', 'Read request body from a JSON file (JSON or CSV)')
   .option('--include-properties', 'Include associated properties')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm enrich phone "5125551234" --json
-  dm enrich phone -f phones.csv --include-properties`)
+  dm enrich phone -f phones.csv --include-properties`
+  )
   .action(async (phone, options) => {
     await enrichPhone(phone, options);
   });
@@ -858,11 +1105,14 @@ enrichCmd
   .option('--page <n>', 'Page number')
   .option('--per-page <n>', 'Results per page')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm enrich name "David Oster" --state TX --json
   dm enrich name "Jane Smith" --zip 78704 --include-properties
-  dm enrich name -f names.csv --state TX`)
+  dm enrich name -f names.csv --state TX`
+  )
   .action(async (name, options) => {
     await enrichName(name, options);
   });
@@ -880,11 +1130,14 @@ program
   .option('--page <n>', 'Page number')
   .option('--per-page <n>', 'Results per page')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm filters --json                                  List all filters
   dm filters --source-type properties --search "owner"
-  dm filters --source-type people --per-page 100 --json`)
+  dm filters --source-type people --per-page 100 --json`
+  )
   .action(async (options) => {
     await filters(options);
   });
@@ -898,11 +1151,14 @@ program
   .option('--page <n>', 'Page number')
   .option('--per-page <n>', 'Results per page')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm fields --json                                   List all fields
   dm fields --source-type properties --search "value"
-  dm fields --source-type people --per-page 100 --json`)
+  dm fields --source-type people --per-page 100 --json`
+  )
   .action(async (options) => {
     await fields(options);
   });
@@ -911,25 +1167,29 @@ Examples:
 // Activity commands
 // ============================================================================
 
-const activityCmd = program
-  .command('activity')
-  .description('View API activity history');
+const activityCmd = program.command('activity').description('View API activity history');
 
 activityCmd
   .command('search')
   .description('Search past API activity')
   .option('--body <json>', 'Request body as JSON string')
   .option('-f, --file <path>', 'Read request body from a JSON file')
-  .option('-t, --types <types...>', 'Filter by activity types (e.g., search_properties enrich_address)')
+  .option(
+    '-t, --types <types...>',
+    'Filter by activity types (e.g., search_properties enrich_address)'
+  )
   .option('-q, --query <text>', 'Free-text search across activity')
   .option('--page <n>', 'Page number')
   .option('--per-page <n>', 'Results per page')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm activity search --json
   dm activity search --types search_properties enrich_address
-  dm activity search --query "Austin" --page 2 --json`)
+  dm activity search --query "Austin" --page 2 --json`
+  )
   .action(async (options) => {
     await activitySearch(options);
   });
@@ -938,9 +1198,12 @@ activityCmd
   .command('get <id>')
   .description('Get details of a specific activity record')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  dm activity get act_abc123 --json`)
+  dm activity get act_abc123 --json`
+  )
   .action(async (id, options) => {
     await activityGet(id, options);
   });
@@ -949,9 +1212,7 @@ Examples:
 // Address validation
 // ============================================================================
 
-const addressesCmd = program
-  .command('addresses')
-  .description('Validate and standardize addresses');
+const addressesCmd = program.command('addresses').description('Validate and standardize addresses');
 
 addressesCmd
   .command('validate [address]')
@@ -959,10 +1220,13 @@ addressesCmd
   .option('--body <json>', 'Request body as JSON string')
   .option('-f, --file <path>', 'Read request body from a JSON file')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm addresses validate "123 Main St, Austin, TX 78704" --json
-  dm addresses validate -f addresses.json`)
+  dm addresses validate -f addresses.json`
+  )
   .action(async (address, options) => {
     await addressesValidate(address, options);
   });
@@ -985,11 +1249,14 @@ tasksCmd
   .option('-p, --page <n>', 'Page number')
   .option('--per-page <n>', 'Results per page')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm tasks list --json
   dm tasks list --status open --assigned-to user_123
-  dm tasks list --search "follow up" --per-page 50`)
+  dm tasks list --search "follow up" --per-page 50`
+  )
   .action(async (options) => {
     await tasksList({
       status: options.status,
@@ -1005,9 +1272,12 @@ tasksCmd
   .command('get <id>')
   .description('Get task details')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  dm tasks get task_abc123 --json`)
+  dm tasks get task_abc123 --json`
+  )
   .action(async (id, options) => {
     await tasksGet(id, options);
   });
@@ -1018,10 +1288,13 @@ tasksCmd
   .option('--body <json>', 'Request body as JSON string')
   .option('-f, --file <path>', 'Read request body from a JSON file')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm tasks create --body '{"title":"Call owner","due_date":"2025-01-15"}' --json
-  dm tasks create -f task.json`)
+  dm tasks create -f task.json`
+  )
   .action(async (options) => {
     await tasksCreate(options);
   });
@@ -1032,9 +1305,12 @@ tasksCmd
   .option('--body <json>', 'Request body as JSON string')
   .option('-f, --file <path>', 'Read request body from a JSON file')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  dm tasks update task_abc123 --body '{"status":"completed"}' --json`)
+  dm tasks update task_abc123 --body '{"status":"completed"}' --json`
+  )
   .action(async (id, options) => {
     await tasksUpdate(id, options);
   });
@@ -1044,10 +1320,13 @@ tasksCmd
   .description('Delete a task')
   .option('--dry-run', 'Preview what would be deleted without making changes')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm tasks delete task_abc123
-  dm tasks delete task_abc123 --dry-run   Preview deletion`)
+  dm tasks delete task_abc123 --dry-run   Preview deletion`
+  )
   .action(async (id, options) => {
     if (options.dryRun) {
       console.log(`Would delete task ${id}.`);
@@ -1069,9 +1348,12 @@ crmCmd
   .command('pipelines')
   .description('List pipelines with stages and opportunity counts')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  dm crm pipelines --json`)
+  dm crm pipelines --json`
+  )
   .action(async (options) => {
     await crmPipelines(options);
   });
@@ -1092,11 +1374,14 @@ crmOppCmd
   .option('-p, --page <n>', 'Page number')
   .option('--per-page <n>', 'Results per page')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm crm opportunities list --json
   dm crm opp list --pipeline-id pipe_123 --priority high
-  dm crm opp ls --search "Main St" --per-page 50`)
+  dm crm opp ls --search "Main St" --per-page 50`
+  )
   .action(async (options) => {
     await crmOpportunitiesList(options);
   });
@@ -1105,9 +1390,12 @@ crmOppCmd
   .command('get <id>')
   .description('Get opportunity details')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  dm crm opp get opp_abc123 --json`)
+  dm crm opp get opp_abc123 --json`
+  )
   .action(async (id, options) => {
     await crmOpportunitiesGet(id, options);
   });
@@ -1118,10 +1406,13 @@ crmOppCmd
   .option('--body <json>', 'Request body as JSON string')
   .option('-f, --file <path>', 'Read request body from a JSON file')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm crm opp create --body '{"name":"123 Main St","pipeline_id":"pipe_123","stage_id":"stage_456"}' --json
-  dm crm opp create -f opportunity.json`)
+  dm crm opp create -f opportunity.json`
+  )
   .action(async (options) => {
     await crmOpportunitiesCreate(options);
   });
@@ -1132,9 +1423,12 @@ crmOppCmd
   .option('--body <json>', 'Request body as JSON string')
   .option('-f, --file <path>', 'Read request body from a JSON file')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  dm crm opp update opp_abc123 --body '{"priority":"high"}' --json`)
+  dm crm opp update opp_abc123 --body '{"priority":"high"}' --json`
+  )
   .action(async (id, options) => {
     await crmOpportunitiesUpdate(id, options);
   });
@@ -1144,10 +1438,13 @@ crmOppCmd
   .description('Delete an opportunity')
   .option('--dry-run', 'Preview what would be deleted without making changes')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm crm opp delete opp_abc123
-  dm crm opp delete opp_abc123 --dry-run  Preview deletion`)
+  dm crm opp delete opp_abc123 --dry-run  Preview deletion`
+  )
   .action(async (id, options) => {
     if (options.dryRun) {
       console.log(`Would delete opportunity ${id}.`);
@@ -1163,16 +1460,17 @@ crmOppCmd
   .option('--body <json>', 'Request body as JSON string (stage_id required)')
   .option('-f, --file <path>', 'Read request body from a JSON file')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  dm crm opp move opp_abc123 --body '{"stage_id":"stage_789"}' --json`)
+  dm crm opp move opp_abc123 --body '{"stage_id":"stage_789"}' --json`
+  )
   .action(async (id, options) => {
     await crmOpportunitiesMove(id, options);
   });
 
-const crmTaskCmd = crmCmd
-  .command('tasks')
-  .description('Manage CRM tasks');
+const crmTaskCmd = crmCmd.command('tasks').description('Manage CRM tasks');
 
 crmTaskCmd
   .command('list <opportunityId>')
@@ -1181,9 +1479,12 @@ crmTaskCmd
   .option('-p, --page <n>', 'Page number')
   .option('--per-page <n>', 'Results per page')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  dm crm tasks list opp_abc123 --json`)
+  dm crm tasks list opp_abc123 --json`
+  )
   .action(async (opportunityId, options) => {
     await crmTasksList(opportunityId, options);
   });
@@ -1194,9 +1495,12 @@ crmTaskCmd
   .option('--body <json>', 'Request body as JSON string')
   .option('-f, --file <path>', 'Read request body from a JSON file')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  dm crm tasks create opp_abc123 --body '{"title":"Call owner"}' --json`)
+  dm crm tasks create opp_abc123 --body '{"title":"Call owner"}' --json`
+  )
   .action(async (opportunityId, options) => {
     await crmTasksCreate(opportunityId, options);
   });
@@ -1207,16 +1511,17 @@ crmTaskCmd
   .option('--body <json>', 'Request body as JSON string')
   .option('-f, --file <path>', 'Read request body from a JSON file')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  dm crm tasks update opp_abc123 task_456 --body '{"status":"completed"}' --json`)
+  dm crm tasks update opp_abc123 task_456 --body '{"status":"completed"}' --json`
+  )
   .action(async (opportunityId, taskId, options) => {
     await crmTasksUpdate(opportunityId, taskId, options);
   });
 
-const crmNoteCmd = crmCmd
-  .command('notes')
-  .description('Manage CRM notes');
+const crmNoteCmd = crmCmd.command('notes').description('Manage CRM notes');
 
 crmNoteCmd
   .command('list <opportunityId>')
@@ -1225,9 +1530,12 @@ crmNoteCmd
   .option('-p, --page <n>', 'Page number')
   .option('--per-page <n>', 'Results per page')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  dm crm notes list opp_abc123 --json`)
+  dm crm notes list opp_abc123 --json`
+  )
   .action(async (opportunityId, options) => {
     await crmNotesList(opportunityId, options);
   });
@@ -1238,9 +1546,12 @@ crmNoteCmd
   .option('--body <json>', 'Request body as JSON string')
   .option('-f, --file <path>', 'Read request body from a JSON file')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  dm crm notes create opp_abc123 --body '{"content":"Spoke with owner, interested in selling."}' --json`)
+  dm crm notes create opp_abc123 --body '{"content":"Spoke with owner, interested in selling."}' --json`
+  )
   .action(async (opportunityId, options) => {
     await crmNotesCreate(opportunityId, options);
   });
@@ -1251,9 +1562,12 @@ crmNoteCmd
   .option('--body <json>', 'Request body as JSON string')
   .option('-f, --file <path>', 'Read request body from a JSON file')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  dm crm notes update opp_abc123 note_456 --body '{"content":"Updated note."}' --json`)
+  dm crm notes update opp_abc123 note_456 --body '{"content":"Updated note."}' --json`
+  )
   .action(async (opportunityId, noteId, options) => {
     await crmNotesUpdate(opportunityId, noteId, options);
   });
@@ -1267,9 +1581,12 @@ crmRecordCmd
   .alias('ls')
   .description('List records linked to an opportunity')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  dm crm records list opp_abc123 --json`)
+  dm crm records list opp_abc123 --json`
+  )
   .action(async (opportunityId, options) => {
     await crmRecordsList(opportunityId, options);
   });
@@ -1280,9 +1597,12 @@ crmRecordCmd
   .option('--body <json>', 'Request body as JSON string')
   .option('-f, --file <path>', 'Read request body from a JSON file')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  dm crm records link opp_abc123 --body '{"record_id":"prop_456","record_type":"property"}' --json`)
+  dm crm records link opp_abc123 --body '{"record_id":"prop_456","record_type":"property"}' --json`
+  )
   .action(async (opportunityId, options) => {
     await crmRecordsLink(opportunityId, options);
   });
@@ -1292,10 +1612,13 @@ crmRecordCmd
   .description('Unlink a record from an opportunity')
   .option('--dry-run', 'Preview what would be unlinked without making changes')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm crm records unlink opp_abc123 rec_456
-  dm crm records unlink opp_abc123 rec_456 --dry-run`)
+  dm crm records unlink opp_abc123 rec_456 --dry-run`
+  )
   .action(async (opportunityId, recordId, options) => {
     if (options.dryRun) {
       console.log(`Would unlink record ${recordId} from opportunity ${opportunityId}.`);
@@ -1305,18 +1628,19 @@ Examples:
     await crmRecordsUnlink(opportunityId, recordId, options);
   });
 
-const crmLabelCmd = crmCmd
-  .command('labels')
-  .description('Manage CRM labels');
+const crmLabelCmd = crmCmd.command('labels').description('Manage CRM labels');
 
 crmLabelCmd
   .command('list')
   .alias('ls')
   .description('List all CRM labels')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  dm crm labels list --json`)
+  dm crm labels list --json`
+  )
   .action(async (options) => {
     await crmLabelsList(options);
   });
@@ -1327,9 +1651,12 @@ crmLabelCmd
   .option('--body <json>', 'Request body as JSON string')
   .option('-f, --file <path>', 'Read request body from a JSON file')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  dm crm labels create --body '{"name":"Hot Lead","color":"red"}' --json`)
+  dm crm labels create --body '{"name":"Hot Lead","color":"red"}' --json`
+  )
   .action(async (options) => {
     await crmLabelsCreate(options);
   });
@@ -1340,9 +1667,12 @@ crmLabelCmd
   .option('--body <json>', 'Request body as JSON string')
   .option('-f, --file <path>', 'Read request body from a JSON file')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  dm crm labels update label_abc123 --body '{"name":"Warm Lead"}' --json`)
+  dm crm labels update label_abc123 --body '{"name":"Warm Lead"}' --json`
+  )
   .action(async (id, options) => {
     await crmLabelsUpdate(id, options);
   });
@@ -1352,10 +1682,13 @@ crmLabelCmd
   .description('Delete a label')
   .option('--dry-run', 'Preview what would be deleted without making changes')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm crm labels delete label_abc123
-  dm crm labels delete label_abc123 --dry-run`)
+  dm crm labels delete label_abc123 --dry-run`
+  )
   .action(async (id, options) => {
     if (options.dryRun) {
       console.log(`Would delete label ${id}.`);
@@ -1367,9 +1700,7 @@ Examples:
 
 // ── Opportunity Labels (add/remove on opportunities) ──
 
-const crmOppLabelCmd = crmOppCmd
-  .command('labels')
-  .description('Manage labels on an opportunity');
+const crmOppLabelCmd = crmOppCmd.command('labels').description('Manage labels on an opportunity');
 
 crmOppLabelCmd
   .command('add <opportunityId>')
@@ -1378,10 +1709,13 @@ crmOppLabelCmd
   .option('--body <json>', 'Request body as JSON string')
   .option('-f, --file <path>', 'Read request body from a JSON file')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm crm opp labels add opp_abc123 --label-id label_456
-  dm crm opp labels add opp_abc123 --body '{"label_id":"label_456"}' --json`)
+  dm crm opp labels add opp_abc123 --body '{"label_id":"label_456"}' --json`
+  )
   .action(async (opportunityId, options) => {
     await crmOpportunityLabelsAdd(opportunityId, options);
   });
@@ -1390,9 +1724,12 @@ crmOppLabelCmd
   .command('remove <opportunityId> <labelId>')
   .description('Remove a label from an opportunity')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  dm crm opp labels remove opp_abc123 label_456`)
+  dm crm opp labels remove opp_abc123 label_456`
+  )
   .action(async (opportunityId, labelId, options) => {
     await crmOpportunityLabelsRemove(opportunityId, labelId, options);
   });
@@ -1409,10 +1746,13 @@ crmSubCmd
   .alias('ls')
   .description('List subscribers of an opportunity')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm crm opp subscribers list opp_abc123 --json
-  dm crm opp subs ls opp_abc123`)
+  dm crm opp subs ls opp_abc123`
+  )
   .action(async (opportunityId, options) => {
     await crmSubscribersList(opportunityId, options);
   });
@@ -1424,10 +1764,13 @@ crmSubCmd
   .option('--body <json>', 'Request body as JSON string')
   .option('-f, --file <path>', 'Read request body from a JSON file')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm crm opp subscribers add opp_abc123 --user-id 42
-  dm crm opp subs add opp_abc123 --body '{"user_id":42}' --json`)
+  dm crm opp subs add opp_abc123 --body '{"user_id":42}' --json`
+  )
   .action(async (opportunityId, options) => {
     await crmSubscribersAdd(opportunityId, options);
   });
@@ -1437,9 +1780,12 @@ crmSubCmd
   .description('Unsubscribe a user from an opportunity')
   .requiredOption('--user-id <id>', 'User ID to unsubscribe')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  dm crm opp subscribers remove opp_abc123 --user-id 42`)
+  dm crm opp subscribers remove opp_abc123 --user-id 42`
+  )
   .action(async (opportunityId, options) => {
     await crmSubscribersRemove(opportunityId, options);
   });
@@ -1451,10 +1797,13 @@ crmCmd
   .option('--limit <n>', 'Items per page')
   .option('--category <cat>', 'Filter by category')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm crm activity opp_abc123 --json
-  dm crm activity opp_abc123 --category notes --limit 20`)
+  dm crm activity opp_abc123 --category notes --limit 20`
+  )
   .action(async (opportunityId, options) => {
     await crmActivity(opportunityId, options);
   });
@@ -1469,26 +1818,30 @@ const dialerCmd = program
 
 // ── Calls ──
 
-const dialerCallsCmd = dialerCmd
-  .command('calls')
-  .description('View call history and stats');
+const dialerCallsCmd = dialerCmd.command('calls').description('View call history and stats');
 
 dialerCallsCmd
   .command('list')
   .alias('ls')
   .description('List call history')
-  .option('--status <status>', 'Filter by status: initiating, ringing, answered, completed, failed, busy, no_answer, cancelled')
+  .option(
+    '--status <status>',
+    'Filter by status: initiating, ringing, answered, completed, failed, busy, no_answer, cancelled'
+  )
   .option('--search <term>', 'Search by contact name or phone number')
   .option('--date-from <date>', 'Filter from date (ISO 8601)')
   .option('--date-to <date>', 'Filter to date (ISO 8601)')
   .option('-p, --page <n>', 'Page number')
   .option('--per-page <n>', 'Results per page')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm dialer calls list --json
   dm dialer calls list --status completed --date-from 2025-01-01
-  dm dialer calls list --search "5125551234" --per-page 50`)
+  dm dialer calls list --search "5125551234" --per-page 50`
+  )
   .action(async (options) => {
     await dialerCallsList(options);
   });
@@ -1497,9 +1850,12 @@ dialerCallsCmd
   .command('get <uuid>')
   .description('Get call details by UUID')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  dm dialer calls get call_uuid_123 --json`)
+  dm dialer calls get call_uuid_123 --json`
+  )
   .action(async (uuid, options) => {
     await dialerCallsGet(uuid, options);
   });
@@ -1510,28 +1866,32 @@ dialerCallsCmd
   .option('--date-from <date>', 'Filter from date (ISO 8601)')
   .option('--date-to <date>', 'Filter to date (ISO 8601)')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm dialer calls stats --json
-  dm dialer calls stats --date-from 2025-01-01 --date-to 2025-01-31`)
+  dm dialer calls stats --date-from 2025-01-01 --date-to 2025-01-31`
+  )
   .action(async (options) => {
     await dialerCallsStats(options);
   });
 
 // ── Call Notes ──
 
-const dialerNotesCmd = dialerCmd
-  .command('notes')
-  .description('Manage call notes');
+const dialerNotesCmd = dialerCmd.command('notes').description('Manage call notes');
 
 dialerNotesCmd
   .command('list <callUuid>')
   .alias('ls')
   .description('List notes for a call')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  dm dialer notes list call_uuid_123 --json`)
+  dm dialer notes list call_uuid_123 --json`
+  )
   .action(async (callUuid, options) => {
     await dialerNotesList(callUuid, options);
   });
@@ -1542,9 +1902,12 @@ dialerNotesCmd
   .option('--body <json>', 'Request body as JSON string')
   .option('-f, --file <path>', 'Read request body from a JSON file')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  dm dialer notes create call_uuid_123 --body '{"content":"Left voicemail."}' --json`)
+  dm dialer notes create call_uuid_123 --body '{"content":"Left voicemail."}' --json`
+  )
   .action(async (callUuid, options) => {
     await dialerNotesCreate(callUuid, options);
   });
@@ -1554,10 +1917,13 @@ dialerNotesCmd
   .description('Delete a call note')
   .option('--dry-run', 'Preview what would be deleted without making changes')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm dialer notes delete call_uuid_123 note_456
-  dm dialer notes delete call_uuid_123 note_456 --dry-run`)
+  dm dialer notes delete call_uuid_123 note_456 --dry-run`
+  )
   .action(async (callUuid, noteId, options) => {
     if (options.dryRun) {
       console.log(`Would delete note ${noteId} from call ${callUuid}.`);
@@ -1569,18 +1935,19 @@ Examples:
 
 // ── Queues ──
 
-const dialerQueuesCmd = dialerCmd
-  .command('queues')
-  .description('Manage dialer queues');
+const dialerQueuesCmd = dialerCmd.command('queues').description('Manage dialer queues');
 
 dialerQueuesCmd
   .command('list')
   .alias('ls')
   .description('List all dialer queues')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  dm dialer queues list --json`)
+  dm dialer queues list --json`
+  )
   .action(async (options) => {
     await dialerQueuesList(options);
   });
@@ -1591,9 +1958,12 @@ dialerQueuesCmd
   .option('--body <json>', 'Request body as JSON string')
   .option('-f, --file <path>', 'Read request body from a JSON file')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  dm dialer queues create --body '{"name":"Morning Calls"}' --json`)
+  dm dialer queues create --body '{"name":"Morning Calls"}' --json`
+  )
   .action(async (options) => {
     await dialerQueuesCreate(options);
   });
@@ -1603,10 +1973,13 @@ dialerQueuesCmd
   .description('Delete a queue')
   .option('--dry-run', 'Preview what would be deleted without making changes')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm dialer queues delete queue_abc123
-  dm dialer queues delete queue_abc123 --dry-run`)
+  dm dialer queues delete queue_abc123 --dry-run`
+  )
   .action(async (id, options) => {
     if (options.dryRun) {
       console.log(`Would delete queue ${id} and all its items.`);
@@ -1618,22 +1991,26 @@ Examples:
 
 // ── Queue Items ──
 
-const dialerItemsCmd = dialerCmd
-  .command('items')
-  .description('Manage queue items');
+const dialerItemsCmd = dialerCmd.command('items').description('Manage queue items');
 
 dialerItemsCmd
   .command('list <queueId>')
   .alias('ls')
   .description('List items in a queue')
-  .option('--status <status>', 'Filter by status: pending, in_progress, completed, skipped, deferred')
+  .option(
+    '--status <status>',
+    'Filter by status: pending, in_progress, completed, skipped, deferred'
+  )
   .option('-p, --page <n>', 'Page number')
   .option('--per-page <n>', 'Results per page')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm dialer items list queue_abc123 --json
-  dm dialer items list queue_abc123 --status pending --per-page 50`)
+  dm dialer items list queue_abc123 --status pending --per-page 50`
+  )
   .action(async (queueId, options) => {
     await dialerQueueItemsList(queueId, options);
   });
@@ -1644,9 +2021,12 @@ dialerItemsCmd
   .option('--body <json>', 'Request body as JSON string')
   .option('-f, --file <path>', 'Read request body from a JSON file')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  dm dialer items add queue_abc123 --body '{"phone_numbers":["5125551234"]}' --json`)
+  dm dialer items add queue_abc123 --body '{"phone_numbers":["5125551234"]}' --json`
+  )
   .action(async (queueId, options) => {
     await dialerQueueItemsAdd(queueId, options);
   });
@@ -1657,9 +2037,12 @@ dialerItemsCmd
   .option('--body <json>', 'Request body as JSON string')
   .option('-f, --file <path>', 'Read request body from a JSON file')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  dm dialer items update queue_abc123 item_456 --body '{"status":"skipped"}' --json`)
+  dm dialer items update queue_abc123 item_456 --body '{"status":"skipped"}' --json`
+  )
   .action(async (queueId, itemId, options) => {
     await dialerQueueItemsUpdate(queueId, itemId, options);
   });
@@ -1669,10 +2052,13 @@ dialerItemsCmd
   .description('Remove an item from a queue')
   .option('--dry-run', 'Preview what would be removed without making changes')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm dialer items remove queue_abc123 item_456
-  dm dialer items remove queue_abc123 item_456 --dry-run`)
+  dm dialer items remove queue_abc123 item_456 --dry-run`
+  )
   .action(async (queueId, itemId, options) => {
     if (options.dryRun) {
       console.log(`Would remove item ${itemId} from queue ${queueId}.`);
@@ -1688,9 +2074,12 @@ dialerCmd
   .command('dispositions')
   .description('List call dispositions')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  dm dialer dispositions --json`)
+  dm dialer dispositions --json`
+  )
   .action(async (options) => {
     await dialerDispositions(options);
   });
@@ -1709,10 +2098,13 @@ dialerSuppCmd
   .option('-p, --page <n>', 'Page number')
   .option('--per-page <n>', 'Results per page')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm dialer suppression list --json
-  dm dialer suppression list --search "512" --per-page 100`)
+  dm dialer suppression list --search "512" --per-page 100`
+  )
   .action(async (options) => {
     await dialerSuppressionList(options);
   });
@@ -1721,9 +2113,12 @@ dialerSuppCmd
   .command('check <phoneNumber>')
   .description('Check if a phone number is suppressed')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  dm dialer suppression check 5125551234 --json`)
+  dm dialer suppression check 5125551234 --json`
+  )
   .action(async (phoneNumber, options) => {
     await dialerSuppressionCheck(phoneNumber, options);
   });
@@ -1734,9 +2129,12 @@ dialerSuppCmd
   .option('--body <json>', 'Request body as JSON string')
   .option('-f, --file <path>', 'Read request body from a JSON file')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  dm dialer suppression add --body '{"phone_number":"5125551234","reason":"Do not contact"}' --json`)
+  dm dialer suppression add --body '{"phone_number":"5125551234","reason":"Do not contact"}' --json`
+  )
   .action(async (options) => {
     await dialerSuppressionAdd(options);
   });
@@ -1765,11 +2163,14 @@ mailCampaignsCmd
   .option('-p, --page <n>', 'Page number')
   .option('--per-page <n>', 'Results per page')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm mail campaigns list --json
   dm mail camp ls --status active
-  dm mail campaigns list --search "Austin" --per-page 50`)
+  dm mail campaigns list --search "Austin" --per-page 50`
+  )
   .action(async (options) => {
     await mailCampaignsList(options);
   });
@@ -1780,12 +2181,15 @@ mailCampaignsCmd
   .option('--body <json>', 'Request body as JSON string')
   .option('-f, --file <path>', 'Read request body from a JSON file')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm mail campaigns create -f campaign.json --json
   dm mail campaigns create --body '{"name":"Austin Owners","property_ids":[123],"address_to":"owner","steps":[{"design_prompt":"Professional postcard"}]}'
 
-Note: Set "launch": true in body to send immediately, or leave as draft.`)
+Note: Set "launch": true in body to send immediately, or leave as draft.`
+  )
   .action(async (options) => {
     await mailCampaignsCreate(options);
   });
@@ -1794,9 +2198,12 @@ mailCampaignsCmd
   .command('get <id>')
   .description('Get campaign details')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  dm mail campaigns get camp_abc123 --json`)
+  dm mail campaigns get camp_abc123 --json`
+  )
   .action(async (id, options) => {
     await mailCampaignsGet(id, options);
   });
@@ -1807,11 +2214,14 @@ mailCampaignsCmd
   .option('--body <json>', 'Request body as JSON string')
   .option('-f, --file <path>', 'Read request body from a JSON file')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm mail campaigns update camp_abc123 --body '{"name":"Updated Name"}' --json
 
-Note: Only draft campaigns can be updated.`)
+Note: Only draft campaigns can be updated.`
+  )
   .action(async (id, options) => {
     await mailCampaignsUpdate(id, options);
   });
@@ -1821,12 +2231,15 @@ mailCampaignsCmd
   .description('Cancel a campaign')
   .option('--dry-run', 'Preview what would be cancelled without making changes')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm mail campaigns delete camp_abc123
   dm mail campaigns delete camp_abc123 --dry-run
 
-Note: Active campaigns will stop sending. Already-submitted mail cannot be recalled.`)
+Note: Active campaigns will stop sending. Already-submitted mail cannot be recalled.`
+  )
   .action(async (id, options) => {
     if (options.dryRun) {
       console.log(`Would cancel campaign ${id}. Already-submitted mail cannot be recalled.`);
@@ -1841,12 +2254,15 @@ mailCampaignsCmd
   .description('Launch a draft campaign')
   .option('--dry-run', 'Check cost estimate without launching')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm mail campaigns send camp_abc123 --json
   dm mail campaigns send camp_abc123 --dry-run   Check cost before sending
 
-Note: Verify wallet balance first with: dm mail wallet balance`)
+Note: Verify wallet balance first with: dm mail wallet balance`
+  )
   .action(async (id, options) => {
     if (options.dryRun) {
       await mailCampaignsCostEstimate(id, options);
@@ -1859,9 +2275,12 @@ mailCampaignsCmd
   .command('pause <id>')
   .description('Pause an active campaign')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  dm mail campaigns pause camp_abc123`)
+  dm mail campaigns pause camp_abc123`
+  )
   .action(async (id, options) => {
     await mailCampaignsPause(id, options);
   });
@@ -1870,9 +2289,12 @@ mailCampaignsCmd
   .command('resume <id>')
   .description('Resume a paused campaign')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  dm mail campaigns resume camp_abc123`)
+  dm mail campaigns resume camp_abc123`
+  )
   .action(async (id, options) => {
     await mailCampaignsResume(id, options);
   });
@@ -1883,10 +2305,13 @@ mailCampaignsCmd
   .option('-p, --page <n>', 'Page number')
   .option('--per-page <n>', 'Results per page')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm mail campaigns recipients camp_abc123 --json
-  dm mail campaigns recipients camp_abc123 --per-page 100`)
+  dm mail campaigns recipients camp_abc123 --per-page 100`
+  )
   .action(async (id, options) => {
     await mailCampaignsRecipients(id, options);
   });
@@ -1895,9 +2320,12 @@ mailCampaignsCmd
   .command('analytics <id>')
   .description('Get campaign delivery and response analytics')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  dm mail campaigns analytics camp_abc123 --json`)
+  dm mail campaigns analytics camp_abc123 --json`
+  )
   .action(async (id, options) => {
     await mailCampaignsAnalytics(id, options);
   });
@@ -1906,18 +2334,19 @@ mailCampaignsCmd
   .command('cost-estimate <id>')
   .description('Estimate campaign cost before sending')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  dm mail campaigns cost-estimate camp_abc123 --json`)
+  dm mail campaigns cost-estimate camp_abc123 --json`
+  )
   .action(async (id, options) => {
     await mailCampaignsCostEstimate(id, options);
   });
 
 // ── Designs ──
 
-const mailDesignsCmd = mailCmd
-  .command('designs')
-  .description('Manage postcard designs');
+const mailDesignsCmd = mailCmd.command('designs').description('Manage postcard designs');
 
 mailDesignsCmd
   .command('list')
@@ -1929,11 +2358,14 @@ mailDesignsCmd
   .option('-p, --page <n>', 'Page number')
   .option('--per-page <n>', 'Results per page')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm mail designs list --json
   dm mail designs list --status active --size 4x6
-  dm mail designs list --search "professional"`)
+  dm mail designs list --search "professional"`
+  )
   .action(async (options) => {
     await mailDesignsList(options);
   });
@@ -1944,12 +2376,15 @@ mailDesignsCmd
   .option('--body <json>', 'Request body as JSON string')
   .option('-f, --file <path>', 'Read request body from a JSON file')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm mail designs create --body '{"name":"My Card","prompt":"Professional real estate postcard","size":"4x6"}' --json
   dm mail designs create -f design.json
 
-Note: Provide either "prompt" (AI-generated) or "html_front" (custom HTML).`)
+Note: Provide either "prompt" (AI-generated) or "html_front" (custom HTML).`
+  )
   .action(async (options) => {
     await mailDesignsCreate(options);
   });
@@ -1958,9 +2393,12 @@ mailDesignsCmd
   .command('get <id>')
   .description('Get design details')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  dm mail designs get des_abc123 --json`)
+  dm mail designs get des_abc123 --json`
+  )
   .action(async (id, options) => {
     await mailDesignsGet(id, options);
   });
@@ -1971,11 +2409,14 @@ mailDesignsCmd
   .option('--body <json>', 'Request body as JSON string')
   .option('-f, --file <path>', 'Read request body from a JSON file')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm mail designs update des_abc123 --body '{"name":"Updated Name","publish":true}' --json
 
-Note: Set "publish": true to promote draft HTML to active.`)
+Note: Set "publish": true to promote draft HTML to active.`
+  )
   .action(async (id, options) => {
     await mailDesignsUpdate(id, options);
   });
@@ -1985,12 +2426,15 @@ mailDesignsCmd
   .description('Delete a design')
   .option('--dry-run', 'Preview what would be deleted without making changes')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm mail designs delete des_abc123
   dm mail designs delete des_abc123 --dry-run
 
-Note: Designs used in active campaigns cannot be deleted.`)
+Note: Designs used in active campaigns cannot be deleted.`
+  )
   .action(async (id, options) => {
     if (options.dryRun) {
       console.log(`Would delete design ${id}.`);
@@ -2012,10 +2456,13 @@ mailAddressesCmd
   .alias('ls')
   .description('List return addresses')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm mail return-addresses list --json
-  dm mail addr ls --json`)
+  dm mail addr ls --json`
+  )
   .action(async (options) => {
     await mailReturnAddressesList(options);
   });
@@ -2026,10 +2473,13 @@ mailAddressesCmd
   .option('--body <json>', 'Request body as JSON string')
   .option('-f, --file <path>', 'Read request body from a JSON file')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm mail addr create --body '{"name":"DealMachine","address_1":"123 Main St","city":"Austin","state":"TX","zip":"78704"}' --json
-  dm mail addr create --body '{"name":"Office","label":"HQ","address_1":"456 Oak","city":"Dallas","state":"TX","zip":"75201","set_as_default":true}'`)
+  dm mail addr create --body '{"name":"Office","label":"HQ","address_1":"456 Oak","city":"Dallas","state":"TX","zip":"75201","set_as_default":true}'`
+  )
   .action(async (options) => {
     await mailReturnAddressesCreate(options);
   });
@@ -2038,9 +2488,12 @@ mailAddressesCmd
   .command('get <id>')
   .description('Get return address details')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  dm mail addr get addr_abc123 --json`)
+  dm mail addr get addr_abc123 --json`
+  )
   .action(async (id, options) => {
     await mailReturnAddressesGet(id, options);
   });
@@ -2051,9 +2504,12 @@ mailAddressesCmd
   .option('--body <json>', 'Request body as JSON string')
   .option('-f, --file <path>', 'Read request body from a JSON file')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  dm mail addr update addr_abc123 --body '{"name":"New Name"}' --json`)
+  dm mail addr update addr_abc123 --body '{"name":"New Name"}' --json`
+  )
   .action(async (id, options) => {
     await mailReturnAddressesUpdate(id, options);
   });
@@ -2063,12 +2519,15 @@ mailAddressesCmd
   .description('Delete a return address')
   .option('--dry-run', 'Preview what would be deleted without making changes')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm mail addr delete addr_abc123
   dm mail addr delete addr_abc123 --dry-run
 
-Note: Cannot delete the default address. Set another as default first.`)
+Note: Cannot delete the default address. Set another as default first.`
+  )
   .action(async (id, options) => {
     if (options.dryRun) {
       console.log(`Would delete return address ${id}.`);
@@ -2082,9 +2541,12 @@ mailAddressesCmd
   .command('set-default <id>')
   .description('Set a return address as the default')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  dm mail addr set-default addr_abc123`)
+  dm mail addr set-default addr_abc123`
+  )
   .action(async (id, options) => {
     await mailReturnAddressesSetDefault(id, options);
   });
@@ -2099,9 +2561,12 @@ mailWalletCmd
   .command('balance')
   .description('Get wallet balance')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  dm mail wallet balance --json`)
+  dm mail wallet balance --json`
+  )
   .action(async (options) => {
     await mailWalletBalance(options);
   });
@@ -2112,10 +2577,13 @@ mailWalletCmd
   .option('--body <json>', 'Request body as JSON string')
   .option('-f, --file <path>', 'Read request body from a JSON file')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm mail wallet add-funds --body '{"amount_cents":5000}' --json                      Add $50
-  dm mail wallet add-funds --body '{"amount_cents":10000,"payment_method_id":"pm_..."}' --json`)
+  dm mail wallet add-funds --body '{"amount_cents":10000,"payment_method_id":"pm_..."}' --json`
+  )
   .action(async (options) => {
     await mailWalletAddFunds(options);
   });
@@ -2130,11 +2598,14 @@ mailWalletCmd
   .option('-p, --page <n>', 'Page number')
   .option('--per-page <n>', 'Results per page')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   dm mail wallet transactions --json
   dm mail wallet txns --type spend --campaign-id camp_abc123
-  dm mail wallet transactions --type purchase --per-page 50`)
+  dm mail wallet transactions --type purchase --per-page 50`
+  )
   .action(async (options) => {
     await mailWalletTransactions(options);
   });
@@ -2143,9 +2614,12 @@ mailWalletCmd
   .command('pricing')
   .description('Get postcard pricing for your plan')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  dm mail wallet pricing --json`)
+  dm mail wallet pricing --json`
+  )
   .action(async (options) => {
     await mailWalletPricing(options);
   });
@@ -2158,9 +2632,7 @@ const devCmd = program
   .command('dev')
   .description('Local development utilities (requires Docker MySQL)');
 
-const devLicenseCmd = devCmd
-  .command('license')
-  .description('Manage API key licenses');
+const devLicenseCmd = devCmd.command('license').description('Manage API key licenses');
 
 devLicenseCmd
   .command('add <key_id>')

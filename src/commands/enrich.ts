@@ -123,7 +123,7 @@ async function runBatchEnrichment(opts: {
     responses.push(data);
 
     if (data.warning && data.warning.includes('credit limit reached')) {
-      spinner.warn(`Enrichment credit limit reached at batch ${batchNum}/${totalBatches}`);
+      spinner.warn(`Data credit limit reached at batch ${batchNum}/${totalBatches}`);
       break;
     }
   }
@@ -681,10 +681,25 @@ function printPropertyEnrichResult(title: string, data: PropertyEnrichResponse):
       contacts: Array.isArray(item.contacts) ? String(item.contacts.length) : '—',
     }));
     printTable(rows, ['matched', 'id', 'address', 'value', 'contacts']);
+    printMatchWarnings(data.data);
   }
 
   printCredits(data.credits);
   console.log();
+}
+
+function printMatchWarnings(items: Record<string, unknown>[]): void {
+  const warned = items
+    .map((item, i) => ({ i, w: (item as any).match_warning as { code?: string; message?: string; hint?: Record<string, unknown> } | undefined }))
+    .filter((entry) => entry.w);
+  if (warned.length === 0) return;
+  console.log();
+  console.log(chalk.yellow(`! ${warned.length} item(s) had input rewritten before matching:`));
+  for (const { i, w } of warned) {
+    const parsed = w?.hint?.parsed_street;
+    const detail = parsed ? `parsed as "${String(parsed)}"` : (w?.message ?? '');
+    console.log(chalk.dim(`    [${i}] ${w?.code ?? 'match_warning'}: ${detail}`));
+  }
 }
 
 function printPersonEnrichResult(title: string, data: PersonEnrichResponse): void {

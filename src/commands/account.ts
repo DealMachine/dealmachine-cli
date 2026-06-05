@@ -6,19 +6,21 @@ import chalk from 'chalk';
 import { apiRequest, formatDate } from '../lib/client.js';
 
 interface AccountResponse {
-  organization: {
-    id: number;
-    name: string;
-    createdAt: string;
-  };
-  user: {
-    id: number | null;
-    authType: 'api_key' | 'oauth';
+  data: {
+    organization: {
+      id: number;
+      name: string;
+      createdAt: string;
+    };
+    user: {
+      id: number | null;
+      authType: 'api_key' | 'oauth';
+    };
   };
 }
 
 export async function account(): Promise<void> {
-  const data = await apiRequest<AccountResponse>('/account');
+  const { data } = await apiRequest<AccountResponse>('/account');
 
   console.log();
   console.log(chalk.bold('Account'));

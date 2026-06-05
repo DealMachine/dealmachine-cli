@@ -189,7 +189,15 @@ interface WalletPricingResponse {
     plan_slug: string;
     sizes: { size: string; price_cents: number; label: string | null }[];
     current_usage?: number;
-    bands?: { threshold_quantity: number; label: string | null; prices: { size: string; price_cents: number }[] }[];
+    bands?: {
+      threshold_quantity: number;
+      label: string | null;
+      prices: { size: string; price_cents: number }[];
+    }[];
+    plans?: {
+      plan_name: string;
+      prices: { size: string; price_cents: number }[];
+    }[];
   };
 }
 
@@ -240,7 +248,9 @@ export async function mailCampaignsList(options: {
 
   const p = data.pagination;
   console.log();
-  console.log(chalk.dim(`Page ${p.page} — ${p.total} total campaigns${p.has_more ? ' (more available)' : ''}`));
+  console.log(
+    chalk.dim(`Page ${p.page} — ${p.total} total campaigns${p.has_more ? ' (more available)' : ''}`)
+  );
   console.log();
 }
 
@@ -271,11 +281,11 @@ export async function mailCampaignsCreate(options: {
   printHeader('Campaign Created');
   printKeyValue({
     'Campaign ID': c.id,
-    'Name': c.name,
-    'Status': c.status,
-    'Recipients': c.total_recipients,
-    'Steps': c.steps.length,
-    'Created': formatDate(c.created_at),
+    Name: c.name,
+    Status: c.status,
+    Recipients: c.total_recipients,
+    Steps: c.steps.length,
+    Created: formatDate(c.created_at),
   });
   console.log();
 }
@@ -284,10 +294,7 @@ export async function mailCampaignsCreate(options: {
 // Campaigns — Get
 // ============================================================================
 
-export async function mailCampaignsGet(
-  id: string,
-  options: { json?: boolean }
-): Promise<void> {
+export async function mailCampaignsGet(id: string, options: { json?: boolean }): Promise<void> {
   const spinner = createSpinner('Fetching campaign...').start();
   const data = await apiRequest<CampaignResponse>(`/mail/campaigns/${id}`);
   spinner.stop();
@@ -300,17 +307,17 @@ export async function mailCampaignsGet(
   const c = data.data;
   printHeader(`Campaign ${c.id}`);
   printKeyValue({
-    'Name': c.name,
-    'Description': c.description || '—',
-    'Status': c.status,
-    'Audience': c.audience_kind || '—',
-    'Recipients': c.total_recipients,
-    'Sent': c.total_sent,
-    'Delivered': c.total_delivered,
-    'Steps': c.steps.length,
-    'Created': formatDate(c.created_at),
-    'Launched': c.launched_at ? formatDate(c.launched_at) : '—',
-    'Completed': c.completed_at ? formatDate(c.completed_at) : '—',
+    Name: c.name,
+    Description: c.description || '—',
+    Status: c.status,
+    Audience: c.audience_kind || '—',
+    Recipients: c.total_recipients,
+    Sent: c.total_sent,
+    Delivered: c.total_delivered,
+    Steps: c.steps.length,
+    Created: formatDate(c.created_at),
+    Launched: c.launched_at ? formatDate(c.launched_at) : '—',
+    Completed: c.completed_at ? formatDate(c.completed_at) : '—',
   });
 
   if (c.steps.length > 0) {
@@ -355,9 +362,9 @@ export async function mailCampaignsUpdate(
   printHeader('Campaign Updated');
   printKeyValue({
     'Campaign ID': c.id,
-    'Name': c.name,
-    'Status': c.status,
-    'Updated': formatDate(c.updated_at),
+    Name: c.name,
+    Status: c.status,
+    Updated: formatDate(c.updated_at),
   });
   console.log();
 }
@@ -366,10 +373,7 @@ export async function mailCampaignsUpdate(
 // Campaigns — Delete (Cancel)
 // ============================================================================
 
-export async function mailCampaignsDelete(
-  id: string,
-  options: { json?: boolean }
-): Promise<void> {
+export async function mailCampaignsDelete(id: string, options: { json?: boolean }): Promise<void> {
   const spinner = createSpinner('Cancelling campaign...').start();
   const data = await apiRequest<CampaignResponse>(`/mail/campaigns/${id}`, {
     method: 'DELETE',
@@ -389,10 +393,7 @@ export async function mailCampaignsDelete(
 // Campaigns — Send (Launch)
 // ============================================================================
 
-export async function mailCampaignsSend(
-  id: string,
-  options: { json?: boolean }
-): Promise<void> {
+export async function mailCampaignsSend(id: string, options: { json?: boolean }): Promise<void> {
   const spinner = createSpinner('Launching campaign...').start();
   const data = await apiRequest<CampaignResponse>(`/mail/campaigns/${id}/send`, {
     method: 'POST',
@@ -409,9 +410,9 @@ export async function mailCampaignsSend(
   printHeader('Campaign Launched');
   printKeyValue({
     'Campaign ID': c.id,
-    'Name': c.name,
-    'Status': c.status,
-    'Recipients': c.total_recipients,
+    Name: c.name,
+    Status: c.status,
+    Recipients: c.total_recipients,
   });
   console.log();
 }
@@ -420,10 +421,7 @@ export async function mailCampaignsSend(
 // Campaigns — Pause
 // ============================================================================
 
-export async function mailCampaignsPause(
-  id: string,
-  options: { json?: boolean }
-): Promise<void> {
+export async function mailCampaignsPause(id: string, options: { json?: boolean }): Promise<void> {
   const spinner = createSpinner('Pausing campaign...').start();
   const data = await apiRequest<CampaignResponse>(`/mail/campaigns/${id}/pause`, {
     method: 'POST',
@@ -444,10 +442,7 @@ export async function mailCampaignsPause(
 // Campaigns — Resume
 // ============================================================================
 
-export async function mailCampaignsResume(
-  id: string,
-  options: { json?: boolean }
-): Promise<void> {
+export async function mailCampaignsResume(id: string, options: { json?: boolean }): Promise<void> {
   const spinner = createSpinner('Resuming campaign...').start();
   const data = await apiRequest<CampaignResponse>(`/mail/campaigns/${id}/resume`, {
     method: 'POST',
@@ -529,11 +524,11 @@ export async function mailCampaignsAnalytics(
   const a = data.data;
   printHeader(`Analytics — ${a.campaign_name}`);
   printKeyValue({
-    'Recipients': a.total_recipients,
-    'Sent': a.total_sent,
-    'Delivered': a.total_delivered,
-    'Bounced': a.total_bounced,
-    'Responses': a.total_responses,
+    Recipients: a.total_recipients,
+    Sent: a.total_sent,
+    Delivered: a.total_delivered,
+    Bounced: a.total_bounced,
+    Responses: a.total_responses,
     'Delivery Rate': `${a.delivery_rate.toFixed(1)}%`,
     'Response Rate': `${a.response_rate.toFixed(1)}%`,
   });
@@ -560,7 +555,7 @@ export async function mailCampaignsCostEstimate(
   const e = data.data;
   printHeader('Cost Estimate');
   printKeyValue({
-    'Recipients': e.recipient_count,
+    Recipients: e.recipient_count,
     'Price Per Card': `$${(e.price_per_card_cents / 100).toFixed(2)}`,
     'Total Cost': `$${e.total_cost_dollars.toFixed(2)}`,
     'Pay Now': `$${(e.pay_now_cost_cents / 100).toFixed(2)}`,
@@ -619,7 +614,9 @@ export async function mailDesignsList(options: {
 
   const p = data.pagination;
   console.log();
-  console.log(chalk.dim(`Page ${p.page} — ${p.total} total designs${p.has_more ? ' (more available)' : ''}`));
+  console.log(
+    chalk.dim(`Page ${p.page} — ${p.total} total designs${p.has_more ? ' (more available)' : ''}`)
+  );
   console.log();
 }
 
@@ -650,11 +647,11 @@ export async function mailDesignsCreate(options: {
   printHeader('Design Created');
   printKeyValue({
     'Design ID': d.id,
-    'Name': d.name,
-    'Status': d.status,
-    'Size': d.size,
-    'Orientation': d.orientation,
-    'Created': formatDate(d.created_at),
+    Name: d.name,
+    Status: d.status,
+    Size: d.size,
+    Orientation: d.orientation,
+    Created: formatDate(d.created_at),
   });
   if (d.front_preview_url) {
     console.log();
@@ -667,10 +664,7 @@ export async function mailDesignsCreate(options: {
 // Designs — Get
 // ============================================================================
 
-export async function mailDesignsGet(
-  id: string,
-  options: { json?: boolean }
-): Promise<void> {
+export async function mailDesignsGet(id: string, options: { json?: boolean }): Promise<void> {
   const spinner = createSpinner('Fetching design...').start();
   const data = await apiRequest<DesignResponse>(`/mail/designs/${id}`);
   spinner.stop();
@@ -683,17 +677,17 @@ export async function mailDesignsGet(
   const d = data.data;
   printHeader(`Design ${d.id}`);
   printKeyValue({
-    'Name': d.name,
-    'Status': d.status,
-    'Size': d.size,
-    'Orientation': d.orientation,
-    'Layout': d.layout || '—',
-    'Theme': d.theme || '—',
-    'Prompt': d.prompt ? truncate(d.prompt, 60) : '—',
+    Name: d.name,
+    Status: d.status,
+    Size: d.size,
+    Orientation: d.orientation,
+    Layout: d.layout || '—',
+    Theme: d.theme || '—',
+    Prompt: d.prompt ? truncate(d.prompt, 60) : '—',
     'Front Preview': d.front_preview_url || '—',
     'Back Preview': d.back_preview_url || '—',
-    'Created': formatDate(d.created_at),
-    'Published': d.published_at ? formatDate(d.published_at) : '—',
+    Created: formatDate(d.created_at),
+    Published: d.published_at ? formatDate(d.published_at) : '—',
   });
   console.log();
 }
@@ -724,9 +718,9 @@ export async function mailDesignsUpdate(
   printHeader('Design Updated');
   printKeyValue({
     'Design ID': d.id,
-    'Name': d.name,
-    'Status': d.status,
-    'Updated': formatDate(d.updated_at),
+    Name: d.name,
+    Status: d.status,
+    Updated: formatDate(d.updated_at),
   });
   console.log();
 }
@@ -735,10 +729,7 @@ export async function mailDesignsUpdate(
 // Designs — Delete
 // ============================================================================
 
-export async function mailDesignsDelete(
-  id: string,
-  options: { json?: boolean }
-): Promise<void> {
+export async function mailDesignsDelete(id: string, options: { json?: boolean }): Promise<void> {
   const spinner = createSpinner('Deleting design...').start();
   const data = await apiRequest<{ deleted: boolean }>(`/mail/designs/${id}`, {
     method: 'DELETE',
@@ -758,9 +749,7 @@ export async function mailDesignsDelete(
 // Return Addresses — List
 // ============================================================================
 
-export async function mailReturnAddressesList(options: {
-  json?: boolean;
-}): Promise<void> {
+export async function mailReturnAddressesList(options: { json?: boolean }): Promise<void> {
   const spinner = createSpinner('Fetching return addresses...').start();
   const data = await apiRequest<ReturnAddressListResponse>('/mail/return-addresses');
   spinner.stop();
@@ -815,12 +804,12 @@ export async function mailReturnAddressesCreate(options: {
   const a = data.data;
   printHeader('Return Address Created');
   printKeyValue({
-    'ID': a.id,
-    'Name': a.name,
-    'Label': a.label || '—',
-    'Address': `${a.address_1}, ${a.city}, ${a.state} ${a.zip}`,
-    'Validated': a.is_validated ? 'yes' : 'no',
-    'Default': a.is_default ? 'yes' : 'no',
+    ID: a.id,
+    Name: a.name,
+    Label: a.label || '—',
+    Address: `${a.address_1}, ${a.city}, ${a.state} ${a.zip}`,
+    Validated: a.is_validated ? 'yes' : 'no',
+    Default: a.is_default ? 'yes' : 'no',
   });
   if (data.corrected) {
     console.log(chalk.yellow('  Address was corrected by USPS validation.'));
@@ -848,16 +837,16 @@ export async function mailReturnAddressesGet(
   const a = data.data;
   printHeader(`Return Address ${a.id}`);
   printKeyValue({
-    'Name': a.name,
-    'Label': a.label || '—',
+    Name: a.name,
+    Label: a.label || '—',
     'Address 1': a.address_1,
     'Address 2': a.address_2 || '—',
-    'City': a.city,
-    'State': a.state,
-    'ZIP': a.zip,
-    'Validated': a.is_validated ? 'yes' : 'no',
-    'Default': a.is_default ? 'yes' : 'no',
-    'Created': formatDate(a.created_at),
+    City: a.city,
+    State: a.state,
+    ZIP: a.zip,
+    Validated: a.is_validated ? 'yes' : 'no',
+    Default: a.is_default ? 'yes' : 'no',
+    Created: formatDate(a.created_at),
   });
   console.log();
 }
@@ -887,10 +876,10 @@ export async function mailReturnAddressesUpdate(
   const a = data.data;
   printHeader('Return Address Updated');
   printKeyValue({
-    'ID': a.id,
-    'Name': a.name,
-    'Address': `${a.address_1}, ${a.city}, ${a.state} ${a.zip}`,
-    'Validated': a.is_validated ? 'yes' : 'no',
+    ID: a.id,
+    Name: a.name,
+    Address: `${a.address_1}, ${a.city}, ${a.state} ${a.zip}`,
+    Validated: a.is_validated ? 'yes' : 'no',
   });
   if (data.corrected) {
     console.log(chalk.yellow('  Address was corrected by USPS validation.'));
@@ -950,9 +939,7 @@ export async function mailReturnAddressesSetDefault(
 // Wallet — Balance
 // ============================================================================
 
-export async function mailWalletBalance(options: {
-  json?: boolean;
-}): Promise<void> {
+export async function mailWalletBalance(options: { json?: boolean }): Promise<void> {
   const spinner = createSpinner('Fetching wallet balance...').start();
   const data = await apiRequest<WalletBalance>('/mail/wallet/balance');
   spinner.stop();
@@ -965,9 +952,9 @@ export async function mailWalletBalance(options: {
   const w = data.data;
   printHeader('Mail Wallet');
   printKeyValue({
-    'Balance': w.balance_formatted,
-    'Available': w.available_formatted,
-    'Pending': `$${(w.pending_cents / 100).toFixed(2)}`,
+    Balance: w.balance_formatted,
+    Available: w.available_formatted,
+    Pending: `$${(w.pending_cents / 100).toFixed(2)}`,
     'Lifetime Credits': `$${(w.lifetime_credits_cents / 100).toFixed(2)}`,
     'Lifetime Spent': `$${(w.lifetime_spent_cents / 100).toFixed(2)}`,
     'Auto-Reload': w.auto_reload.enabled
@@ -989,7 +976,14 @@ export async function mailWalletAddFunds(options: {
   const requestBody = await parseRequestBody(options);
 
   const spinner = createSpinner('Adding funds...').start();
-  const data = await apiRequest<{ data: { payment_intent_id: string; amount_cents: number; succeeded?: boolean; requires_action?: boolean } }>('/mail/wallet/add-funds', {
+  const data = await apiRequest<{
+    data: {
+      payment_intent_id: string;
+      amount_cents: number;
+      succeeded?: boolean;
+      requires_action?: boolean;
+    };
+  }>('/mail/wallet/add-funds', {
     method: 'POST',
     body: requestBody,
   });
@@ -1004,8 +998,8 @@ export async function mailWalletAddFunds(options: {
   printHeader('Add Funds');
   printKeyValue({
     'Payment Intent': r.payment_intent_id,
-    'Amount': `$${(r.amount_cents / 100).toFixed(2)}`,
-    'Succeeded': r.succeeded ? 'yes' : 'no',
+    Amount: `$${(r.amount_cents / 100).toFixed(2)}`,
+    Succeeded: r.succeeded ? 'yes' : 'no',
     'Requires Action': r.requires_action ? 'yes' : 'no',
   });
   console.log();
@@ -1059,7 +1053,11 @@ export async function mailWalletTransactions(options: {
 
   const p = data.pagination;
   console.log();
-  console.log(chalk.dim(`Page ${p.page} — ${p.total} total transactions${p.has_more ? ' (more available)' : ''}`));
+  console.log(
+    chalk.dim(
+      `Page ${p.page} — ${p.total} total transactions${p.has_more ? ' (more available)' : ''}`
+    )
+  );
   console.log();
 }
 
@@ -1067,9 +1065,7 @@ export async function mailWalletTransactions(options: {
 // Wallet — Pricing
 // ============================================================================
 
-export async function mailWalletPricing(options: {
-  json?: boolean;
-}): Promise<void> {
+export async function mailWalletPricing(options: { json?: boolean }): Promise<void> {
   const spinner = createSpinner('Fetching pricing...').start();
   const data = await apiRequest<WalletPricingResponse>('/mail/wallet/pricing');
   spinner.stop();
@@ -1098,11 +1094,25 @@ export async function mailWalletPricing(options: {
 
   if (data.data.bands && data.data.bands.length > 0) {
     console.log();
-    console.log(chalk.bold('Volume Pricing'));
+    console.log(chalk.bold('Plan Metadata Pricing'));
     console.log(chalk.dim('─'.repeat(50)));
     for (const band of data.data.bands) {
-      const prices = band.prices.map((p) => `${p.size}: $${(p.price_cents / 100).toFixed(2)}`).join(', ');
-      console.log(`  ${band.threshold_quantity}+ cards${band.label ? ` (${band.label})` : ''}: ${prices}`);
+      const prices = band.prices
+        .map((p) => `${p.size}: $${(p.price_cents / 100).toFixed(2)}`)
+        .join(', ');
+      console.log(`  ${band.label || 'Plan price'}: ${prices}`);
+    }
+  }
+
+  if (data.data.plans && data.data.plans.length > 0) {
+    console.log();
+    console.log(chalk.bold('Catalog Prices'));
+    console.log(chalk.dim('─'.repeat(50)));
+    for (const plan of data.data.plans) {
+      const prices = plan.prices
+        .map((p) => `${p.size}: $${(p.price_cents / 100).toFixed(2)}`)
+        .join(', ');
+      console.log(`  ${plan.plan_name}: ${prices}`);
     }
   }
   console.log();

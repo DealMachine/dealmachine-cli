@@ -5,12 +5,7 @@
 import chalk from 'chalk';
 
 import { apiRequest, formatDate } from '../lib/client.js';
-import {
-  printJson,
-  printHeader,
-  printKeyValue,
-  createSpinner,
-} from '../lib/output.js';
+import { printJson, printHeader, printKeyValue, createSpinner } from '../lib/output.js';
 
 // ============================================================================
 // Types
@@ -53,28 +48,24 @@ export async function subscriptionStatus(options: { json?: boolean }): Promise<v
 
   printHeader('Subscription');
 
-  const statusColor = data.status === 'active'
-    ? chalk.green
-    : data.status === 'trialing'
-      ? chalk.yellow
-      : chalk.red;
+  const statusColor =
+    data.status === 'active' ? chalk.green : data.status === 'trialing' ? chalk.yellow : chalk.red;
 
   printKeyValue({
-    'Status': statusColor(data.status),
-    'Plan': `${data.plan.name}${data.plan.is_paid ? '' : chalk.dim(' (free)')}`,
-    'Trialing': data.trial.is_trialing
+    Status: statusColor(data.status),
+    Plan: `${data.plan.name}${data.plan.is_paid ? '' : chalk.dim(' (free)')}`,
+    Trialing: data.trial.is_trialing
       ? `Yes — ends ${data.trial.trial_end ? formatDate(data.trial.trial_end) : 'Unknown'}`
       : 'No',
     'Billing Cycle': `${formatDate(data.billing_cycle.start)} → ${formatDate(data.billing_cycle.end)}`,
-    'Enrichment Cap': data.credits.enrichment_cap.toLocaleString(),
+    'Data Credit Cap': data.credits.enrichment_cap.toLocaleString(),
     'AI Cap': data.credits.ai_cap.toLocaleString(),
   });
 
   if (data.trial.is_trialing) {
     console.log();
-    console.log(chalk.dim(`  Trial enrichment credits: ${data.trial.enrichment_credits}`));
+    console.log(chalk.dim(`  Trial data credits: ${data.trial.enrichment_credits}`));
   }
 
   console.log();
 }
-

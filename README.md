@@ -2,7 +2,7 @@
 
 DealMachine CLI (`dm`) -- property intelligence from the command line.
 
-A standalone Commander.js CLI that talks to the DealMachine REST API. Provides **16 command groups** covering authentication, property search, people lookup, enrichment, comps, list management, and developer utilities. Compiles to a single ESM bundle via `tsc`.
+A standalone Commander.js CLI that talks to the DealMachine REST API. Provides **17 command groups** covering agent guidance, authentication, property search, people lookup, enrichment, comps, list management, and developer utilities. Compiles to a single ESM bundle via `tsc`.
 
 This package has **zero** `@dealmachine/*` dependencies -- it is a self-contained binary that communicates exclusively through the public API.
 
@@ -14,6 +14,7 @@ This package has **zero** `@dealmachine/*` dependencies -- it is a self-containe
 - [Authentication](#authentication)
 - [Configuration](#configuration)
 - [Commands](#commands)
+  - [Agents](#agents-commands) -- `agents`, `agents guide`, `agents playbook`
   - [Auth](#auth-commands) -- `login`, `logout`, `whoami`
   - [Config](#config-commands) -- `config get`, `config set`, `config path`
   - [Account](#account-commands) -- `account`
@@ -144,23 +145,59 @@ Credentials are stored at `~/.dealmachine/config.json` with file permissions `06
 
 The CLI checks these environment variables for API URL resolution (in priority order):
 
-| Variable | Purpose | Example |
-|----------|---------|---------|
+| Variable                             | Purpose             | Example                    |
+| ------------------------------------ | ------------------- | -------------------------- |
 | `DM_API_URL` / `DEALMACHINE_API_URL` | Direct URL override | `http://localhost:3001/v1` |
-| `DM_ENV` / `DEALMACHINE_ENVIRONMENT` | Environment name | `local` or `production` |
+| `DM_ENV` / `DEALMACHINE_ENVIRONMENT` | Environment name    | `local` or `production`    |
 
 If none are set, the CLI falls back to the `apiEnvironment` field in the config file, then defaults to `local`.
 
 ### API Environments
 
-| Environment | URL |
-|-------------|-----|
-| `local` | `http://localhost:3001/v1` |
+| Environment  | URL                                 |
+| ------------ | ----------------------------------- |
+| `local`      | `http://localhost:3001/v1`          |
 | `production` | `https://api.v2.dealmachine.com/v1` |
 
 ---
 
 ## Commands
+
+### Agents Commands
+
+#### `dm agents`
+
+Print concise guidance for agents using the CLI. This is the recommended first command when an agent has access to `dm` but has not loaded the DealMachine Playbook yet.
+
+```bash
+dm agents
+dm agents --json
+```
+
+The guide tells agents to use `--json` and `--quiet`, verify auth, fetch live filters and fields before searches, count before credit-consuming work, and confirm expected credit usage before fetching records or exporting.
+
+#### `dm agents guide`
+
+Print the same concise agent guidance explicitly.
+
+```bash
+dm agents guide
+dm agents guide --json
+```
+
+#### `dm agents playbook`
+
+Print the bundled DealMachine Playbook Markdown. Agents should load this before translating natural language property, people, contact, enrichment, list, export, comps, or credit-usage requests into CLI commands.
+
+```bash
+dm agents playbook
+dm agents playbook --json
+dm agents skill        # alias
+```
+
+The Playbook is copied from `packages/playbooks/playbook/SKILL.md` into `dist/agents/dealmachine-playbook.md` during `npm run build`, so the command works from a published CLI package as well as a local source checkout.
+
+---
 
 ### Auth Commands
 
@@ -175,11 +212,11 @@ dm login --key dm_sk_live_abc123    # Direct API key
 dm login --env local                # Target local API
 ```
 
-| Option | Description |
-|--------|-------------|
-| `--no-browser` | Do not automatically open the browser |
-| `--key <api-key>` | Login directly with an API key (skips browser) |
-| `--env <environment>` | API environment: `local` or `production` |
+| Option                | Description                                    |
+| --------------------- | ---------------------------------------------- |
+| `--no-browser`        | Do not automatically open the browser          |
+| `--key <api-key>`     | Login directly with an API key (skips browser) |
+| `--env <environment>` | API environment: `local` or `production`       |
 
 #### `dm logout`
 
@@ -198,8 +235,8 @@ dm whoami               # Show stored credentials
 dm whoami --verify      # Verify credentials against the API
 ```
 
-| Option | Description |
-|--------|-------------|
+| Option     | Description                     |
+| ---------- | ------------------------------- |
 | `--verify` | Verify credentials with the API |
 
 ---
@@ -311,13 +348,20 @@ cat search.json | dm properties search
 
 # Machine-readable output
 dm properties search -f search.json --json
+
+# Query Builder protocol filters
+dm properties search --include-lists 123,456 --exclude-previously-exported --body '{"locations":[]}'
 ```
 
-| Option | Description |
-|--------|-------------|
-| `--body <json>` | Request body as JSON string |
-| `-f, --file <path>` | Read request body from a JSON file |
-| `--json` | Output as JSON |
+| Option                            | Description                                                                   |
+| --------------------------------- | ----------------------------------------------------------------------------- |
+| `--body <json>`                   | Request body as JSON string                                                   |
+| `-f, --file <path>`               | Read request body from a JSON file                                            |
+| `--include-lists <ids>`           | Comma-separated list IDs to include                                           |
+| `--exclude-lists <ids>`           | Comma-separated list IDs to exclude                                           |
+| `--exclude-previously-exported`   | Exclude records already exported by your organization                         |
+| `--bigquery-data-environment <n>` | Query Builder data environment (`1` production, `2` staging, `3` development) |
+| `--json`                          | Output as JSON                                                                |
 
 #### `dm properties count`
 
@@ -338,10 +382,10 @@ dm properties get prop_12345 --contact-audience owners_and_family
 dm properties get prop_12345 --json
 ```
 
-| Option | Description |
-|--------|-------------|
+| Option                          | Description                                                  |
+| ------------------------------- | ------------------------------------------------------------ |
 | `--contact-audience <audience>` | `owners`, `owners_and_family`, `renters`, `residents`, `all` |
-| `--json` | Output as JSON |
+| `--json`                        | Output as JSON                                               |
 
 #### `dm properties ids [ids...]`
 
@@ -358,12 +402,12 @@ dm properties ids --body '{"ids": ["prop_111", "prop_222"]}'
 dm properties ids -f ids.json --contact-audience owners
 ```
 
-| Option | Description |
-|--------|-------------|
-| `--body <json>` | Request body as JSON string |
-| `-f, --file <path>` | Read request body from a JSON file |
+| Option                          | Description                                                                    |
+| ------------------------------- | ------------------------------------------------------------------------------ |
+| `--body <json>`                 | Request body as JSON string                                                    |
+| `-f, --file <path>`             | Read request body from a JSON file                                             |
 | `--contact-audience <audience>` | Include contacts: `owners`, `owners_and_family`, `renters`, `residents`, `all` |
-| `--json` | Output as JSON |
+| `--json`                        | Output as JSON                                                                 |
 
 #### `dm properties export`
 
@@ -375,16 +419,16 @@ dm properties export -f search.json --require-phone --scrub-dnc
 dm properties export --body '{"locations": [...]}' --mobile-only --json
 ```
 
-| Option | Description |
-|--------|-------------|
-| `--body <json>` | Request body as JSON string |
-| `-f, --file <path>` | Read request body from a JSON file |
-| `--require-phone` | Only include records where the contact has a phone number |
-| `--require-email` | Only include records where the contact has an email address |
-| `--mobile-only` | Only include mobile phone numbers |
-| `--landline-only` | Only include landline phone numbers |
-| `--scrub-dnc` | Exclude contacts on the Do Not Call registry |
-| `--json` | Output as JSON |
+| Option              | Description                                                 |
+| ------------------- | ----------------------------------------------------------- |
+| `--body <json>`     | Request body as JSON string                                 |
+| `-f, --file <path>` | Read request body from a JSON file                          |
+| `--require-phone`   | Only include records where the contact has a phone number   |
+| `--require-email`   | Only include records where the contact has an email address |
+| `--mobile-only`     | Only include mobile phone numbers                           |
+| `--landline-only`   | Only include landline phone numbers                         |
+| `--scrub-dnc`       | Exclude contacts on the Do Not Call registry                |
+| `--json`            | Output as JSON                                              |
 
 ---
 
@@ -400,6 +444,7 @@ dm people search --body '{
   "filters": [{"filter_id": "age", "operator": "between", "value": [30, 50]}]
 }'
 dm people search -f people-search.json --json
+dm people search --include-lists 123 --exclude-lists 456 --exclude-previously-exported --body '{"locations":[]}'
 ```
 
 #### `dm people count`
@@ -420,10 +465,10 @@ dm people get per_12345 --include-properties
 dm people get per_12345 --json
 ```
 
-| Option | Description |
-|--------|-------------|
+| Option                 | Description                   |
+| ---------------------- | ----------------------------- |
 | `--include-properties` | Include associated properties |
-| `--json` | Output as JSON |
+| `--json`               | Output as JSON                |
 
 #### `dm people ids [ids...]`
 
@@ -468,12 +513,12 @@ dm enrich address -f addresses.csv --contact-audience owners
 # CSV columns: full_address (or street, city, state, zip)
 ```
 
-| Option | Description |
-|--------|-------------|
-| `--body <json>` | Request body as JSON string |
-| `-f, --file <path>` | Read from JSON or CSV file |
+| Option                          | Description                                           |
+| ------------------------------- | ----------------------------------------------------- |
+| `--body <json>`                 | Request body as JSON string                           |
+| `-f, --file <path>`             | Read from JSON or CSV file                            |
 | `--contact-audience <audience>` | `owners`, `owners_and_family`, `renters`, `residents` |
-| `--json` | Output as JSON |
+| `--json`                        | Output as JSON                                        |
 
 #### `dm enrich latlng [coords]`
 
@@ -495,10 +540,10 @@ dm enrich apn -f parcels.csv --zip 78704
 # CSV columns: apn (or parcel_id, parcel_number)
 ```
 
-| Option | Description |
-|--------|-------------|
-| `--state <code>` | Narrow by state (e.g., TX) |
-| `--zip <code>` | Narrow by ZIP code |
+| Option                          | Description                                           |
+| ------------------------------- | ----------------------------------------------------- |
+| `--state <code>`                | Narrow by state (e.g., TX)                            |
+| `--zip <code>`                  | Narrow by ZIP code                                    |
 | `--contact-audience <audience>` | `owners`, `owners_and_family`, `renters`, `residents` |
 
 #### `dm enrich email [email]`
@@ -512,8 +557,8 @@ dm enrich email -f emails.csv --json
 # CSV columns: email (or email_address)
 ```
 
-| Option | Description |
-|--------|-------------|
+| Option                 | Description                   |
+| ---------------------- | ----------------------------- |
 | `--include-properties` | Include associated properties |
 
 #### `dm enrich phone [phone]`
@@ -536,13 +581,13 @@ dm enrich name "Doe" --state TX --page 2
 dm enrich name "Jane Doe" --zip 78704 --include-properties
 ```
 
-| Option | Description |
-|--------|-------------|
-| `--state <code>` | Narrow by state |
-| `--zip <code>` | Narrow by ZIP code |
+| Option                 | Description                   |
+| ---------------------- | ----------------------------- |
+| `--state <code>`       | Narrow by state               |
+| `--zip <code>`         | Narrow by ZIP code            |
 | `--include-properties` | Include associated properties |
-| `--page <n>` | Page number |
-| `--per-page <n>` | Results per page |
+| `--page <n>`           | Page number                   |
+| `--per-page <n>`       | Results per page              |
 
 ---
 
@@ -567,17 +612,17 @@ dm comps --body '{
 }'
 ```
 
-| Option | Description |
-|--------|-------------|
-| `--body <json>` | Request body as JSON string |
-| `-f, --file <path>` | Read request body from a JSON file |
-| `--radius <miles>` | Search radius in miles (default: 1) |
-| `--timeframe <period>` | `3months`, `6months`, `12months`, `all` (default: 6months) |
-| `--limit <n>` | Max comps per property (default: 25, max: 100) |
-| `--sort-by <field>` | `distance`, `price`, `date`, `match` (default: match) |
-| `--sort-direction <dir>` | `asc`, `desc` (default: desc) |
-| `--include-foreclosures` | Include foreclosure sales |
-| `--json` | Output as JSON |
+| Option                   | Description                                                |
+| ------------------------ | ---------------------------------------------------------- |
+| `--body <json>`          | Request body as JSON string                                |
+| `-f, --file <path>`      | Read request body from a JSON file                         |
+| `--radius <miles>`       | Search radius in miles (default: 1)                        |
+| `--timeframe <period>`   | `3months`, `6months`, `12months`, `all` (default: 6months) |
+| `--limit <n>`            | Max comps per property (default: 25, max: 100)             |
+| `--sort-by <field>`      | `distance`, `price`, `date`, `match` (default: match)      |
+| `--sort-direction <dir>` | `asc`, `desc` (default: desc)                              |
+| `--include-foreclosures` | Include foreclosure sales                                  |
+| `--json`                 | Output as JSON                                             |
 
 Output includes subject property details, value estimation with confidence interval, summary statistics (average/median price, price per sqft), and a table of comparable properties.
 
@@ -595,13 +640,13 @@ dm lists search --search "Austin" --source-type properties --sort newest
 dm lists search --page 2 --per-page 50 --json
 ```
 
-| Option | Description |
-|--------|-------------|
-| `--search <term>` | Search lists by name |
-| `--source-type <type>` | `properties` or `people` |
-| `--sort <order>` | `newest`, `oldest`, `name`, `count` |
-| `-p, --page <n>` | Page number |
-| `--per-page <n>` | Results per page |
+| Option                 | Description                         |
+| ---------------------- | ----------------------------------- |
+| `--search <term>`      | Search lists by name                |
+| `--source-type <type>` | `properties` or `people`            |
+| `--sort <order>`       | `newest`, `oldest`, `name`, `count` |
+| `-p, --page <n>`       | Page number                         |
+| `--per-page <n>`       | Results per page                    |
 
 #### `dm lists create`
 
@@ -618,13 +663,13 @@ dm lists create --name "Hot Leads" --source-type properties --ids 123,456,789
 dm lists create --name "TX SFR" -f search-filters.json
 ```
 
-| Option | Description |
-|--------|-------------|
-| `--name <name>` | List name (required) |
-| `--source-type <type>` | `properties` or `people` |
-| `--ids <csv>` | Comma-separated record IDs to pre-populate (max 250) |
-| `--body <json>` | Request body as JSON (filters/locations) |
-| `-f, --file <path>` | Read request body from a JSON file |
+| Option                 | Description                                          |
+| ---------------------- | ---------------------------------------------------- |
+| `--name <name>`        | List name (required)                                 |
+| `--source-type <type>` | `properties` or `people`                             |
+| `--ids <csv>`          | Comma-separated record IDs to pre-populate (max 250) |
+| `--body <json>`        | Request body as JSON (filters/locations)             |
+| `-f, --file <path>`    | Read request body from a JSON file                   |
 
 #### `dm lists get <id>`
 
@@ -685,9 +730,9 @@ dm lists add list_abc123 --ids 111,222,333
 dm lists add list_abc123 --ids 111,222 --id-type internal_property_id
 ```
 
-| Option | Description |
-|--------|-------------|
-| `--ids <csv>` | Comma-separated list of IDs to add (required) |
+| Option             | Description                                    |
+| ------------------ | ---------------------------------------------- |
+| `--ids <csv>`      | Comma-separated list of IDs to add (required)  |
 | `--id-type <type>` | `internal_property_id` or `internal_person_id` |
 
 #### `dm lists remove <id>`
@@ -707,10 +752,10 @@ dm lists export list_abc123
 dm lists export list_abc123 --fields "full_address,estimated_value,owner_name" --anchor property
 ```
 
-| Option | Description |
-|--------|-------------|
-| `--fields <csv>` | Comma-separated list of fields to export |
-| `--anchor <type>` | `property` or `person` |
+| Option            | Description                              |
+| ----------------- | ---------------------------------------- |
+| `--fields <csv>`  | Comma-separated list of fields to export |
+| `--anchor <type>` | `property` or `person`                   |
 
 ---
 
@@ -726,13 +771,13 @@ dm filters --source-type properties --search "bed"
 dm filters --group-id building_information --json
 ```
 
-| Option | Description |
-|--------|-------------|
+| Option                 | Description              |
+| ---------------------- | ------------------------ |
 | `--source-type <type>` | `properties` or `people` |
-| `--group-id <id>` | Filter by group ID |
-| `--search <term>` | Search filters by name |
-| `--page <n>` | Page number |
-| `--per-page <n>` | Results per page |
+| `--group-id <id>`      | Filter by group ID       |
+| `--search <term>`      | Search filters by name   |
+| `--page <n>`           | Page number              |
+| `--per-page <n>`       | Results per page         |
 
 ---
 
@@ -748,13 +793,13 @@ dm fields --source-type people --search "phone"
 dm fields --group-id contact_info --json
 ```
 
-| Option | Description |
-|--------|-------------|
+| Option                 | Description              |
+| ---------------------- | ------------------------ |
 | `--source-type <type>` | `properties` or `people` |
-| `--group-id <id>` | Filter by group ID |
-| `--search <term>` | Search fields by name |
-| `--page <n>` | Page number |
-| `--per-page <n>` | Results per page |
+| `--group-id <id>`      | Filter by group ID       |
+| `--search <term>`      | Search fields by name    |
+| `--page <n>`           | Page number              |
+| `--per-page <n>`       | Results per page         |
 
 ---
 
@@ -770,14 +815,14 @@ dm activity search -q "Austin" --page 2
 dm activity search --body '{"types": ["search_properties"], "page": 1}'
 ```
 
-| Option | Description |
-|--------|-------------|
-| `--body <json>` | Request body as JSON string |
-| `-f, --file <path>` | Read request body from a JSON file |
+| Option                   | Description                                |
+| ------------------------ | ------------------------------------------ |
+| `--body <json>`          | Request body as JSON string                |
+| `-f, --file <path>`      | Read request body from a JSON file         |
 | `-t, --types <types...>` | Filter by activity types (space-separated) |
-| `-q, --query <text>` | Free-text search across activity |
-| `--page <n>` | Page number |
-| `--per-page <n>` | Results per page |
+| `-q, --query <text>`     | Free-text search across activity           |
+| `--page <n>`             | Page number                                |
+| `--per-page <n>`         | Results per page                           |
 
 #### `dm activity get <id>`
 
@@ -826,11 +871,11 @@ dm dev license add key_abc123 --type unlimited
 dm dev license add key_abc123 --type county --code 48453 --expires 2026-12-31
 ```
 
-| Option | Description |
-|--------|-------------|
-| `--type <type>` | `state`, `county`, `zip_code`, or `unlimited` (required) |
-| `--code <code>` | Location code: state abbreviation, FIPS code, or ZIP |
-| `--expires <date>` | Expiration date in ISO format |
+| Option             | Description                                              |
+| ------------------ | -------------------------------------------------------- |
+| `--type <type>`    | `state`, `county`, `zip_code`, or `unlimited` (required) |
+| `--code <code>`    | Location code: state abbreviation, FIPS code, or ZIP     |
+| `--expires <date>` | Expiration date in ISO format                            |
 
 #### `dm dev license list [key_id]`
 
@@ -855,11 +900,12 @@ dm dev license remove 42
 
 Every command supports these flags:
 
-| Flag | Description |
-|------|-------------|
-| `--json` | Output as machine-readable JSON (for scripting and piping) |
-| `--help` | Show usage information for any command |
-| `--version` | Show the CLI version |
+| Flag        | Description                                                |
+| ----------- | ---------------------------------------------------------- |
+| `--json`    | Output as machine-readable JSON (for scripting and piping) |
+| `--quiet`   | Suppress spinners and decorative output for agents/scripts |
+| `--help`    | Show usage information for any command                     |
+| `--version` | Show the CLI version                                       |
 
 ---
 
@@ -889,13 +935,13 @@ dm enrich address -f addresses.csv
 
 The `enrich` commands detect `.csv` files by extension and auto-parse them. Expected column names per command:
 
-| Command | Required Columns | Alternative Column Names |
-|---------|-----------------|-------------------------|
-| `enrich address` | `full_address` | or `street` + `city`, `state`, `zip` |
-| `enrich latlng` | `latitude`, `longitude` | `lat`, `lng`/`lon`/`long` |
-| `enrich apn` | `apn` | `parcel_id`, `parcel_number` |
-| `enrich email` | `email` | `email_address` |
-| `enrich phone` | `phone` | `phone_number` |
+| Command          | Required Columns        | Alternative Column Names             |
+| ---------------- | ----------------------- | ------------------------------------ |
+| `enrich address` | `full_address`          | or `street` + `city`, `state`, `zip` |
+| `enrich latlng`  | `latitude`, `longitude` | `lat`, `lng`/`lon`/`long`            |
+| `enrich apn`     | `apn`                   | `parcel_id`, `parcel_number`         |
+| `enrich email`   | `email`                 | `email_address`                      |
+| `enrich phone`   | `phone`                 | `phone_number`                       |
 
 Batches larger than 250 items are automatically chunked with progress spinners. If an export limit is reached mid-batch, the CLI stops and returns results collected so far.
 
@@ -905,14 +951,17 @@ Batches larger than 250 items are automatically chunked with progress spinners. 
 
 ```
 packages/cli/
+  scripts/
+    copy-agent-assets.mjs      # Bundles the Playbook Markdown into dist/agents
   src/
-    index.ts                  # Program entrypoint -- registers all 16 command groups
+    index.ts                  # Program entrypoint -- registers all 17 command groups
     lib/
       config.ts               # Read/write ~/.dealmachine/config.json (mode 0600)
       client.ts               # HTTP client wrapper (apiRequest, formatDate, getApiKey)
       api.ts                  # Device auth flow client (requestDeviceCode, pollForToken, verifyCredentials)
       output.ts               # Formatting helpers (printTable, printJson, printKeyValue, parseRequestBody)
     commands/
+      agents.ts               # dm agents    -- agent guide and Playbook output
       login.ts                # dm login     -- device auth + API key login
       logout.ts               # dm logout    -- remove credentials
       whoami.ts               # dm whoami    -- show/verify auth status
@@ -936,11 +985,11 @@ packages/cli/
 
 ### Key Modules
 
-| Module | Responsibility |
-|--------|---------------|
-| `lib/config.ts` | Manages `~/.dealmachine/config.json`. Enforces `0600` file permissions and `0700` directory permissions. Provides typed read/write/delete helpers. |
-| `lib/client.ts` | Central HTTP client. Resolves the API base URL from env vars, config, or defaults. Attaches the `Authorization: Bearer` header and `User-Agent: dm-cli/0.1.0`. Exits with a non-zero code on HTTP errors. |
-| `lib/api.ts` | Device authorization flow implementation. Handles `POST /v1/auth/device/code` and `POST /v1/auth/device/token` with RFC 8628-compliant polling and error mapping. Also provides `verifyCredentials` for key validation. |
+| Module          | Responsibility                                                                                                                                                                                                                                          |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lib/config.ts` | Manages `~/.dealmachine/config.json`. Enforces `0600` file permissions and `0700` directory permissions. Provides typed read/write/delete helpers.                                                                                                      |
+| `lib/client.ts` | Central HTTP client. Resolves the API base URL from env vars, config, or defaults. Attaches the `Authorization: Bearer` header and `User-Agent: dm-cli/0.1.0`. Exits with a non-zero code on HTTP errors.                                               |
+| `lib/api.ts`    | Device authorization flow implementation. Handles `POST /v1/auth/device/code` and `POST /v1/auth/device/token` with RFC 8628-compliant polling and error mapping. Also provides `verifyCredentials` for key validation.                                 |
 | `lib/output.ts` | All output formatting: `printTable` (auto-width columns), `printJson`, `printKeyValue`, `printPagination`, `printCredits`, `printTotals`, `printWarning`, `printHeader`. Also exports `parseRequestBody` which handles `--body`, `-f`, and stdin input. |
 
 ---
@@ -948,7 +997,7 @@ packages/cli/
 ## Building
 
 ```bash
-npm run build      # Compile TypeScript to dist/ (tsc)
+npm run build      # Compile TypeScript and bundle agent Playbook assets to dist/
 npm run dev        # Watch mode (tsc --watch)
 ```
 
@@ -999,9 +1048,7 @@ interface MyResponse {
   data: { id: string; name: string };
 }
 
-export async function myCommand(
-  options: { json?: boolean }
-): Promise<void> {
+export async function myCommand(options: { json?: boolean }): Promise<void> {
   const spinner = ora('Doing something...').start();
   const data = await apiRequest<MyResponse>('/my-endpoint');
   spinner.stop();
@@ -1013,8 +1060,8 @@ export async function myCommand(
 
   printHeader('My Command');
   printKeyValue({
-    'ID': data.data.id,
-    'Name': data.data.name,
+    ID: data.data.id,
+    Name: data.data.name,
   });
   console.log();
 }
@@ -1037,9 +1084,7 @@ program
   });
 
 // Or as a subcommand group
-const myGroup = program
-  .command('mygroup')
-  .description('Group description');
+const myGroup = program.command('mygroup').description('Group description');
 
 myGroup
   .command('sub1')
@@ -1073,18 +1118,18 @@ node dist/index.js mycommand --json
 
 ### Runtime
 
-| Package | Version | Purpose |
-|---------|---------|---------|
+| Package     | Version | Purpose                                                                |
+| ----------- | ------- | ---------------------------------------------------------------------- |
 | `commander` | ^12.1.0 | CLI framework -- command registration, option parsing, help generation |
-| `chalk` | ^5.3.0 | Terminal string styling (colors, bold, dim) |
-| `ora` | ^8.1.0 | Spinner animations for async operations |
-| `open` | ^10.1.0 | Opens the browser for the device auth flow |
+| `chalk`     | ^5.3.0  | Terminal string styling (colors, bold, dim)                            |
+| `ora`       | ^8.1.0  | Spinner animations for async operations                                |
+| `open`      | ^10.1.0 | Opens the browser for the device auth flow                             |
 
 ### Dev
 
-| Package | Version | Purpose |
-|---------|---------|---------|
-| `typescript` | ^5.6.3 | TypeScript compiler |
+| Package       | Version | Purpose                  |
+| ------------- | ------- | ------------------------ |
+| `typescript`  | ^5.6.3  | TypeScript compiler      |
 | `@types/node` | ^22.0.0 | Node.js type definitions |
 
 ### Internal Package Dependencies
@@ -1093,4 +1138,4 @@ node dist/index.js mycommand --json
 
 ### Used By
 
-The **Playbook** (Claude Code skill at `packages/playbook/`) uses `dm` commands to execute property intelligence workflows. The CLI is the primary interface through which the Playbook interacts with DealMachine data.
+The **Playbook** at `packages/playbooks/playbook/` uses `dm` commands to execute property intelligence workflows. The CLI is the primary interface through which the Playbook interacts with DealMachine data. Agents can load the bundled Playbook directly with `dm agents playbook`.
