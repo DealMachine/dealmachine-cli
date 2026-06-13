@@ -128,6 +128,10 @@ import {
   mailWalletAddFunds,
   mailWalletTransactions,
   mailWalletPricing,
+  mailSettingsGet,
+  mailSettingsUpdate,
+  mailAnalyticsSummary,
+  mailAnalyticsTimeseries,
 } from './commands/mail.js';
 
 const program = new Command();
@@ -135,7 +139,7 @@ const program = new Command();
 program
   .name('dm')
   .description('DealMachine CLI - Property intelligence from the command line')
-  .version('0.1.0')
+  .version('0.1.1')
   .option('--quiet', 'Suppress spinners and decorative output (agent-friendly, also DM_QUIET=1)')
   .addHelpText(
     'after',
@@ -221,13 +225,17 @@ program
   .description('Authenticate with your DealMachine account')
   .option('--no-browser', 'Do not automatically open the browser')
   .option('--key <api-key>', 'Login directly with an API key (skips browser)')
-  .option('--env <environment>', 'API environment: local or production (default: production)')
+  .option(
+    '--env <environment>',
+    'API environment: local, staging, or production (default: production)'
+  )
   .addHelpText(
     'after',
     `
 Examples:
   dm login                               Interactive browser login
   dm login --key dm_sk_live_abc123       Login with an API key (non-interactive)
+  dm login --env staging --no-browser    Login to staging without opening browser
   dm login --env local --no-browser      Login to local env without opening browser`
   )
   .action(async (options) => {
@@ -293,6 +301,7 @@ configCmd
     `
 Examples:
   dm config set apiEnvironment production   Switch to production API
+  dm config set apiEnvironment staging      Switch to staging API
   dm config set apiEnvironment local        Switch to local API`
   )
   .action(async (key: string, value: string) => {
@@ -1102,6 +1111,7 @@ enrichCmd
   .option('--state <code>', 'Narrow by state (e.g., TX)')
   .option('--zip <code>', 'Narrow by ZIP code')
   .option('--include-properties', 'Include associated properties')
+  .option('--estimate-cost', 'Return match count and estimated credits without consuming credits')
   .option('--page <n>', 'Page number')
   .option('--per-page <n>', 'Results per page')
   .option('--json', 'Output as JSON')
@@ -1110,6 +1120,7 @@ enrichCmd
     `
 Examples:
   dm enrich name "David Oster" --state TX --json
+  dm enrich name "David Oster" --state TX --estimate-cost
   dm enrich name "Jane Smith" --zip 78704 --include-properties
   dm enrich name -f names.csv --state TX`
   )
@@ -2622,6 +2633,89 @@ Examples:
   )
   .action(async (options) => {
     await mailWalletPricing(options);
+  });
+
+// ── Settings ──
+
+const mailSettingsCmd = mailCmd
+  .command('settings')
+  .description('View and update organization-level mail defaults');
+
+mailSettingsCmd
+  .command('get')
+  .description('Get organization mail settings')
+  .option('--json', 'Output as JSON')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  dm mail settings get --json`
+  )
+  .action(async (options) => {
+    await mailSettingsGet(options);
+  });
+
+mailSettingsCmd
+  .command('update')
+  .description('Update organization mail settings (partial; pass null to clear a field)')
+  .option('--body <json>', 'Request body as JSON string')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--json', 'Output as JSON')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  dm mail settings update --body '{"default_postcard_size":"6x9","default_sender_name":"DealMachine"}' --json
+  dm mail settings update --body '{"default_qr_code_url":null}'`
+  )
+  .action(async (options) => {
+    await mailSettingsUpdate(options);
+  });
+
+// ── Analytics (account-wide) ──
+
+const mailAnalyticsCmd = mailCmd
+  .command('analytics')
+  .description('View account-wide mail analytics');
+
+mailAnalyticsCmd
+  .command('summary')
+  .description('Account-wide totals plus per-campaign engagement')
+  .option('--start-date <date>', 'Start of date range (ISO, by campaign launch date)')
+  .option('--end-date <date>', 'End of date range (ISO)')
+  .option('--launched-only', 'Only include launched campaigns')
+  .option('-p, --page <n>', 'Page number')
+  .option('--per-page <n>', 'Results per page')
+  .option('--json', 'Output as JSON')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  dm mail analytics summary --json
+  dm mail analytics summary --launched-only --per-page 50`
+  )
+  .action(async (options) => {
+    await mailAnalyticsSummary(options);
+  });
+
+mailAnalyticsCmd
+  .command('timeseries')
+  .description('Time series for a single metric, bucketed by day or week')
+  .option('--metric <metric>', 'Metric: sent, delivered, scans, open_rate (default sent)')
+  .option('--group-by <bucket>', 'Bucket size: day or week (default day)')
+  .option('--days <n>', 'Days back from today when no date range given (1-365, default 30)')
+  .option('--start-date <date>', 'Start of date range (ISO; overrides --days)')
+  .option('--end-date <date>', 'End of date range (ISO, defaults to now)')
+  .option('--json', 'Output as JSON')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  dm mail analytics timeseries --json
+  dm mail analytics timeseries --metric open_rate --group-by week --days 90`
+  )
+  .action(async (options) => {
+    await mailAnalyticsTimeseries(options);
   });
 
 // ============================================================================

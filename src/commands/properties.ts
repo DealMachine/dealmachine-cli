@@ -14,6 +14,7 @@ import {
   printTotals,
   printCredits,
   printWarning,
+  formatCurrency,
   truncate,
   createSpinner,
 } from '../lib/output.js';
@@ -113,7 +114,7 @@ export async function propertiesSearch(
       address: truncate(String(p.full_address || p.address || ''), 35),
       city: p.city || '',
       state: p.state || '',
-      value: p.estimated_value != null ? `$${Number(p.estimated_value).toLocaleString()}` : '—',
+      value: formatCurrency(p.estimated_value),
       contacts: Array.isArray(p.contacts) ? String(p.contacts.length) : '—',
     }));
     printTable(rows, ['id', 'address', 'city', 'state', 'value', 'contacts']);
@@ -250,7 +251,7 @@ export async function propertiesIds(options: {
     id: p.dm_property_id || '',
     found: (p as any).found ? chalk.green('yes') : chalk.dim('no'),
     address: truncate(String(p.full_address || p.address || ''), 35),
-    value: p.estimated_value != null ? `$${Number(p.estimated_value).toLocaleString()}` : '—',
+    value: formatCurrency(p.estimated_value),
   }));
   printTable(rows, ['id', 'found', 'address', 'value']);
 

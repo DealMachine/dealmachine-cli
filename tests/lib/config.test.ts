@@ -7,12 +7,20 @@ import * as path from 'node:path';
 vi.mock('node:fs');
 vi.mock('node:os', () => ({
   homedir: vi.fn(() => '/tmp/test-home'),
+  hostname: vi.fn(() => 'test-host'),
+  userInfo: vi.fn(() => ({ username: 'test-user' })),
+}));
+vi.mock('node:child_process', () => ({
+  execFileSync: vi.fn(() => {
+    throw new Error('credential store unavailable');
+  }),
 }));
 
 import { readConfig, writeConfig, deleteConfig, configExists, getConfigValue, setConfigValue } from '../../src/lib/config';
 
 const CONFIG_DIR = path.join('/tmp/test-home', '.dealmachine');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
+const CREDENTIAL_FILE = path.join(CONFIG_DIR, 'api-key.enc');
 
 const sampleConfig = {
   apiKey: 'dm_sk_live_test123',
@@ -26,6 +34,16 @@ describe('CLI config', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
+
+  function getWrittenConfig() {
+    const call = [...vi
+      .mocked(fs.writeFileSync)
+      .mock.calls]
+      .reverse()
+      .find(([file]) => file === CONFIG_FILE);
+    expect(call).toBeDefined();
+    return JSON.parse(call![1] as string);
+  }
 
   describe('readConfig', () => {
     it('returns null when config file does not exist', () => {
@@ -54,15 +72,32 @@ describe('CLI config', () => {
       expect(fs.mkdirSync).toHaveBeenCalledWith(CONFIG_DIR, { mode: 0o700 });
       expect(fs.writeFileSync).toHaveBeenCalledWith(
         CONFIG_FILE,
-        JSON.stringify(sampleConfig, null, 2),
+        expect.any(String),
         { mode: 0o600, encoding: 'utf-8' }
       );
+      expect(fs.writeFileSync).toHaveBeenCalledWith(
+        CREDENTIAL_FILE,
+        expect.any(String),
+        { mode: 0o600, encoding: 'utf-8' }
+      );
+      const writtenConfig = getWrittenConfig();
+      expect(writtenConfig.apiKey).toBeUndefined();
+      expect(writtenConfig.credentialStore).toBe('encrypted-file');
+      expect(writtenConfig.credentialFile).toBe(CREDENTIAL_FILE);
     });
 
     it('skips mkdir when directory exists', () => {
       vi.mocked(fs.existsSync).mockReturnValue(true);
       writeConfig(sampleConfig);
       expect(fs.mkdirSync).not.toHaveBeenCalled();
+    });
+
+    it('falls back when the OS credential store is unavailable', () => {
+      vi.mocked(fs.existsSync).mockImplementation((file) => file === CONFIG_DIR);
+
+      writeConfig(sampleConfig);
+
+      expect(getWrittenConfig().credentialStore).toBe('encrypted-file');
     });
   });
 
@@ -112,10 +147,9 @@ describe('CLI config', () => {
       const result = setConfigValue('organizationName', 'New Name');
       expect(result).toBe(true);
       expect(fs.writeFileSync).toHaveBeenCalled();
-      const writtenData = JSON.parse(
-        vi.mocked(fs.writeFileSync).mock.calls[0][1] as string
-      );
+      const writtenData = getWrittenConfig();
       expect(writtenData.organizationName).toBe('New Name');
+      expect(writtenData.apiKey).toBeUndefined();
     });
 
     it('returns false when no config exists', () => {

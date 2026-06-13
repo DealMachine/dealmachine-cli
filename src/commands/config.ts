@@ -17,7 +17,7 @@ const ALL_KEYS: ConfigKey[] = [
   'apiKey',
 ];
 
-const VALID_API_ENVIRONMENTS: ApiEnvironment[] = ['local', 'production'];
+const VALID_API_ENVIRONMENTS: ApiEnvironment[] = ['local', 'staging', 'production'];
 
 export async function configGet(key?: string): Promise<void> {
   const config = readConfig();

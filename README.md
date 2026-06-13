@@ -47,11 +47,12 @@ npm install -g dealmachine
 dm login
 ```
 
-The canonical package is `@dealmachine/cli`. The `dealmachine` package is a short install alias that provides the same `dm` command.
+The canonical implementation package is `@dealmachine/cli`. The `dealmachine` package is the short install alias and provides the same `dm` command.
 
 ### From source
 
 ```bash
+cd packages/cli
 npm run build
 node dist/index.js whoami
 ```
@@ -59,6 +60,7 @@ node dist/index.js whoami
 ### Link for local development
 
 ```bash
+cd packages/cli
 npm link
 dm --version
 ```
@@ -93,6 +95,7 @@ dm login --no-browser
 
 # Target a specific environment
 dm login --env local
+dm login --env staging
 ```
 
 ### Direct API Key Login
@@ -111,6 +114,7 @@ If you are already logged in, you can switch the target API environment without 
 
 ```bash
 dm login --env local       # Switch to http://localhost:3001/v1
+dm login --env staging     # Switch to https://api-staging.v2.dealmachine.com/v1
 dm login --env production  # Switch to https://api.v2.dealmachine.com/v1
 ```
 
@@ -145,19 +149,20 @@ Credentials are stored at `~/.dealmachine/config.json` with file permissions `06
 
 The CLI checks these environment variables for API URL resolution (in priority order):
 
-| Variable                             | Purpose             | Example                    |
-| ------------------------------------ | ------------------- | -------------------------- |
-| `DM_API_URL` / `DEALMACHINE_API_URL` | Direct URL override | `http://localhost:3001/v1` |
-| `DM_ENV` / `DEALMACHINE_ENVIRONMENT` | Environment name    | `local` or `production`    |
+| Variable                             | Purpose             | Example                             |
+| ------------------------------------ | ------------------- | ----------------------------------- |
+| `DM_API_URL` / `DEALMACHINE_API_URL` | Direct URL override | `http://localhost:3001/v1`          |
+| `DM_ENV` / `DEALMACHINE_ENVIRONMENT` | Environment name    | `local`, `staging`, or `production` |
 
-If none are set, the CLI falls back to the `apiEnvironment` field in the config file, then defaults to `local`.
+If none are set, the CLI falls back to the `apiEnvironment` field in the config file, then defaults to `production`.
 
 ### API Environments
 
-| Environment  | URL                                 |
-| ------------ | ----------------------------------- |
-| `local`      | `http://localhost:3001/v1`          |
-| `production` | `https://api.v2.dealmachine.com/v1` |
+| Environment  | URL                                         |
+| ------------ | ------------------------------------------- |
+| `local`      | `http://localhost:3001/v1`                  |
+| `staging`    | `https://api-staging.v2.dealmachine.com/v1` |
+| `production` | `https://api.v2.dealmachine.com/v1`         |
 
 ---
 
@@ -212,11 +217,11 @@ dm login --key dm_sk_live_abc123    # Direct API key
 dm login --env local                # Target local API
 ```
 
-| Option                | Description                                    |
-| --------------------- | ---------------------------------------------- |
-| `--no-browser`        | Do not automatically open the browser          |
-| `--key <api-key>`     | Login directly with an API key (skips browser) |
-| `--env <environment>` | API environment: `local` or `production`       |
+| Option                | Description                                          |
+| --------------------- | ---------------------------------------------------- |
+| `--no-browser`        | Do not automatically open the browser                |
+| `--key <api-key>`     | Login directly with an API key (skips browser)       |
+| `--env <environment>` | API environment: `local`, `staging`, or `production` |
 
 #### `dm logout`
 
@@ -261,6 +266,7 @@ Set a configuration value. Only `apiEnvironment` is editable.
 
 ```bash
 dm config set apiEnvironment local
+dm config set apiEnvironment staging
 dm config set apiEnvironment production
 ```
 
@@ -577,6 +583,7 @@ Look up people by name. Supports "First Last" or just "Last" format.
 
 ```bash
 dm enrich name "Jane Doe"
+dm enrich name "Jane Doe" --state TX --estimate-cost
 dm enrich name "Doe" --state TX --page 2
 dm enrich name "Jane Doe" --zip 78704 --include-properties
 ```
@@ -586,6 +593,7 @@ dm enrich name "Jane Doe" --zip 78704 --include-properties
 | `--state <code>`       | Narrow by state               |
 | `--zip <code>`         | Narrow by ZIP code            |
 | `--include-properties` | Include associated properties |
+| `--estimate-cost`      | Preview count and credits     |
 | `--page <n>`           | Page number                   |
 | `--per-page <n>`       | Results per page              |
 

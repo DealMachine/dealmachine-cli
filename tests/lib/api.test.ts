@@ -16,6 +16,7 @@ describe('CLI API helpers', () => {
           organization: {
             id: 145,
             name: 'Lecko Org',
+            slug: 'lecko',
           },
         },
       }),
@@ -27,6 +28,7 @@ describe('CLI API helpers', () => {
       organization: {
         id: 145,
         name: 'Lecko Org',
+        slug: 'lecko',
       },
     });
     expect(fetchMock).toHaveBeenCalledWith('https://api.example.test/v1/account', {

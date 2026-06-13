@@ -23,7 +23,10 @@ export async function whoami(options: WhoamiOptions): Promise<void> {
 
   console.log(chalk.bold('Current authentication:'));
   console.log('');
-  console.log(`  Organization: ${chalk.cyan(config.organizationName)} (${config.organizationSlug})`);
+  const organizationLabel = config.organizationSlug
+    ? `${config.organizationName} (${config.organizationSlug})`
+    : config.organizationName;
+  console.log(`  Organization: ${chalk.cyan(organizationLabel)}`);
   console.log(`  Org ID:       ${chalk.dim(String(config.organizationId))}`);
   console.log(`  API Key:      ${chalk.dim(config.apiKey.slice(0, 20) + '...')}`);
   console.log(`  Key ID:       ${chalk.dim(config.keyId)}`);

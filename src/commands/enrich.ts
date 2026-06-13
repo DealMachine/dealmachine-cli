@@ -16,6 +16,7 @@ import {
   printCredits,
   printWarning,
   printPagination,
+  formatCurrency,
   truncate,
   createSpinner,
 } from '../lib/output.js';
@@ -41,6 +42,30 @@ interface NameEnrichResponse {
   credits: { used: number; properties: number; people: number; deduplicated: number };
 }
 
+interface NameEstimateResponse {
+  totals: { people: number; properties: number };
+  pagination: {
+    page: number;
+    per_page: number;
+    total_results: number;
+    total_pages: number;
+    has_next_page: boolean;
+    has_previous_page: boolean;
+  };
+  estimated_credits: {
+    this_page: number;
+    total_all_pages: number;
+    breakdown: {
+      people: number;
+      properties: number;
+      already_accessed: number;
+      note: string;
+    };
+  };
+}
+
+type NameEnrichApiResponse = NameEnrichResponse | NameEstimateResponse;
+
 // ============================================================================
 // CSV + Batch Helpers
 // ============================================================================
@@ -56,7 +81,9 @@ function parseCsv(filePath: string): Record<string, string>[] {
   return lines.slice(1).map((line) => {
     const values = line.split(',').map((v) => v.trim());
     const obj: Record<string, string> = {};
-    headers.forEach((h, i) => { obj[h] = values[i] || ''; });
+    headers.forEach((h, i) => {
+      obj[h] = values[i] || '';
+    });
     return obj;
   });
 }
@@ -100,15 +127,17 @@ function mergeResponses(responses: EnrichResponse[]): EnrichResponse {
  */
 async function runBatchEnrichment(opts: {
   items: Record<string, unknown>[];
-  arrayKey: string;          // e.g. 'emails', 'phones', 'addresses', 'data', 'apns'
-  endpoint: string;          // e.g. '/enrichment/email'
-  label: string;             // e.g. 'emails', 'addresses'
+  arrayKey: string; // e.g. 'emails', 'phones', 'addresses', 'data', 'apns'
+  endpoint: string; // e.g. '/enrichment/email'
+  label: string; // e.g. 'emails', 'addresses'
   extraBody?: Record<string, unknown>;
 }): Promise<EnrichResponse> {
   const { items, arrayKey, endpoint, label, extraBody } = opts;
   const responses: EnrichResponse[] = [];
   const totalBatches = Math.ceil(items.length / API_BATCH_LIMIT);
-  const spinner = createSpinner(`Enriching ${items.length} ${label} (batch 1/${totalBatches})...`).start();
+  const spinner = createSpinner(
+    `Enriching ${items.length} ${label} (batch 1/${totalBatches})...`
+  ).start();
 
   for (let i = 0; i < items.length; i += API_BATCH_LIMIT) {
     const batch = items.slice(i, i + API_BATCH_LIMIT);
@@ -173,12 +202,14 @@ export async function enrichAddress(
         console.error(chalk.red('Error: CSV must have "full_address" or "street" column.'));
         process.exit(1);
       }
-      items = rows.map((r) => ({
-        street: r[streetCol!],
-        ...(cityCol && { city: r[cityCol] }),
-        ...(stateCol && { state: r[stateCol] }),
-        ...(zipCol && { zip: r[zipCol] }),
-      })).filter((a) => a.street);
+      items = rows
+        .map((r) => ({
+          street: r[streetCol!],
+          ...(cityCol && { city: r[cityCol] }),
+          ...(stateCol && { state: r[stateCol] }),
+          ...(zipCol && { zip: r[zipCol] }),
+        }))
+        .filter((a) => a.street);
     }
 
     const extraBody: Record<string, unknown> = {};
@@ -192,7 +223,10 @@ export async function enrichAddress(
       extraBody,
     });
 
-    if (options.json) { printJson(merged); return; }
+    if (options.json) {
+      printJson(merged);
+      return;
+    }
     printPropertyEnrichResult('Address Enrichment', merged);
     return;
   }
@@ -217,7 +251,10 @@ export async function enrichAddress(
       label: 'addresses',
       extraBody,
     });
-    if (options.json) { printJson(merged); return; }
+    if (options.json) {
+      printJson(merged);
+      return;
+    }
     printPropertyEnrichResult('Address Enrichment', merged);
     return;
   }
@@ -229,7 +266,10 @@ export async function enrichAddress(
   });
   spinner.stop();
 
-  if (options.json) { printJson(data); return; }
+  if (options.json) {
+    printJson(data);
+    return;
+  }
   printPropertyEnrichResult('Address Enrichment', data);
 }
 
@@ -261,10 +301,12 @@ export async function enrichLatLng(
       process.exit(1);
     }
 
-    const items = rows.map((r) => ({
-      latitude: parseFloat(r[latCol]),
-      longitude: parseFloat(r[lngCol]),
-    })).filter((c) => !isNaN(c.latitude) && !isNaN(c.longitude));
+    const items = rows
+      .map((r) => ({
+        latitude: parseFloat(r[latCol]),
+        longitude: parseFloat(r[lngCol]),
+      }))
+      .filter((c) => !isNaN(c.latitude) && !isNaN(c.longitude));
 
     const extraBody: Record<string, unknown> = {};
     if (options.contactAudience) extraBody.contact_audience = options.contactAudience;
@@ -277,7 +319,10 @@ export async function enrichLatLng(
       extraBody,
     });
 
-    if (options.json) { printJson(merged); return; }
+    if (options.json) {
+      printJson(merged);
+      return;
+    }
     printPropertyEnrichResult('Coordinate Enrichment', merged);
     return;
   }
@@ -286,7 +331,9 @@ export async function enrichLatLng(
   if (coords) {
     const [lat, lng] = coords.split(',').map((s) => parseFloat(s.trim()));
     if (isNaN(lat) || isNaN(lng)) {
-      console.error(chalk.red('Error: Invalid coordinates. Use format: lat,lng (e.g., 30.25,-97.75)'));
+      console.error(
+        chalk.red('Error: Invalid coordinates. Use format: lat,lng (e.g., 30.25,-97.75)')
+      );
       process.exit(1);
     }
     requestBody = { data: [{ latitude: lat, longitude: lng }] };
@@ -307,7 +354,10 @@ export async function enrichLatLng(
       label: 'coordinates',
       extraBody,
     });
-    if (options.json) { printJson(merged); return; }
+    if (options.json) {
+      printJson(merged);
+      return;
+    }
     printPropertyEnrichResult('Coordinate Enrichment', merged);
     return;
   }
@@ -319,7 +369,10 @@ export async function enrichLatLng(
   });
   spinner.stop();
 
-  if (options.json) { printJson(data); return; }
+  if (options.json) {
+    printJson(data);
+    return;
+  }
   printPropertyEnrichResult('Coordinate Enrichment', data);
 }
 
@@ -367,7 +420,10 @@ export async function enrichApn(
       extraBody,
     });
 
-    if (options.json) { printJson(merged); return; }
+    if (options.json) {
+      printJson(merged);
+      return;
+    }
     printPropertyEnrichResult('APN Enrichment', merged);
     return;
   }
@@ -394,7 +450,10 @@ export async function enrichApn(
       label: 'APNs',
       extraBody,
     });
-    if (options.json) { printJson(merged); return; }
+    if (options.json) {
+      printJson(merged);
+      return;
+    }
     printPropertyEnrichResult('APN Enrichment', merged);
     return;
   }
@@ -406,7 +465,10 @@ export async function enrichApn(
   });
   spinner.stop();
 
-  if (options.json) { printJson(data); return; }
+  if (options.json) {
+    printJson(data);
+    return;
+  }
   printPropertyEnrichResult('APN Enrichment', data);
 }
 
@@ -450,7 +512,10 @@ export async function enrichEmail(
       extraBody,
     });
 
-    if (options.json) { printJson(merged); return; }
+    if (options.json) {
+      printJson(merged);
+      return;
+    }
     printPersonEnrichResult('Email Enrichment', merged);
     return;
   }
@@ -475,7 +540,10 @@ export async function enrichEmail(
       label: 'emails',
       extraBody,
     });
-    if (options.json) { printJson(merged); return; }
+    if (options.json) {
+      printJson(merged);
+      return;
+    }
     printPersonEnrichResult('Email Enrichment', merged);
     return;
   }
@@ -487,7 +555,10 @@ export async function enrichEmail(
   });
   spinner.stop();
 
-  if (options.json) { printJson(data); return; }
+  if (options.json) {
+    printJson(data);
+    return;
+  }
   printPersonEnrichResult('Email Enrichment', data);
 }
 
@@ -531,7 +602,10 @@ export async function enrichPhone(
       extraBody,
     });
 
-    if (options.json) { printJson(merged); return; }
+    if (options.json) {
+      printJson(merged);
+      return;
+    }
     printPersonEnrichResult('Phone Enrichment', merged);
     return;
   }
@@ -556,7 +630,10 @@ export async function enrichPhone(
       label: 'phones',
       extraBody,
     });
-    if (options.json) { printJson(merged); return; }
+    if (options.json) {
+      printJson(merged);
+      return;
+    }
     printPersonEnrichResult('Phone Enrichment', merged);
     return;
   }
@@ -568,7 +645,10 @@ export async function enrichPhone(
   });
   spinner.stop();
 
-  if (options.json) { printJson(data); return; }
+  if (options.json) {
+    printJson(data);
+    return;
+  }
   printPersonEnrichResult('Phone Enrichment', data);
 }
 
@@ -584,6 +664,7 @@ export async function enrichName(
     state?: string;
     zip?: string;
     includeProperties?: boolean;
+    estimateCost?: boolean;
     page?: string;
     perPage?: string;
     json?: boolean;
@@ -614,14 +695,19 @@ export async function enrichName(
     }
 
     if (options.includeProperties) requestBody.include_properties = true;
+    if (options.estimateCost) requestBody.estimate_cost = true;
     if (options.page) requestBody.page = parseInt(options.page, 10);
     if (options.perPage) requestBody.per_page = parseInt(options.perPage, 10);
   } else {
     requestBody = await parseRequestBody(options);
+    if (options.estimateCost) requestBody.estimate_cost = true;
   }
 
-  const spinner = createSpinner('Enriching by name...').start();
-  const data = await apiRequest<NameEnrichResponse>('/enrichment/name', {
+  const isEstimate = requestBody.estimate_cost === true;
+  const spinner = createSpinner(
+    isEstimate ? 'Estimating name enrichment...' : 'Enriching by name...'
+  ).start();
+  const data = await apiRequest<NameEnrichApiResponse>('/enrichment/name', {
     method: 'POST',
     body: requestBody,
   });
@@ -629,6 +715,11 @@ export async function enrichName(
 
   if (options.json) {
     printJson(data);
+    return;
+  }
+
+  if (isNameEstimateResponse(data)) {
+    printNameEstimateResult(data);
     return;
   }
 
@@ -662,6 +753,29 @@ export async function enrichName(
 // Shared Output Helpers
 // ============================================================================
 
+function isNameEstimateResponse(data: NameEnrichApiResponse): data is NameEstimateResponse {
+  return 'estimated_credits' in data;
+}
+
+function printNameEstimateResult(data: NameEstimateResponse): void {
+  printHeader('Name Enrichment Estimate');
+  printTotals(data.totals);
+  printPagination(data.pagination);
+  console.log();
+  console.log(
+    chalk.dim(
+      `  ${chalk.cyan('estimated credits')}: ${data.estimated_credits.this_page.toLocaleString()} this page | ${data.estimated_credits.total_all_pages.toLocaleString()} all pages`
+    )
+  );
+  console.log(
+    chalk.dim(
+      `  ${chalk.cyan('people')}: ${data.estimated_credits.breakdown.people.toLocaleString()} | ${chalk.cyan('properties')}: ${data.estimated_credits.breakdown.properties.toLocaleString()}`
+    )
+  );
+  console.log(chalk.dim(`  ${data.estimated_credits.breakdown.note}`));
+  console.log();
+}
+
 function printPropertyEnrichResult(title: string, data: PropertyEnrichResponse): void {
   printHeader(title);
   printTotals({
@@ -677,7 +791,7 @@ function printPropertyEnrichResult(title: string, data: PropertyEnrichResponse):
       matched: (item as any).matched ? chalk.green('yes') : chalk.dim('no'),
       id: item.dm_property_id || '—',
       address: truncate(String(item.full_address || item.address || ''), 35),
-      value: item.estimated_value != null ? `$${Number(item.estimated_value).toLocaleString()}` : '—',
+      value: formatCurrency(item.estimated_value),
       contacts: Array.isArray(item.contacts) ? String(item.contacts.length) : '—',
     }));
     printTable(rows, ['matched', 'id', 'address', 'value', 'contacts']);
@@ -690,7 +804,12 @@ function printPropertyEnrichResult(title: string, data: PropertyEnrichResponse):
 
 function printMatchWarnings(items: Record<string, unknown>[]): void {
   const warned = items
-    .map((item, i) => ({ i, w: (item as any).match_warning as { code?: string; message?: string; hint?: Record<string, unknown> } | undefined }))
+    .map((item, i) => ({
+      i,
+      w: (item as any).match_warning as
+        | { code?: string; message?: string; hint?: Record<string, unknown> }
+        | undefined,
+    }))
     .filter((entry) => entry.w);
   if (warned.length === 0) return;
   console.log();

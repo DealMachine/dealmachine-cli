@@ -1117,3 +1117,204 @@ export async function mailWalletPricing(options: { json?: boolean }): Promise<vo
   }
   console.log();
 }
+
+// ============================================================================
+// Settings
+// ============================================================================
+
+interface MailSettings {
+  default_postcard_size: string | null;
+  default_sender_name: string | null;
+  contact_frequency_limit_days: number | null;
+  default_qr_code_url: string | null;
+  default_signature_image_url: string | null;
+}
+
+interface MailSettingsResponse {
+  data: MailSettings;
+}
+
+function printMailSettings(s: MailSettings): void {
+  printKeyValue({
+    'Default Postcard Size': s.default_postcard_size ?? '— (4x6)',
+    'Default Sender Name': s.default_sender_name ?? '—',
+    'Contact Frequency Limit': s.contact_frequency_limit_days != null
+      ? `${s.contact_frequency_limit_days} day(s)`
+      : '— (1 day)',
+    'Default QR Code URL': s.default_qr_code_url ?? '—',
+    'Default Signature Image': s.default_signature_image_url ?? '—',
+  });
+}
+
+export async function mailSettingsGet(options: { json?: boolean }): Promise<void> {
+  const spinner = createSpinner('Fetching mail settings...').start();
+  const data = await apiRequest<MailSettingsResponse>('/mail/settings');
+  spinner.stop();
+
+  if (options.json) {
+    printJson(data);
+    return;
+  }
+
+  printHeader('Mail Settings');
+  printMailSettings(data.data);
+  console.log();
+}
+
+export async function mailSettingsUpdate(options: {
+  body?: string;
+  file?: string;
+  json?: boolean;
+}): Promise<void> {
+  const requestBody = await parseRequestBody(options);
+
+  const spinner = createSpinner('Updating mail settings...').start();
+  const data = await apiRequest<MailSettingsResponse>('/mail/settings', {
+    method: 'PATCH',
+    body: requestBody,
+  });
+  spinner.stop();
+
+  if (options.json) {
+    printJson(data);
+    return;
+  }
+
+  printHeader('Mail Settings Updated');
+  printMailSettings(data.data);
+  console.log();
+}
+
+// ============================================================================
+// Analytics (account-wide)
+// ============================================================================
+
+interface AnalyticsSummaryResponse {
+  data: {
+    summary: {
+      total_sent: number;
+      total_delivered: number;
+      total_failed: number;
+      total_opened: number;
+      unique_openers: number;
+      avg_open_rate: number;
+      campaign_count: number;
+    };
+    campaigns: {
+      campaign_id: string;
+      campaign_name: string;
+      status: string;
+      total_sent: number;
+      total_delivered: number;
+      open_rate: number;
+    }[];
+  };
+  pagination: { page: number; per_page: number; total: number; has_more: boolean };
+}
+
+interface AnalyticsTimeseriesResponse {
+  data: {
+    metric: string;
+    group_by: string;
+    start_date: string;
+    end_date: string;
+    points: { date: string; value: number; secondary_value?: number }[];
+  };
+}
+
+export async function mailAnalyticsSummary(options: {
+  startDate?: string;
+  endDate?: string;
+  launchedOnly?: boolean;
+  page?: string;
+  perPage?: string;
+  json?: boolean;
+}): Promise<void> {
+  const spinner = createSpinner('Fetching analytics summary...').start();
+  const data = await apiRequest<AnalyticsSummaryResponse>('/mail/analytics/summary', {
+    query: {
+      page: options.page,
+      per_page: options.perPage,
+      start_date: options.startDate,
+      end_date: options.endDate,
+      launched_only: options.launchedOnly ? 'true' : undefined,
+    },
+  });
+  spinner.stop();
+
+  if (options.json) {
+    printJson(data);
+    return;
+  }
+
+  const s = data.data.summary;
+  printHeader('Mail Analytics — Summary');
+  printKeyValue({
+    Campaigns: s.campaign_count,
+    Sent: s.total_sent,
+    Delivered: s.total_delivered,
+    Failed: s.total_failed,
+    Opened: s.total_opened,
+    'Unique Openers': s.unique_openers,
+    'Avg Open Rate': `${s.avg_open_rate.toFixed(1)}%`,
+  });
+
+  if (data.data.campaigns.length > 0) {
+    console.log();
+    const rows = data.data.campaigns.map((c) => ({
+      id: c.campaign_id,
+      name: truncate(c.campaign_name, 28),
+      status: c.status,
+      sent: c.total_sent,
+      delivered: c.total_delivered,
+      'open %': `${c.open_rate.toFixed(1)}%`,
+    }));
+    printTable(rows, ['id', 'name', 'status', 'sent', 'delivered', 'open %']);
+    const p = data.pagination;
+    printPagination({ ...p, total_results: p.total, total_pages: Math.ceil(p.total / p.per_page) });
+  }
+  console.log();
+}
+
+export async function mailAnalyticsTimeseries(options: {
+  metric?: string;
+  groupBy?: string;
+  days?: string;
+  startDate?: string;
+  endDate?: string;
+  json?: boolean;
+}): Promise<void> {
+  const spinner = createSpinner('Fetching analytics time series...').start();
+  const data = await apiRequest<AnalyticsTimeseriesResponse>('/mail/analytics/timeseries', {
+    query: {
+      metric: options.metric,
+      group_by: options.groupBy,
+      days: options.days,
+      start_date: options.startDate,
+      end_date: options.endDate,
+    },
+  });
+  spinner.stop();
+
+  if (options.json) {
+    printJson(data);
+    return;
+  }
+
+  const d = data.data;
+  printHeader(`Mail Analytics — ${d.metric} (by ${d.group_by})`);
+  if (d.points.length > 0) {
+    const rows = d.points.map((p) => {
+      const row: Record<string, string | number> = { date: p.date, value: p.value };
+      if (p.secondary_value !== undefined) row.unique = p.secondary_value;
+      return row;
+    });
+    const columns = d.points.some((p) => p.secondary_value !== undefined)
+      ? ['date', 'value', 'unique']
+      : ['date', 'value'];
+    printTable(rows, columns);
+  } else {
+    console.log(chalk.dim('  No data points in range.'));
+  }
+  console.log();
+}

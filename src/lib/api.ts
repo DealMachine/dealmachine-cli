@@ -6,6 +6,7 @@ import { readConfig, type ApiEnvironment } from './config.js';
 
 const API_URLS: Record<ApiEnvironment, string> = {
   local: 'http://localhost:3001/v1',
+  staging: 'https://api-staging.v2.dealmachine.com/v1',
   production: 'https://api.v2.dealmachine.com/v1',
 } as const;
 
@@ -131,7 +132,7 @@ export async function pollForToken(
 
 export async function verifyCredentials(apiKey: string): Promise<{
   valid: boolean;
-  organization?: { id: number; name: string };
+  organization?: { id: number; name: string; slug?: string };
 }> {
   try {
     const response = await fetch(`${getApiBaseUrl()}/account`, {
@@ -147,7 +148,7 @@ export async function verifyCredentials(apiKey: string): Promise<{
     }
 
     const data = await response.json() as {
-      data?: { organization?: { id?: number; name?: string } };
+      data?: { organization?: { id?: number; name?: string; slug?: string | null } };
     };
     const organization = data.data?.organization;
 
@@ -164,6 +165,7 @@ export async function verifyCredentials(apiKey: string): Promise<{
       organization: {
         id: organization.id,
         name: organization.name,
+        ...(organization.slug && { slug: organization.slug }),
       },
     };
   } catch {

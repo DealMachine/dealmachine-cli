@@ -15,7 +15,7 @@ const CLIENT_ID = 'dealmachine-next-cli';
 interface LoginOptions {
   noBrowser?: boolean;
   key?: string;
-  env?: 'local' | 'production';
+  env?: 'local' | 'staging' | 'production';
 }
 
 export async function login(options: LoginOptions): Promise<void> {
@@ -141,7 +141,7 @@ export async function login(options: LoginOptions): Promise<void> {
  * Login with a raw API key (skips browser flow).
  * Verifies the key against the API, then stores it.
  */
-async function loginWithKey(apiKey: string, env?: 'local' | 'production'): Promise<void> {
+async function loginWithKey(apiKey: string, env?: 'local' | 'staging' | 'production'): Promise<void> {
   const baseUrl = getApiBaseUrl();
   console.log(chalk.dim(`Verifying key against ${baseUrl}...`));
 
@@ -162,7 +162,7 @@ async function loginWithKey(apiKey: string, env?: 'local' | 'production'): Promi
     keyId: 'manual',
     organizationId: result.organization.id,
     organizationName: result.organization.name,
-    organizationSlug: '',
+    organizationSlug: result.organization.slug || '',
     ...(env && { apiEnvironment: env }),
   });
 

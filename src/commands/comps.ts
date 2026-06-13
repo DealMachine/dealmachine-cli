@@ -12,6 +12,7 @@ import {
   printTable,
   printCredits,
   printKeyValue,
+  formatCurrency,
   truncate,
   createSpinner,
 } from '../lib/output.js';
@@ -121,7 +122,7 @@ export async function comps(
         bedrooms: s.bedrooms,
         bathrooms: s.bathrooms,
         sqft: s.sqft,
-        estimated_value: s.estimated_value ? `$${Number(s.estimated_value).toLocaleString()}` : '—',
+        estimated_value: formatCurrency(s.estimated_value),
       }, 4);
     }
 
@@ -133,9 +134,9 @@ export async function comps(
         console.log(chalk.bold('  Value Estimation'));
         const ci = ve.confidence_interval || {};
         printKeyValue({
-          estimated_value: `$${Number(ve.estimated_value).toLocaleString()}`,
+          estimated_value: formatCurrency(ve.estimated_value),
           range: ci.low && ci.high
-            ? `$${Number(ci.low).toLocaleString()} — $${Number(ci.high).toLocaleString()}`
+            ? `${formatCurrency(ci.low)} - ${formatCurrency(ci.high)}`
             : '—',
           methodology: ve.methodology || '—',
           based_on: `${ve.based_on_comps || 0} comps`,
@@ -150,8 +151,8 @@ export async function comps(
       console.log(chalk.bold('  Summary'));
       printKeyValue({
         comps_found: sm.count || 0,
-        avg_price: sm.avg_price ? `$${Number(sm.avg_price).toLocaleString()}` : '—',
-        median_price: sm.median_price ? `$${Number(sm.median_price).toLocaleString()}` : '—',
+        avg_price: formatCurrency(sm.avg_price),
+        median_price: formatCurrency(sm.median_price),
         avg_price_per_sqft: sm.avg_price_per_sqft ? `$${sm.avg_price_per_sqft}/sqft` : '—',
         avg_distance: sm.avg_distance ? `${sm.avg_distance} mi` : '—',
         confidence: sm.confidence_level || '—',
@@ -167,8 +168,8 @@ export async function comps(
         type: comp.type || '—',
         address: truncate(comp.display_line_1 || comp.address || '—', 30),
         price: comp.type === 'sale'
-          ? (comp.sale_price ? `$${Number(comp.sale_price).toLocaleString()}` : '—')
-          : (comp.listing_price ? `$${Number(comp.listing_price).toLocaleString()}` : '—'),
+          ? formatCurrency(comp.sale_price)
+          : formatCurrency(comp.listing_price),
         '$/sqft': comp.price_per_sqft ? `$${Math.round(comp.price_per_sqft)}` : '—',
         distance: comp.distance != null ? `${comp.distance} mi` : '—',
         score: comp.match_score?.overall != null ? `${comp.match_score.overall}` : '—',

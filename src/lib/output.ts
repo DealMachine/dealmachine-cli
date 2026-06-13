@@ -182,9 +182,34 @@ export function printWarning(warning: string): void {
   console.log(chalk.yellow(`  Warning: ${warning}`));
 }
 
+export function formatCurrency(value: unknown, fallback = '-'): string {
+  const amount = parseFormattedNumber(value);
+  return amount == null ? fallback : `$${amount.toLocaleString()}`;
+}
+
 // ============================================================================
 // Helpers
 // ============================================================================
+
+function parseFormattedNumber(value: unknown): number | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+  if (typeof value === 'bigint') return Number(value);
+  if (typeof value !== 'string') return null;
+
+  const trimmed = value.trim();
+  if (!trimmed || trimmed === '-' || (trimmed.length === 1 && trimmed.charCodeAt(0) === 0x2014)) {
+    return null;
+  }
+
+  const isNegative = /^\(.*\)$/.test(trimmed);
+  const normalized = trimmed.replace(/^\((.*)\)$/, '$1').replace(/[$,%\s,]/g, '');
+  if (!normalized) return null;
+
+  const parsed = Number(normalized);
+  if (!Number.isFinite(parsed)) return null;
+  return isNegative ? -parsed : parsed;
+}
 
 function formatValue(value: unknown): string {
   if (value === null || value === undefined) return chalk.dim('—');
