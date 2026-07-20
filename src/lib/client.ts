@@ -4,6 +4,7 @@
 
 import chalk from 'chalk';
 import { readConfig, type ApiEnvironment } from './config.js';
+import { CLI_USER_AGENT } from '../version.js';
 
 const API_URLS: Record<ApiEnvironment, string> = {
   local: 'http://localhost:3001/v1',
@@ -77,7 +78,7 @@ export async function apiRequest<T>(
     headers: {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
-      'User-Agent': 'dm-cli/0.1.0',
+      'User-Agent': CLI_USER_AGENT,
     },
     ...(body && { body: JSON.stringify(body) }),
   });

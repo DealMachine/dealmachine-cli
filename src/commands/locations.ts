@@ -1,5 +1,5 @@
 /**
- * Locations commands — search and get locations (states, counties, zip codes)
+ * Locations commands: search and get locations (states, counties, cities, zip codes)
  */
 
 import chalk from 'chalk';
@@ -77,7 +77,7 @@ export async function locationsSearch(options: {
       type: l.type,
       name: truncate(l.name, 30),
       code: l.code,
-      state: l.state || '—',
+      state: l.state || '-',
       properties: l.property_count.toLocaleString(),
     }));
     printTable(rows, ['location_id', 'type', 'name', 'code', 'state', 'properties']);
@@ -111,8 +111,8 @@ export async function locationsGet(
     'Type': data.type,
     'Name': data.name,
     'Code': data.code,
-    'State': data.state || '—',
-    'State Name': data.state_name || '—',
+    'State': data.state || '-',
+    'State Name': data.state_name || '-',
     'Properties': data.property_count.toLocaleString(),
   });
   console.log();

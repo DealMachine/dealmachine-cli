@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
+import { CLI_VERSION } from './version.js';
 import { login } from './commands/login.js';
 import { logout } from './commands/logout.js';
 import { whoami } from './commands/whoami.js';
@@ -8,6 +9,7 @@ import { configGet, configSet, configPath } from './commands/config.js';
 import { account } from './commands/account.js';
 import { usage } from './commands/usage.js';
 import { agentsGuide, agentsPlaybook } from './commands/agents.js';
+import { checkout, plans, signup } from './commands/onboarding.js';
 import {
   propertiesSearch,
   propertiesCount,
@@ -139,7 +141,7 @@ const program = new Command();
 program
   .name('dm')
   .description('DealMachine CLI - Property intelligence from the command line')
-  .version('0.1.1')
+  .version(CLI_VERSION)
   .option('--quiet', 'Suppress spinners and decorative output (agent-friendly, also DM_QUIET=1)')
   .addHelpText(
     'after',
@@ -180,8 +182,8 @@ Examples:
   dm agents playbook                     Print the full DealMachine Playbook
   dm agents skill                        Alias for dm agents playbook`
   )
-  .action(async (options, command: Command) => {
-    await agentsGuide(command.optsWithGlobals<{ json?: boolean }>());
+  .action(async (options: { json?: boolean }) => {
+    await agentsGuide(options);
   });
 
 agentsCmd
@@ -195,8 +197,8 @@ Examples:
   dm agents guide                        Print concise agent usage guidance
   dm agents guide --json                 Print agent guidance as JSON`
   )
-  .action(async (options, command: Command) => {
-    await agentsGuide(command.optsWithGlobals<{ json?: boolean }>());
+  .action(async (options: { json?: boolean }) => {
+    await agentsGuide(options);
   });
 
 agentsCmd
@@ -212,8 +214,8 @@ Examples:
   dm agents playbook --json              Print the Playbook as JSON
   dm agents skill                        Alias for dm agents playbook`
   )
-  .action(async (options, command: Command) => {
-    await agentsPlaybook(command.optsWithGlobals<{ json?: boolean }>());
+  .action(async (options: { json?: boolean }) => {
+    await agentsPlaybook(options);
   });
 
 // ============================================================================
@@ -271,6 +273,69 @@ Examples:
   )
   .action(async (options) => {
     await whoami(options);
+  });
+
+program
+  .command('signup')
+  .description('Create a public API account and receive an API key')
+  .argument('<email>', 'Email address for the new account')
+  .option('--first-name <name>', 'First name')
+  .option('--last-name <name>', 'Last name')
+  .option('--phone-number <phone-number>', 'Phone number in E.164 format, if required')
+  .option('--login', 'Store the returned API key for the CLI')
+  .option('--json', 'Output as JSON')
+  .option(
+    '--env <environment>',
+    'API environment: local, staging, or production (default: production)'
+  )
+  .addHelpText(
+    'after',
+    `
+Examples:
+  dm signup ada@example.com --first-name Ada --last-name Lovelace --phone-number +15551234567
+  dm signup ada@example.com --login
+  dm signup ada@example.com --env staging --json`
+  )
+  .action(async (email: string, options) => {
+    await signup({ ...options, email });
+  });
+
+program
+  .command('plans')
+  .description('List public self-serve subscription plans')
+  .option('--type <type>', 'Plan family filter. Currently: solo')
+  .option('--json', 'Output as JSON')
+  .option(
+    '--env <environment>',
+    'API environment: local, staging, or production (default: production)'
+  )
+  .addHelpText(
+    'after',
+    `
+Examples:
+  dm plans
+  dm plans --env staging
+  dm plans --json`
+  )
+  .action(async (options) => {
+    await plans(options);
+  });
+
+program
+  .command('checkout')
+  .description('Create a Stripe checkout session for a self-serve plan')
+  .requiredOption('--price-id <price-id>', 'Stripe price ID from dm plans')
+  .option('--quantity <quantity>', 'Seat quantity', '1')
+  .option('--json', 'Output as JSON')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  dm checkout --price-id price_xxx_monthly
+  dm checkout --price-id price_xxx_monthly --quantity 2 --json`
+  )
+  .action(async (options) => {
+    await checkout(options);
   });
 
 // ============================================================================
@@ -387,14 +452,14 @@ Examples:
 const locationsCmd = program
   .command('locations')
   .alias('loc')
-  .description('Search and look up US locations (states, counties, zip codes)');
+  .description('Search and look up US locations (states, counties, cities, zip codes)');
 
 locationsCmd
   .command('search')
   .alias('ls')
-  .description('Search locations by name')
-  .requiredOption('-q, --query <text>', 'Search query (e.g., "Harris", "78704")')
-  .option('--type <type>', 'Filter by type: state, county, zip_code')
+  .description('Search locations by name, code, or state')
+  .requiredOption('-q, --query <text>', 'Search query (e.g., "Harris", "Austin", "MO", "78704")')
+  .option('--type <type>', 'Filter by type: state, county, city, zip_code')
   .option('--state <code>', 'Filter by state (two-letter abbreviation, e.g., TX)')
   .option('-p, --page <n>', 'Page number')
   .option('--per-page <n>', 'Results per page (max 100)')
@@ -405,6 +470,8 @@ locationsCmd
 Examples:
   dm locations search -q "Harris" --json
   dm locations search -q "787" --type zip_code --state TX
+  dm locations search -q "saint louis" --type city --state MO --json
+  dm locations search -q "MO" --type state --json
   dm loc search -q "California" --type state --json`
   )
   .action(async (options) => {
@@ -413,13 +480,14 @@ Examples:
 
 locationsCmd
   .command('get <locationId>')
-  .description('Get a location by ID (e.g., loc_county_48201)')
+  .description('Get a location by ID (e.g., loc_county_48201, loc_city_7333)')
   .option('--json', 'Output as JSON')
   .addHelpText(
     'after',
     `
 Examples:
   dm locations get loc_county_48201 --json
+  dm locations get loc_city_7333 --json
   dm locations get loc_state_TX
   dm loc get loc_zip_code_78704 --json`
   )
@@ -932,12 +1000,14 @@ peopleCmd
   .command('get <id>')
   .description('Get a person by ID (e.g., per_12345)')
   .option('--include-properties', 'Include associated properties')
+  .option('--fields <csv>', 'Comma-separated field IDs from dm fields')
   .option('--json', 'Output as JSON')
   .addHelpText(
     'after',
     `
 Examples:
   dm people get per_12345
+  dm people get per_12345 --fields estimated_household_income,estimated_value --json
   dm people get per_12345 --include-properties --json`
   )
   .action(async (id, options) => {
@@ -950,12 +1020,14 @@ peopleCmd
   .option('--body <json>', 'Request body as JSON string')
   .option('-f, --file <path>', 'Read request body from a JSON file')
   .option('--include-properties', 'Include associated properties')
+  .option('--fields <csv>', 'Comma-separated field IDs from dm fields')
   .option('--json', 'Output as JSON')
   .addHelpText(
     'after',
     `
 Examples:
   dm people ids per_111 per_222 per_333 --json
+  dm people ids per_111 per_222 --fields estimated_household_income,estimated_value
   dm people ids --body '{"ids":["per_111","per_222"]}' --include-properties`
   )
   .action(async (ids, options) => {
@@ -1072,13 +1144,17 @@ enrichCmd
   .option('--body <json>', 'Request body as JSON string')
   .option('-f, --file <path>', 'Read request body from a JSON file (JSON or CSV)')
   .option('--include-properties', 'Include associated properties')
+  .option('--state <code>', 'Narrow by state')
+  .option('--zip <code>', 'Narrow by ZIP code')
+  .option('--county <fips>', 'Narrow by county FIPS')
+  .option('--city <place-id>', 'Narrow by city place ID from dm locations search')
   .option('--json', 'Output as JSON')
   .addHelpText(
     'after',
     `
 Examples:
   dm enrich email "john@example.com" --json
-  dm enrich email "john@example.com" --include-properties
+  dm enrich email "john@example.com" --city 53584 --include-properties
   dm enrich email -f emails.csv --json               Batch enrich from CSV`
   )
   .action(async (email, options) => {
@@ -1091,12 +1167,16 @@ enrichCmd
   .option('--body <json>', 'Request body as JSON string')
   .option('-f, --file <path>', 'Read request body from a JSON file (JSON or CSV)')
   .option('--include-properties', 'Include associated properties')
+  .option('--state <code>', 'Narrow by state')
+  .option('--zip <code>', 'Narrow by ZIP code')
+  .option('--county <fips>', 'Narrow by county FIPS')
+  .option('--city <place-id>', 'Narrow by city place ID from dm locations search')
   .option('--json', 'Output as JSON')
   .addHelpText(
     'after',
     `
 Examples:
-  dm enrich phone "5125551234" --json
+  dm enrich phone "5125551234" --city 53584 --json
   dm enrich phone -f phones.csv --include-properties`
   )
   .action(async (phone, options) => {
@@ -1110,6 +1190,8 @@ enrichCmd
   .option('-f, --file <path>', 'Read request body from a JSON file (JSON or CSV)')
   .option('--state <code>', 'Narrow by state (e.g., TX)')
   .option('--zip <code>', 'Narrow by ZIP code')
+  .option('--county <fips>', 'Narrow by county FIPS')
+  .option('--city <place-id>', 'Narrow by city place ID from dm locations search')
   .option('--include-properties', 'Include associated properties')
   .option('--estimate-cost', 'Return match count and estimated credits without consuming credits')
   .option('--page <n>', 'Page number')
@@ -1119,7 +1201,7 @@ enrichCmd
     'after',
     `
 Examples:
-  dm enrich name "David Oster" --state TX --json
+  dm enrich name "David Oster" --city 53584 --json
   dm enrich name "David Oster" --state TX --estimate-cost
   dm enrich name "Jane Smith" --zip 78704 --include-properties
   dm enrich name -f names.csv --state TX`

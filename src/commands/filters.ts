@@ -14,6 +14,7 @@ interface FilterItem {
   type: string;
   source_type: string | null;
   group_id: string | null;
+  is_premium_filter: boolean;
   options: { option_id: string | number; label: string }[] | null;
   allowed_operators: string[];
 }
@@ -62,11 +63,12 @@ export async function filters(options: {
       filter_id: f.filter_id,
       name: truncate(f.name, 25),
       type: f.type,
+      premium: f.is_premium_filter ? 'Premium' : '',
       source: f.source_type || '—',
       group: f.group_id || '—',
       operators: truncate(f.allowed_operators.join(', '), 30),
     }));
-    printTable(rows, ['filter_id', 'name', 'type', 'source', 'group', 'operators']);
+    printTable(rows, ['filter_id', 'name', 'type', 'premium', 'source', 'group', 'operators']);
   }
 
   printPagination(data.pagination);

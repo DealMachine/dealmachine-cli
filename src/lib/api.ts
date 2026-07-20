@@ -3,6 +3,7 @@
  */
 
 import { readConfig, type ApiEnvironment } from './config.js';
+import { CLI_USER_AGENT } from '../version.js';
 
 const API_URLS: Record<ApiEnvironment, string> = {
   local: 'http://localhost:3001/v1',
@@ -71,7 +72,7 @@ export async function requestDeviceCode(
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'User-Agent': 'dm-cli/0.1.0',
+      'User-Agent': CLI_USER_AGENT,
     },
     body: JSON.stringify({
       client_id: clientId,
@@ -96,7 +97,7 @@ export async function pollForToken(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'User-Agent': 'dm-cli/0.1.0',
+        'User-Agent': CLI_USER_AGENT,
       },
       body: JSON.stringify({
         device_code: deviceCode,
@@ -139,7 +140,7 @@ export async function verifyCredentials(apiKey: string): Promise<{
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
-        'User-Agent': 'dm-cli/0.1.0',
+        'User-Agent': CLI_USER_AGENT,
       },
     });
 

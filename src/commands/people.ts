@@ -160,10 +160,11 @@ export async function peopleCount(
 
 export async function peopleGet(
   id: string,
-  options: { includeProperties?: boolean; json?: boolean }
+  options: { includeProperties?: boolean; fields?: string; json?: boolean }
 ): Promise<void> {
   const query: Record<string, string> = {};
   if (options.includeProperties) query.include_properties = 'true';
+  if (options.fields) query.fields = options.fields;
 
   const spinner = createSpinner('Fetching person...').start();
   const data = await apiRequest<GetPersonResponse>(`/people/${id}`, { query });
@@ -229,6 +230,7 @@ export async function peopleIds(options: {
   body?: string;
   file?: string;
   includeProperties?: boolean;
+  fields?: string;
   json?: boolean;
 }): Promise<void> {
   let requestBody: Record<string, unknown>;
@@ -238,6 +240,13 @@ export async function peopleIds(options: {
     if (options.includeProperties) requestBody.include_properties = true;
   } else {
     requestBody = await parseRequestBody(options);
+  }
+  if (options.includeProperties) requestBody.include_properties = true;
+  if (options.fields) {
+    requestBody.fields = options.fields
+      .split(',')
+      .map((field) => field.trim())
+      .filter(Boolean);
   }
 
   const spinner = createSpinner('Fetching people...').start();

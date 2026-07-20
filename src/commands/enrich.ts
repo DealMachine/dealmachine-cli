@@ -72,6 +72,25 @@ type NameEnrichApiResponse = NameEnrichResponse | NameEstimateResponse;
 
 const API_BATCH_LIMIT = 250;
 
+type LocationCliOptions = {
+  state?: string;
+  zip?: string;
+  county?: string;
+  city?: string;
+};
+
+function applyLocationOption(body: Record<string, unknown>, options: LocationCliOptions): void {
+  if (options.city) {
+    body.location = { type: 'city', code: options.city };
+  } else if (options.county) {
+    body.location = { type: 'county', code: options.county };
+  } else if (options.zip) {
+    body.location = { type: 'zip_code', code: options.zip };
+  } else if (options.state) {
+    body.location = { type: 'state', code: options.state };
+  }
+}
+
 /** Parse a CSV file into an array of objects keyed by lowercase column headers. */
 function parseCsv(filePath: string): Record<string, string>[] {
   const content = fs.readFileSync(filePath, 'utf-8');
@@ -482,6 +501,10 @@ export async function enrichEmail(
     body?: string;
     file?: string;
     includeProperties?: boolean;
+    state?: string;
+    zip?: string;
+    county?: string;
+    city?: string;
     json?: boolean;
   }
 ): Promise<void> {
@@ -503,6 +526,7 @@ export async function enrichEmail(
 
     const extraBody: Record<string, unknown> = {};
     if (options.includeProperties) extraBody.include_properties = true;
+    applyLocationOption(extraBody, options);
 
     const merged = await runBatchEnrichment({
       items,
@@ -527,6 +551,7 @@ export async function enrichEmail(
   } else {
     requestBody = await parseRequestBody(options);
   }
+  applyLocationOption(requestBody, options);
 
   // Auto-batch large JSON input
   const emailItems = (requestBody as any).data;
@@ -572,6 +597,10 @@ export async function enrichPhone(
     body?: string;
     file?: string;
     includeProperties?: boolean;
+    state?: string;
+    zip?: string;
+    county?: string;
+    city?: string;
     json?: boolean;
   }
 ): Promise<void> {
@@ -593,6 +622,7 @@ export async function enrichPhone(
 
     const extraBody: Record<string, unknown> = {};
     if (options.includeProperties) extraBody.include_properties = true;
+    applyLocationOption(extraBody, options);
 
     const merged = await runBatchEnrichment({
       items,
@@ -617,6 +647,7 @@ export async function enrichPhone(
   } else {
     requestBody = await parseRequestBody(options);
   }
+  applyLocationOption(requestBody, options);
 
   // Auto-batch large JSON input
   const phoneItems = (requestBody as any).data;
@@ -663,6 +694,8 @@ export async function enrichName(
     file?: string;
     state?: string;
     zip?: string;
+    county?: string;
+    city?: string;
     includeProperties?: boolean;
     estimateCost?: boolean;
     page?: string;
@@ -688,12 +721,6 @@ export async function enrichName(
     };
 
     // Add location if provided
-    if (options.state) {
-      requestBody.location = { type: 'state', code: options.state };
-    } else if (options.zip) {
-      requestBody.location = { type: 'zip_code', code: options.zip };
-    }
-
     if (options.includeProperties) requestBody.include_properties = true;
     if (options.estimateCost) requestBody.estimate_cost = true;
     if (options.page) requestBody.page = parseInt(options.page, 10);
@@ -702,6 +729,7 @@ export async function enrichName(
     requestBody = await parseRequestBody(options);
     if (options.estimateCost) requestBody.estimate_cost = true;
   }
+  applyLocationOption(requestBody, options);
 
   const isEstimate = requestBody.estimate_cost === true;
   const spinner = createSpinner(
