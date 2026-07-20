@@ -1,0 +1,39 @@
+{
+  "name": "dealmachine",
+  "version": "0.1.2",
+  "description": "Install alias for the DealMachine CLI",
+  "author": "DealMachine",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DealMachine/dealmachine-cli.git",
+    "directory": "npm-alias"
+  },
+  "homepage": "https://github.com/DealMachine/dealmachine-cli#readme",
+  "bugs": {
+    "url": "https://github.com/DealMachine/dealmachine-cli/issues"
+  },
+  "bin": {
+    "dm": "bin/dm.js"
+  },
+  "files": [
+    "bin",
+    "README.md",
+    "LICENSE"
+  ],
+  "dependencies": {
+    "@dealmachine/cli": "0.1.2"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "dealmachine",
+    "cli",
+    "api"
+  ]
+}

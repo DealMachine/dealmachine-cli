@@ -108,6 +108,8 @@ dm login --key dm_sk_live_abc123...
 
 The key is verified against `GET /v1/account` before being stored. If verification fails, the CLI exits with a non-zero code.
 
+If you do not have an API key yet, use `dm signup`, `dm plans`, and `dm checkout` first. Public plan checkout only accepts self-serve Basic and Pro prices from the shared plan catalog and is capped at 60,000 monthly data credits.
+
 ### Switching Environments
 
 If you are already logged in, you can switch the target API environment without logging out:
@@ -205,6 +207,32 @@ The Playbook is copied from `packages/playbooks/playbook/SKILL.md` into `dist/ag
 ---
 
 ### Auth Commands
+
+#### `dm signup`
+
+Create a public API account and receive an API key:
+
+```bash
+dm signup developer@example.com --first-name Ada --last-name Lovelace --phone-number +15551234567
+dm signup developer@example.com --login
+```
+
+#### `dm plans`
+
+List public self-serve Basic and Pro plans:
+
+```bash
+dm plans
+dm plans --json
+```
+
+#### `dm checkout`
+
+Create a Stripe checkout session using a price ID from `dm plans`:
+
+```bash
+dm checkout --price-id price_xxx_monthly
+```
 
 #### `dm login`
 
@@ -996,7 +1024,7 @@ packages/cli/
 | Module          | Responsibility                                                                                                                                                                                                                                          |
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `lib/config.ts` | Manages `~/.dealmachine/config.json`. Enforces `0600` file permissions and `0700` directory permissions. Provides typed read/write/delete helpers.                                                                                                      |
-| `lib/client.ts` | Central HTTP client. Resolves the API base URL from env vars, config, or defaults. Attaches the `Authorization: Bearer` header and `User-Agent: dm-cli/0.1.0`. Exits with a non-zero code on HTTP errors.                                               |
+| `lib/client.ts` | Central HTTP client. Resolves the API base URL from env vars, config, or defaults. Attaches the `Authorization: Bearer` header and versioned `User-Agent`. Exits with a non-zero code on HTTP errors.                                                        |
 | `lib/api.ts`    | Device authorization flow implementation. Handles `POST /v1/auth/device/code` and `POST /v1/auth/device/token` with RFC 8628-compliant polling and error mapping. Also provides `verifyCredentials` for key validation.                                 |
 | `lib/output.ts` | All output formatting: `printTable` (auto-width columns), `printJson`, `printKeyValue`, `printPagination`, `printCredits`, `printTotals`, `printWarning`, `printHeader`. Also exports `parseRequestBody` which handles `--body`, `-f`, and stdin input. |
 

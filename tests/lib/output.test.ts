@@ -14,7 +14,6 @@ import { truncate, printTable, printJson, printKeyValue } from '../../src/lib/ou
 describe('output helpers', () => {
   beforeEach(() => {
     vi.spyOn(console, 'log').mockImplementation(() => {});
-    vi.mocked(console.log).mockClear();
   });
 
   describe('truncate', () => {
