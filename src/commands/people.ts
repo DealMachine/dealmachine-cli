@@ -160,10 +160,11 @@ export async function peopleCount(
 
 export async function peopleGet(
   id: string,
-  options: { includeProperties?: boolean; fields?: string; json?: boolean }
+  options: { includeProperties?: boolean; propertyLimit?: string; fields?: string; json?: boolean }
 ): Promise<void> {
   const query: Record<string, string> = {};
   if (options.includeProperties) query.include_properties = 'true';
+  if (options.propertyLimit) query.property_limit = options.propertyLimit;
   if (options.fields) query.fields = options.fields;
 
   const spinner = createSpinner('Fetching person...').start();
@@ -230,6 +231,7 @@ export async function peopleIds(options: {
   body?: string;
   file?: string;
   includeProperties?: boolean;
+  propertyLimit?: string;
   fields?: string;
   json?: boolean;
 }): Promise<void> {
@@ -242,6 +244,7 @@ export async function peopleIds(options: {
     requestBody = await parseRequestBody(options);
   }
   if (options.includeProperties) requestBody.include_properties = true;
+  if (options.propertyLimit) requestBody.property_limit = parseInt(options.propertyLimit, 10);
   if (options.fields) {
     requestBody.fields = options.fields
       .split(',')

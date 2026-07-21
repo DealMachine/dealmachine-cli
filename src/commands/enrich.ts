@@ -66,6 +66,13 @@ interface NameEstimateResponse {
 
 type NameEnrichApiResponse = NameEnrichResponse | NameEstimateResponse;
 
+function parseFieldsCsv(value: string): string[] {
+  return value
+    .split(',')
+    .map((field) => field.trim())
+    .filter(Boolean);
+}
+
 // ============================================================================
 // CSV + Batch Helpers
 // ============================================================================
@@ -195,6 +202,7 @@ export async function enrichAddress(
     body?: string;
     file?: string;
     contactAudience?: string;
+    fields?: string;
     json?: boolean;
   }
 ): Promise<void> {
@@ -233,6 +241,7 @@ export async function enrichAddress(
 
     const extraBody: Record<string, unknown> = {};
     if (options.contactAudience) extraBody.contact_audience = options.contactAudience;
+    if (options.fields) extraBody.fields = parseFieldsCsv(options.fields);
 
     const merged = await runBatchEnrichment({
       items,
@@ -254,8 +263,10 @@ export async function enrichAddress(
   if (address) {
     requestBody = { data: [{ full_address: address }] };
     if (options.contactAudience) requestBody.contact_audience = options.contactAudience;
+    if (options.fields) requestBody.fields = parseFieldsCsv(options.fields);
   } else {
     requestBody = await parseRequestBody(options);
+    if (options.fields) requestBody.fields = parseFieldsCsv(options.fields);
   }
 
   // Auto-batch large JSON input
@@ -302,6 +313,7 @@ export async function enrichLatLng(
     body?: string;
     file?: string;
     contactAudience?: string;
+    fields?: string;
     json?: boolean;
   }
 ): Promise<void> {
@@ -329,6 +341,7 @@ export async function enrichLatLng(
 
     const extraBody: Record<string, unknown> = {};
     if (options.contactAudience) extraBody.contact_audience = options.contactAudience;
+    if (options.fields) extraBody.fields = parseFieldsCsv(options.fields);
 
     const merged = await runBatchEnrichment({
       items,
@@ -357,8 +370,10 @@ export async function enrichLatLng(
     }
     requestBody = { data: [{ latitude: lat, longitude: lng }] };
     if (options.contactAudience) requestBody.contact_audience = options.contactAudience;
+    if (options.fields) requestBody.fields = parseFieldsCsv(options.fields);
   } else {
     requestBody = await parseRequestBody(options);
+    if (options.fields) requestBody.fields = parseFieldsCsv(options.fields);
   }
 
   // Auto-batch large JSON input
@@ -407,6 +422,7 @@ export async function enrichApn(
     state?: string;
     zip?: string;
     contactAudience?: string;
+    fields?: string;
     json?: boolean;
   }
 ): Promise<void> {
@@ -428,6 +444,7 @@ export async function enrichApn(
 
     const extraBody: Record<string, unknown> = {};
     if (options.contactAudience) extraBody.contact_audience = options.contactAudience;
+    if (options.fields) extraBody.fields = parseFieldsCsv(options.fields);
     if (options.state) extraBody.location = { type: 'state', code: options.state };
     else if (options.zip) extraBody.location = { type: 'zip_code', code: options.zip };
 
@@ -453,8 +470,10 @@ export async function enrichApn(
     if (options.state) requestBody.location = { type: 'state', code: options.state };
     else if (options.zip) requestBody.location = { type: 'zip_code', code: options.zip };
     if (options.contactAudience) requestBody.contact_audience = options.contactAudience;
+    if (options.fields) requestBody.fields = parseFieldsCsv(options.fields);
   } else {
     requestBody = await parseRequestBody(options);
+    if (options.fields) requestBody.fields = parseFieldsCsv(options.fields);
   }
 
   // Auto-batch large JSON input
@@ -505,6 +524,7 @@ export async function enrichEmail(
     zip?: string;
     county?: string;
     city?: string;
+    fields?: string;
     json?: boolean;
   }
 ): Promise<void> {
@@ -526,6 +546,7 @@ export async function enrichEmail(
 
     const extraBody: Record<string, unknown> = {};
     if (options.includeProperties) extraBody.include_properties = true;
+    if (options.fields) extraBody.fields = parseFieldsCsv(options.fields);
     applyLocationOption(extraBody, options);
 
     const merged = await runBatchEnrichment({
@@ -548,8 +569,10 @@ export async function enrichEmail(
   if (email) {
     requestBody = { data: [{ email }] };
     if (options.includeProperties) requestBody.include_properties = true;
+    if (options.fields) requestBody.fields = parseFieldsCsv(options.fields);
   } else {
     requestBody = await parseRequestBody(options);
+    if (options.fields) requestBody.fields = parseFieldsCsv(options.fields);
   }
   applyLocationOption(requestBody, options);
 
@@ -601,6 +624,7 @@ export async function enrichPhone(
     zip?: string;
     county?: string;
     city?: string;
+    fields?: string;
     json?: boolean;
   }
 ): Promise<void> {
@@ -622,6 +646,7 @@ export async function enrichPhone(
 
     const extraBody: Record<string, unknown> = {};
     if (options.includeProperties) extraBody.include_properties = true;
+    if (options.fields) extraBody.fields = parseFieldsCsv(options.fields);
     applyLocationOption(extraBody, options);
 
     const merged = await runBatchEnrichment({
@@ -644,8 +669,10 @@ export async function enrichPhone(
   if (phone) {
     requestBody = { data: [{ phone }] };
     if (options.includeProperties) requestBody.include_properties = true;
+    if (options.fields) requestBody.fields = parseFieldsCsv(options.fields);
   } else {
     requestBody = await parseRequestBody(options);
+    if (options.fields) requestBody.fields = parseFieldsCsv(options.fields);
   }
   applyLocationOption(requestBody, options);
 
@@ -700,6 +727,7 @@ export async function enrichName(
     estimateCost?: boolean;
     page?: string;
     perPage?: string;
+    fields?: string;
     json?: boolean;
   }
 ): Promise<void> {
@@ -725,9 +753,11 @@ export async function enrichName(
     if (options.estimateCost) requestBody.estimate_cost = true;
     if (options.page) requestBody.page = parseInt(options.page, 10);
     if (options.perPage) requestBody.per_page = parseInt(options.perPage, 10);
+    if (options.fields) requestBody.fields = parseFieldsCsv(options.fields);
   } else {
     requestBody = await parseRequestBody(options);
     if (options.estimateCost) requestBody.estimate_cost = true;
+    if (options.fields) requestBody.fields = parseFieldsCsv(options.fields);
   }
   applyLocationOption(requestBody, options);
 
@@ -760,7 +790,12 @@ export async function enrichName(
       name: truncate(String(p.full_name || ''), 25),
       phones: Array.isArray(p.phones) ? String(p.phones.length) : '—',
       emails: Array.isArray(p.emails) ? String(p.emails.length) : '—',
-      properties: Array.isArray(p.properties) ? String(p.properties.length) : '—',
+      properties:
+        p.property_count != null
+          ? String(p.property_count)
+          : Array.isArray(p.properties)
+            ? String(p.properties.length)
+            : '—',
     }));
     printTable(rows, ['id', 'name', 'phones', 'emails', 'properties']);
   } else {
@@ -890,6 +925,10 @@ function printPersonEnrichResult(title: string, data: PersonEnrichResponse): voi
         for (const em of emails) {
           console.log(`      ${chalk.dim('email:')} ${em.address || em.email || '—'}`);
         }
+      }
+
+      if (ct.property_count != null) {
+        console.log(`      ${chalk.dim('properties:')} ${String(ct.property_count)}`);
       }
     }
   }

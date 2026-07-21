@@ -1,7 +1,7 @@
 {
   "name": "@dealmachine/cli",
-  "version": "0.1.2",
-  "description": "DealMachine CLI - DealMachine developer tools",
+  "version": "0.1.3",
+  "description": "DealMachine CLI for property intelligence, people lookup, and enrichment through the public API",
   "author": "DealMachine",
   "license": "MIT",
   "type": "module",
@@ -45,8 +45,12 @@
   },
   "keywords": [
     "dealmachine",
-    "dealmachine",
+    "real-estate",
+    "property-data",
+    "property-intelligence",
+    "lead-generation",
+    "api",
     "cli",
-    "api"
+    "enrichment"
   ]
 }

@@ -35,7 +35,7 @@ describe('CLI API helpers', () => {
       method: 'GET',
       headers: {
         'Authorization': 'Bearer dm_sk_live_test',
-        'User-Agent': 'dm-cli/0.1.2',
+        'User-Agent': 'dm-cli/0.1.3',
       },
     });
   });
