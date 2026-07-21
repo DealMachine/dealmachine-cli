@@ -28,7 +28,7 @@ vi.mock('../../src/lib/output.js', () => ({
 }));
 
 import { peopleGet, peopleIds } from '../../src/commands/people.js';
-import { propertiesGet } from '../../src/commands/properties.js';
+import { propertiesGet, propertiesIds } from '../../src/commands/properties.js';
 import {
   enrichAddress,
   enrichApn,
@@ -49,6 +49,56 @@ beforeEach(() => {
 });
 
 describe('CLI public API extensions', () => {
+  it('passes contact_audience=none to single and batch property lookups', async () => {
+    mockApiRequest.mockResolvedValue({
+      data: { dm_property_id: 'prop_123' },
+      credits: { used: 1, properties: 1, people: 0, deduplicated: 0 },
+    });
+
+    await propertiesGet('prop_123', { contactAudience: 'none', json: true });
+    expect(mockApiRequest).toHaveBeenCalledWith('/properties/prop_123', {
+      query: { contact_audience: 'none' },
+    });
+
+    await propertiesIds({ ids: ['prop_123'], contactAudience: 'none', json: true });
+    expect(mockApiRequest).toHaveBeenCalledWith('/properties/ids', {
+      method: 'POST',
+      body: { ids: ['prop_123'], contact_audience: 'none' },
+    });
+  });
+
+  it('passes contact_audience=none to property enrichment', async () => {
+    await enrichAddress('123 Main St, Austin, TX 78704', {
+      contactAudience: 'none',
+      json: true,
+    });
+    expect(mockApiRequest).toHaveBeenCalledWith('/enrichment/address', {
+      method: 'POST',
+      body: {
+        data: [{ full_address: '123 Main St, Austin, TX 78704' }],
+        contact_audience: 'none',
+      },
+    });
+
+    await enrichLatLng('30.25,-97.75', { contactAudience: 'none', json: true });
+    expect(mockApiRequest).toHaveBeenCalledWith('/enrichment/reverse-geocode', {
+      method: 'POST',
+      body: {
+        data: [{ latitude: 30.25, longitude: -97.75 }],
+        contact_audience: 'none',
+      },
+    });
+
+    await enrichApn('1234567890', { contactAudience: 'none', json: true });
+    expect(mockApiRequest).toHaveBeenCalledWith('/enrichment/apn', {
+      method: 'POST',
+      body: {
+        data: [{ apn: '1234567890' }],
+        contact_audience: 'none',
+      },
+    });
+  });
+
   it('passes fields and property_limit to a single person lookup', async () => {
     mockApiRequest.mockResolvedValue({
       data: { dm_person_id: 'per_123' },
