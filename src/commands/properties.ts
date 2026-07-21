@@ -164,10 +164,11 @@ export async function propertiesCount(
 
 export async function propertiesGet(
   id: string,
-  options: { contactAudience?: string; json?: boolean }
+  options: { contactAudience?: string; fields?: string; json?: boolean }
 ): Promise<void> {
   const query: Record<string, string> = {};
   if (options.contactAudience) query.contact_audience = options.contactAudience;
+  if (options.fields) query.fields = options.fields;
 
   const spinner = createSpinner('Fetching property...').start();
   const data = await apiRequest<GetPropertyResponse>(`/properties/${id}`, { query });

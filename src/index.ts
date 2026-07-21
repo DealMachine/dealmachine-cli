@@ -625,6 +625,7 @@ propertiesCmd
     '--contact-audience <audience>',
     'Include contacts: owners, owners_and_family, renters, residents, all'
   )
+  .option('--fields <csv>', 'Comma-separated property field IDs from dm fields')
   .option('--json', 'Output as JSON')
   .addHelpText(
     'after',
@@ -1000,6 +1001,7 @@ peopleCmd
   .command('get <id>')
   .description('Get a person by ID (e.g., per_12345)')
   .option('--include-properties', 'Include associated properties')
+  .option('--property-limit <n>', 'Maximum associated properties to return when included')
   .option('--fields <csv>', 'Comma-separated field IDs from dm fields')
   .option('--json', 'Output as JSON')
   .addHelpText(
@@ -1020,6 +1022,7 @@ peopleCmd
   .option('--body <json>', 'Request body as JSON string')
   .option('-f, --file <path>', 'Read request body from a JSON file')
   .option('--include-properties', 'Include associated properties')
+  .option('--property-limit <n>', 'Maximum associated properties to return per person')
   .option('--fields <csv>', 'Comma-separated field IDs from dm fields')
   .option('--json', 'Output as JSON')
   .addHelpText(
@@ -1080,6 +1083,7 @@ enrichCmd
     '--contact-audience <audience>',
     'Include contacts: owners, owners_and_family, renters, residents'
   )
+  .option('--fields <csv>', 'Comma-separated field IDs from dm fields')
   .option('--json', 'Output as JSON')
   .addHelpText(
     'after',
@@ -1103,6 +1107,7 @@ enrichCmd
     '--contact-audience <audience>',
     'Include contacts: owners, owners_and_family, renters, residents'
   )
+  .option('--fields <csv>', 'Comma-separated field IDs from dm fields')
   .option('--json', 'Output as JSON')
   .addHelpText(
     'after',
@@ -1126,6 +1131,7 @@ enrichCmd
     '--contact-audience <audience>',
     'Include contacts: owners, owners_and_family, renters, residents'
   )
+  .option('--fields <csv>', 'Comma-separated field IDs from dm fields')
   .option('--json', 'Output as JSON')
   .addHelpText(
     'after',
@@ -1148,6 +1154,7 @@ enrichCmd
   .option('--zip <code>', 'Narrow by ZIP code')
   .option('--county <fips>', 'Narrow by county FIPS')
   .option('--city <place-id>', 'Narrow by city place ID from dm locations search')
+  .option('--fields <csv>', 'Comma-separated field IDs from dm fields')
   .option('--json', 'Output as JSON')
   .addHelpText(
     'after',
@@ -1171,6 +1178,7 @@ enrichCmd
   .option('--zip <code>', 'Narrow by ZIP code')
   .option('--county <fips>', 'Narrow by county FIPS')
   .option('--city <place-id>', 'Narrow by city place ID from dm locations search')
+  .option('--fields <csv>', 'Comma-separated field IDs from dm fields')
   .option('--json', 'Output as JSON')
   .addHelpText(
     'after',
@@ -1196,6 +1204,7 @@ enrichCmd
   .option('--estimate-cost', 'Return match count and estimated credits without consuming credits')
   .option('--page <n>', 'Page number')
   .option('--per-page <n>', 'Results per page')
+  .option('--fields <csv>', 'Comma-separated field IDs from dm fields')
   .option('--json', 'Output as JSON')
   .addHelpText(
     'after',

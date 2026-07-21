@@ -413,12 +413,14 @@ Get a single property by its DealMachine ID.
 ```bash
 dm properties get prop_12345
 dm properties get prop_12345 --contact-audience owners_and_family
+dm properties get prop_12345 --fields estimated_value,equity
 dm properties get prop_12345 --json
 ```
 
 | Option                          | Description                                                  |
 | ------------------------------- | ------------------------------------------------------------ |
 | `--contact-audience <audience>` | `owners`, `owners_and_family`, `renters`, `residents`, `all` |
+| `--fields <csv>`                | Comma-separated property field IDs from `dm fields`          |
 | `--json`                        | Output as JSON                                               |
 
 #### `dm properties ids [ids...]`
@@ -495,14 +497,17 @@ Get a single person by their DealMachine ID.
 
 ```bash
 dm people get per_12345
-dm people get per_12345 --include-properties
+dm people get per_12345 --include-properties --property-limit 20
+dm people get per_12345 --fields estimated_household_income,estimated_value
 dm people get per_12345 --json
 ```
 
-| Option                 | Description                   |
-| ---------------------- | ----------------------------- |
-| `--include-properties` | Include associated properties |
-| `--json`               | Output as JSON                |
+| Option                 | Description                                                |
+| ---------------------- | ---------------------------------------------------------- |
+| `--include-properties` | Include associated properties                              |
+| `--property-limit <n>` | Maximum associated properties to return, from 1 through 100 |
+| `--fields <csv>`       | Comma-separated field IDs from `dm fields`                 |
+| `--json`               | Output as JSON                                             |
 
 #### `dm people ids [ids...]`
 
@@ -510,8 +515,15 @@ Get multiple people by their IDs in a single batch request.
 
 ```bash
 dm people ids per_111 per_222 per_333
-dm people ids --body '{"ids": ["per_111", "per_222"]}' --include-properties
+dm people ids --body '{"ids": ["per_111", "per_222"]}' --include-properties --property-limit 20
+dm people ids per_111 per_222 --fields estimated_household_income,estimated_value
 ```
+
+| Option                 | Description                                                    |
+| ---------------------- | -------------------------------------------------------------- |
+| `--include-properties` | Include associated properties                                  |
+| `--property-limit <n>` | Maximum associated properties to return per person, up to 100 |
+| `--fields <csv>`       | Comma-separated field IDs from `dm fields`                     |
 
 #### `dm people export`
 
@@ -528,7 +540,7 @@ Contact filter options are the same as `dm properties export`.
 
 ### Enrich Commands
 
-All enrichment commands support three input modes: a positional argument for single-item lookup, `--body`/`-f` for JSON payloads, and `-f` with a `.csv` file for batch enrichment from CSV. Batches larger than 250 items are automatically chunked.
+All enrichment commands support three input modes: a positional argument for single-item lookup, `--body`/`-f` for JSON payloads, and `-f` with a `.csv` file for batch enrichment from CSV. Batches larger than 250 items are automatically chunked. Every enrichment command accepts `--fields <csv>` and sends the selected field IDs to the API. Email, phone, and name matches also include a free `property_count`; use `--include-properties` when you need the property records themselves.
 
 #### `dm enrich address [address]`
 
@@ -537,6 +549,7 @@ Look up a property by street address.
 ```bash
 # Single address
 dm enrich address "123 Main St, Austin, TX 78704"
+dm enrich address "123 Main St, Austin, TX 78704" --fields estimated_value,equity
 
 # Batch from JSON
 dm enrich address --body '{"data": [{"full_address": "123 Main St, Austin, TX"}]}'
@@ -552,6 +565,7 @@ dm enrich address -f addresses.csv --contact-audience owners
 | `--body <json>`                 | Request body as JSON string                           |
 | `-f, --file <path>`             | Read from JSON or CSV file                            |
 | `--contact-audience <audience>` | `owners`, `owners_and_family`, `renters`, `residents` |
+| `--fields <csv>`                | Comma-separated field IDs from `dm fields`            |
 | `--json`                        | Output as JSON                                        |
 
 #### `dm enrich latlng [coords]`
@@ -560,7 +574,7 @@ Look up a property by latitude/longitude coordinates.
 
 ```bash
 dm enrich latlng 30.25,-97.75
-dm enrich latlng -f coordinates.csv
+dm enrich latlng -f coordinates.csv --fields estimated_value,equity
 # CSV columns: latitude, longitude (or lat, lng/lon/long)
 ```
 
@@ -570,7 +584,7 @@ Look up a property by Assessor's Parcel Number. Narrow results with `--state` or
 
 ```bash
 dm enrich apn "0123-456-789" --state TX
-dm enrich apn -f parcels.csv --zip 78704
+dm enrich apn -f parcels.csv --zip 78704 --fields estimated_value,equity
 # CSV columns: apn (or parcel_id, parcel_number)
 ```
 
@@ -579,6 +593,7 @@ dm enrich apn -f parcels.csv --zip 78704
 | `--state <code>`                | Narrow by state (e.g., TX)                            |
 | `--zip <code>`                  | Narrow by ZIP code                                    |
 | `--contact-audience <audience>` | `owners`, `owners_and_family`, `renters`, `residents` |
+| `--fields <csv>`                | Comma-separated field IDs from `dm fields`            |
 
 #### `dm enrich email [email]`
 
@@ -587,13 +602,14 @@ Look up a person by email address.
 ```bash
 dm enrich email jane@example.com
 dm enrich email jane@example.com --include-properties
-dm enrich email -f emails.csv --json
+dm enrich email -f emails.csv --fields estimated_household_income,estimated_value --json
 # CSV columns: email (or email_address)
 ```
 
-| Option                 | Description                   |
-| ---------------------- | ----------------------------- |
-| `--include-properties` | Include associated properties |
+| Option                 | Description                                    |
+| ---------------------- | ---------------------------------------------- |
+| `--include-properties` | Include associated properties                  |
+| `--fields <csv>`       | Comma-separated field IDs from `dm fields`     |
 
 #### `dm enrich phone [phone]`
 
@@ -601,9 +617,14 @@ Look up a person by phone number.
 
 ```bash
 dm enrich phone 5125551234
-dm enrich phone -f phones.csv --include-properties
+dm enrich phone -f phones.csv --include-properties --fields estimated_value
 # CSV columns: phone (or phone_number)
 ```
+
+| Option                 | Description                                |
+| ---------------------- | ------------------------------------------ |
+| `--include-properties` | Include associated properties              |
+| `--fields <csv>`       | Comma-separated field IDs from `dm fields` |
 
 #### `dm enrich name [name]`
 
@@ -614,6 +635,7 @@ dm enrich name "Jane Doe"
 dm enrich name "Jane Doe" --state TX --estimate-cost
 dm enrich name "Doe" --state TX --page 2
 dm enrich name "Jane Doe" --zip 78704 --include-properties
+dm enrich name "Jane Doe" --fields estimated_household_income,estimated_value
 ```
 
 | Option                 | Description                   |
@@ -621,6 +643,7 @@ dm enrich name "Jane Doe" --zip 78704 --include-properties
 | `--state <code>`       | Narrow by state               |
 | `--zip <code>`         | Narrow by ZIP code            |
 | `--include-properties` | Include associated properties |
+| `--fields <csv>`       | Field IDs from `dm fields`     |
 | `--estimate-cost`      | Preview count and credits     |
 | `--page <n>`           | Page number                   |
 | `--per-page <n>`       | Results per page              |

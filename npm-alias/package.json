@@ -1,7 +1,7 @@
 {
   "name": "dealmachine",
-  "version": "0.1.2",
-  "description": "Install alias for the DealMachine CLI",
+  "version": "0.1.3",
+  "description": "Short install alias for the DealMachine property intelligence CLI",
   "author": "DealMachine",
   "license": "MIT",
   "type": "module",
@@ -23,7 +23,7 @@
     "LICENSE"
   ],
   "dependencies": {
-    "@dealmachine/cli": "0.1.2"
+    "@dealmachine/cli": "0.1.3"
   },
   "engines": {
     "node": ">=18"
@@ -33,7 +33,12 @@
   },
   "keywords": [
     "dealmachine",
+    "real-estate",
+    "property-data",
+    "property-intelligence",
+    "lead-generation",
     "cli",
-    "api"
+    "api",
+    "enrichment"
   ]
 }
