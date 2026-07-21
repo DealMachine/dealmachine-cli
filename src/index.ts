@@ -623,7 +623,7 @@ propertiesCmd
   .description('Get a property by ID (e.g., prop_12345)')
   .option(
     '--contact-audience <audience>',
-    'Include contacts: owners, owners_and_family, renters, residents, all'
+    'Include contacts: owners, owners_and_family, renters, residents, all, none'
   )
   .option('--fields <csv>', 'Comma-separated property field IDs from dm fields')
   .option('--json', 'Output as JSON')
@@ -632,6 +632,7 @@ propertiesCmd
     `
 Examples:
   dm properties get prop_12345
+  dm properties get prop_12345 --contact-audience none --json
   dm properties get prop_12345 --contact-audience owners --json`
   )
   .action(async (id, options) => {
@@ -645,7 +646,7 @@ propertiesCmd
   .option('-f, --file <path>', 'Read request body from a JSON file')
   .option(
     '--contact-audience <audience>',
-    'Include contacts: owners, owners_and_family, renters, residents, all'
+    'Include contacts: owners, owners_and_family, renters, residents, all, none'
   )
   .option('--json', 'Output as JSON')
   .addHelpText(
@@ -1081,7 +1082,7 @@ enrichCmd
   .option('-f, --file <path>', 'Read request body from a JSON file (JSON or CSV)')
   .option(
     '--contact-audience <audience>',
-    'Include contacts: owners, owners_and_family, renters, residents'
+    'Include contacts: owners, owners_and_family, renters, residents, none'
   )
   .option('--fields <csv>', 'Comma-separated field IDs from dm fields')
   .option('--json', 'Output as JSON')
@@ -1090,6 +1091,7 @@ enrichCmd
     `
 Examples:
   dm enrich address "123 Main St, Austin, TX 78704" --json
+  dm enrich address "123 Main St, Austin, TX" --contact-audience none --json
   dm enrich address "123 Main St, Austin, TX" --contact-audience owners
   dm enrich address -f addresses.csv --json          Batch enrich from CSV
   dm enrich address --body '{"addresses":[{"full_address":"123 Main St, Austin, TX"}]}'`
@@ -1105,7 +1107,7 @@ enrichCmd
   .option('-f, --file <path>', 'Read request body from a JSON file (JSON or CSV)')
   .option(
     '--contact-audience <audience>',
-    'Include contacts: owners, owners_and_family, renters, residents'
+    'Include contacts: owners, owners_and_family, renters, residents, none'
   )
   .option('--fields <csv>', 'Comma-separated field IDs from dm fields')
   .option('--json', 'Output as JSON')
@@ -1129,7 +1131,7 @@ enrichCmd
   .option('--zip <code>', 'Narrow by ZIP code')
   .option(
     '--contact-audience <audience>',
-    'Include contacts: owners, owners_and_family, renters, residents'
+    'Include contacts: owners, owners_and_family, renters, residents, none'
   )
   .option('--fields <csv>', 'Comma-separated field IDs from dm fields')
   .option('--json', 'Output as JSON')

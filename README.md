@@ -413,15 +413,18 @@ Get a single property by its DealMachine ID.
 ```bash
 dm properties get prop_12345
 dm properties get prop_12345 --contact-audience owners_and_family
+dm properties get prop_12345 --contact-audience none
 dm properties get prop_12345 --fields estimated_value,equity
 dm properties get prop_12345 --json
 ```
 
 | Option                          | Description                                                  |
 | ------------------------------- | ------------------------------------------------------------ |
-| `--contact-audience <audience>` | `owners`, `owners_and_family`, `renters`, `residents`, `all` |
+| `--contact-audience <audience>` | `owners`, `owners_and_family`, `renters`, `residents`, `all`, `none` |
 | `--fields <csv>`                | Comma-separated property field IDs from `dm fields`          |
 | `--json`                        | Output as JSON                                               |
+
+Property lookup defaults to `owners`. If you only need property data, use `--contact-audience none`. This omits contacts and avoids people credits.
 
 #### `dm properties ids [ids...]`
 
@@ -436,13 +439,14 @@ dm properties ids --body '{"ids": ["prop_111", "prop_222"]}'
 
 # From file
 dm properties ids -f ids.json --contact-audience owners
+dm properties ids -f ids.json --contact-audience none
 ```
 
 | Option                          | Description                                                                    |
 | ------------------------------- | ------------------------------------------------------------------------------ |
 | `--body <json>`                 | Request body as JSON string                                                    |
 | `-f, --file <path>`             | Read request body from a JSON file                                             |
-| `--contact-audience <audience>` | Include contacts: `owners`, `owners_and_family`, `renters`, `residents`, `all` |
+| `--contact-audience <audience>` | Include contacts: `owners`, `owners_and_family`, `renters`, `residents`, `all`, `none` |
 | `--json`                        | Output as JSON                                                                 |
 
 #### `dm properties export`
@@ -549,6 +553,7 @@ Look up a property by street address.
 ```bash
 # Single address
 dm enrich address "123 Main St, Austin, TX 78704"
+dm enrich address "123 Main St, Austin, TX 78704" --contact-audience none
 dm enrich address "123 Main St, Austin, TX 78704" --fields estimated_value,equity
 
 # Batch from JSON
@@ -564,9 +569,11 @@ dm enrich address -f addresses.csv --contact-audience owners
 | ------------------------------- | ----------------------------------------------------- |
 | `--body <json>`                 | Request body as JSON string                           |
 | `-f, --file <path>`             | Read from JSON or CSV file                            |
-| `--contact-audience <audience>` | `owners`, `owners_and_family`, `renters`, `residents` |
+| `--contact-audience <audience>` | `owners`, `owners_and_family`, `renters`, `residents`, `none` |
 | `--fields <csv>`                | Comma-separated field IDs from `dm fields`            |
 | `--json`                        | Output as JSON                                        |
+
+Use `--contact-audience none` whenever you only need the property. The response omits contacts and consumes zero people credits.
 
 #### `dm enrich latlng [coords]`
 
@@ -574,7 +581,7 @@ Look up a property by latitude/longitude coordinates.
 
 ```bash
 dm enrich latlng 30.25,-97.75
-dm enrich latlng -f coordinates.csv --fields estimated_value,equity
+dm enrich latlng -f coordinates.csv --fields estimated_value,equity --contact-audience none
 # CSV columns: latitude, longitude (or lat, lng/lon/long)
 ```
 
@@ -592,7 +599,7 @@ dm enrich apn -f parcels.csv --zip 78704 --fields estimated_value,equity
 | ------------------------------- | ----------------------------------------------------- |
 | `--state <code>`                | Narrow by state (e.g., TX)                            |
 | `--zip <code>`                  | Narrow by ZIP code                                    |
-| `--contact-audience <audience>` | `owners`, `owners_and_family`, `renters`, `residents` |
+| `--contact-audience <audience>` | `owners`, `owners_and_family`, `renters`, `residents`, `none` |
 | `--fields <csv>`                | Comma-separated field IDs from `dm fields`            |
 
 #### `dm enrich email [email]`
