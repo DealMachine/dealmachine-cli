@@ -37,6 +37,10 @@ import {
   enrichName,
   enrichPhone,
 } from '../../src/commands/enrich.js';
+import {
+  addressesAutocomplete,
+  locationsAutocomplete,
+} from '../../src/commands/locations.js';
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -194,6 +198,47 @@ describe('CLI public API extensions', () => {
     expect(mockApiRequest).toHaveBeenCalledWith('/enrichment/name', {
       method: 'POST',
       body: expect.objectContaining({ location: { type: 'city', code: '53584' } }),
+    });
+  });
+
+  it('passes autocomplete controls to the addresses endpoint', async () => {
+    mockApiRequest.mockResolvedValue({
+      data: [],
+      meta: { query: '1200 Barton', scope: 'all', limit: 5, returned: 0, partial_results: false },
+    });
+
+    await addressesAutocomplete({
+      query: '1200 Barton',
+      scope: 'all',
+      state: 'TX',
+      limit: '5',
+      latitude: '30.26',
+      longitude: '-97.76',
+      json: true,
+    });
+
+    expect(mockApiRequest).toHaveBeenCalledWith('/addresses/autocomplete', {
+      query: {
+        q: '1200 Barton',
+        scope: 'all',
+        state: 'TX',
+        limit: '5',
+        latitude: '30.26',
+        longitude: '-97.76',
+      },
+    });
+  });
+
+  it('keeps the locations autocomplete command as a compatibility alias', async () => {
+    mockApiRequest.mockResolvedValue({
+      data: [],
+      meta: { query: 'Austin', scope: 'location', limit: 5, returned: 0, partial_results: false },
+    });
+
+    await locationsAutocomplete({ query: 'Austin', scope: 'location', json: true });
+
+    expect(mockApiRequest).toHaveBeenCalledWith('/addresses/autocomplete', {
+      query: { q: 'Austin', scope: 'location' },
     });
   });
 
