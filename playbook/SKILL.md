@@ -386,8 +386,11 @@ Ask if they want to:
 | "owner and their family"            | `owners_and_family` |
 | "who rents there" / "tenants"       | `renters`           |
 | "who lives there" / "residents"     | `residents`         |
+| "property only" / "no contacts"     | `none`              |
 
 **Credit impact:** Property-shaped results cost 1 property data credit per property, and contacts in `contact_audience` consume people credits. If the user wants a Contact List, Phone List, or Email List, charge 1 people data credit per distinct contact even when property filters created the list.
+
+**Best practice:** Use `contact_audience: "none"` whenever the user only needs property data. This omits contacts and consumes zero people credits. Use `owners` or another audience only when the user needs those people records.
 
 ### Export Defaults
 

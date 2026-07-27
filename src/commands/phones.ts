@@ -80,7 +80,12 @@ export async function phonesDnc(
 
   for (const item of data.data) {
     if (item.matched) {
-      const dnc = item.do_not_call ? chalk.red('DNC') : chalk.green('OK');
+      const dnc =
+        item.do_not_call === true
+          ? chalk.red('DNC')
+          : item.do_not_call === false
+            ? chalk.green('OK')
+            : chalk.yellow('UNKNOWN');
       const type = item.phone_type ? chalk.dim(` (${item.phone_type})`) : '';
       console.log(`  ${chalk.green('✓ matched')}   ${item.input.number}  ${dnc}${type}`);
     } else {

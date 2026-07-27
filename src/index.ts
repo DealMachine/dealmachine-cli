@@ -38,7 +38,12 @@ import { activitySearch, activityGet } from './commands/activity.js';
 import { addressesValidate } from './commands/addresses.js';
 import { licenseAdd, licenseList, licenseRemove } from './commands/dev.js';
 import { comps } from './commands/comps.js';
-import { locationsSearch, locationsGet } from './commands/locations.js';
+import {
+  addressesAutocomplete,
+  locationsSearch,
+  locationsAutocomplete,
+  locationsGet,
+} from './commands/locations.js';
 import { phonesDnc } from './commands/phones.js';
 import { exportsList, exportsGet } from './commands/exports.js';
 import { subscriptionStatus } from './commands/subscription.js';
@@ -479,6 +484,28 @@ Examples:
   });
 
 locationsCmd
+  .command('autocomplete <query>')
+  .alias('complete')
+  .description('Deprecated alias for dm addresses autocomplete')
+  .option('--scope <scope>', 'Suggestion scope: all, address, location', 'all')
+  .option('--state <code>', 'Prefer a state (two-letter abbreviation, e.g., TX)')
+  .option('--limit <n>', 'Maximum suggestions (default 5, max 10)', '5')
+  .option('--latitude <number>', 'Latitude for nearby address ranking')
+  .option('--longitude <number>', 'Longitude for nearby address ranking')
+  .option('--json', 'Output as JSON')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  dm locations autocomplete "1200 Barton Springs" --state TX
+  dm locations autocomplete "saint louis 63101" --scope location --json
+  dm loc autocomplete "Harris County" --limit 5`
+  )
+  .action(async (query, options) => {
+    await locationsAutocomplete({ query, ...options });
+  });
+
+locationsCmd
   .command('get <locationId>')
   .description('Get a location by ID (e.g., loc_county_48201, loc_city_7333)')
   .option('--json', 'Output as JSON')
@@ -682,7 +709,7 @@ propertiesCmd
   )
   .option('--require-phone', 'Only include records where the contact has a phone number')
   .option('--require-email', 'Only include records where the contact has an email address')
-  .option('--mobile-only', 'Only include mobile phone numbers')
+  .option('--mobile-only', 'Only include wireless phone numbers')
   .option('--landline-only', 'Only include landline phone numbers')
   .option('--scrub-dnc', 'Exclude contacts on the Do Not Call registry')
   .option('--json', 'Output as JSON')
@@ -1052,7 +1079,7 @@ peopleCmd
   )
   .option('--require-phone', 'Only include records where the contact has a phone number')
   .option('--require-email', 'Only include records where the contact has an email address')
-  .option('--mobile-only', 'Only include mobile phone numbers')
+  .option('--mobile-only', 'Only include wireless phone numbers')
   .option('--landline-only', 'Only include landline phone numbers')
   .option('--scrub-dnc', 'Exclude contacts on the Do Not Call registry')
   .option('--json', 'Output as JSON')
@@ -1316,7 +1343,31 @@ Examples:
 // Address validation
 // ============================================================================
 
-const addressesCmd = program.command('addresses').description('Validate and standardize addresses');
+const addressesCmd = program
+  .command('addresses')
+  .description('Autocomplete, validate, and standardize addresses');
+
+addressesCmd
+  .command('autocomplete <query>')
+  .alias('complete')
+  .description('Suggest street addresses and normalized DealMachine locations')
+  .option('--scope <scope>', 'Suggestion scope: all, address, location', 'all')
+  .option('--state <code>', 'Prefer a state (two-letter abbreviation, e.g., TX)')
+  .option('--limit <n>', 'Maximum suggestions (default 5, max 10)', '5')
+  .option('--latitude <number>', 'Latitude for nearby address ranking')
+  .option('--longitude <number>', 'Longitude for nearby address ranking')
+  .option('--json', 'Output as JSON')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  dm addresses autocomplete "1200 Barton Springs" --state TX
+  dm addresses autocomplete "saint louis 63101" --scope location --json
+  dm addresses autocomplete "Harris County" --limit 5`
+  )
+  .action(async (query, options) => {
+    await addressesAutocomplete({ query, ...options });
+  });
 
 addressesCmd
   .command('validate [address]')

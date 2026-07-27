@@ -27,7 +27,7 @@ This package has **zero** `@dealmachine/*` dependencies -- it is a self-containe
   - [Filters](#filters-commands) -- list available search filters
   - [Fields](#fields-commands) -- list available data fields
   - [Activity](#activity-commands) -- `search`, `get`
-  - [Addresses](#addresses-commands) -- `validate`
+  - [Addresses](#addresses-commands) -- `autocomplete`, `validate`
   - [Dev](#dev-commands) -- `license add`, `license list`, `license remove`
 - [Global Options](#global-options)
 - [Input Methods](#input-methods)
@@ -465,7 +465,7 @@ dm properties export --body '{"locations": [...]}' --mobile-only --json
 | `-f, --file <path>` | Read request body from a JSON file                          |
 | `--require-phone`   | Only include records where the contact has a phone number   |
 | `--require-email`   | Only include records where the contact has an email address |
-| `--mobile-only`     | Only include mobile phone numbers                           |
+| `--mobile-only`     | Only include wireless phone numbers                         |
 | `--landline-only`   | Only include landline phone numbers                         |
 | `--scrub-dnc`       | Exclude contacts on the Do Not Call registry                |
 | `--json`            | Output as JSON                                              |
@@ -869,6 +869,19 @@ dm fields --group-id contact_info --json
 
 ---
 
+### Locations Commands
+
+Search and retrieve DealMachine locations.
+
+```bash
+dm locations search -q "Harris" --type county --state TX --json
+dm locations get loc_city_48106 --json
+```
+
+`dm locations autocomplete` remains available as a deprecated alias for `dm addresses autocomplete`.
+
+---
+
 ### Activity Commands
 
 #### `dm activity search`
@@ -902,6 +915,26 @@ dm activity get act_abc123 --json
 ---
 
 ### Addresses Commands
+
+#### `dm addresses autocomplete <query>`
+
+Return free, bounded address and normalized location suggestions.
+
+```bash
+dm addresses autocomplete "1200 Barton Springs" --state TX
+dm addresses autocomplete "saint louis 63101" --scope location --limit 5 --json
+```
+
+| Option                 | Description                                      |
+| ---------------------- | ------------------------------------------------ |
+| `--scope <scope>`      | `all`, `address`, or `location`, default `all`   |
+| `--state <code>`       | Prefer a two-letter state abbreviation           |
+| `--limit <n>`          | Maximum suggestions, default 5 and max 10        |
+| `--latitude <number>`  | Latitude for nearby ranking, requires longitude  |
+| `--longitude <number>` | Longitude for nearby ranking, requires latitude  |
+| `--json`               | Output raw JSON response                          |
+
+Autocomplete does not request fields, perform enrichment, or consume data credits.
 
 #### `dm addresses validate [address]`
 

@@ -1,6 +1,6 @@
 {
   "name": "dealmachine",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Short install alias for the DealMachine property intelligence CLI",
   "author": "DealMachine",
   "license": "MIT",
@@ -23,7 +23,7 @@
     "LICENSE"
   ],
   "dependencies": {
-    "@dealmachine/cli": "0.1.4"
+    "@dealmachine/cli": "0.1.5"
   },
   "engines": {
     "node": ">=18"

@@ -17,6 +17,10 @@ interface UsageResponse {
   };
   credits: {
     included: number;
+    total_cap?: number;
+    total_available?: number;
+    monthly_remaining?: number;
+    additional_remaining?: number;
     used: number;
     remaining: number;
     overage: number;
@@ -38,15 +42,29 @@ export async function usage(options: { json?: boolean }): Promise<void> {
 
   printHeader('Credit Usage');
 
-  const pct = data.credits.included > 0
-    ? Math.round((data.credits.used / data.credits.included) * 100)
-    : 0;
+  const totalCap = data.credits.total_cap ?? data.credits.included;
+  const remaining = data.credits.total_available ?? data.credits.remaining;
+  const pct = totalCap > 0 ? Math.round((data.credits.used / totalCap) * 100) : 0;
 
-  console.log(`  ${chalk.cyan('Plan:')}         ${data.plan.name}${data.plan.is_paid ? '' : chalk.dim(' (free)')}`);
-  console.log(`  ${chalk.cyan('Cycle:')}        ${fmtDate(data.billing_cycle.start)} — ${fmtDate(data.billing_cycle.end)}`);
+  console.log(
+    `  ${chalk.cyan('Plan:')}         ${data.plan.name}${data.plan.is_paid ? '' : chalk.dim(' (free)')}`
+  );
+  console.log(
+    `  ${chalk.cyan('Cycle:')}        ${fmtDate(data.billing_cycle.start)} to ${fmtDate(data.billing_cycle.end)}`
+  );
   console.log();
-  console.log(`  ${chalk.cyan('Credits:')}      ${data.credits.used.toLocaleString()} / ${data.credits.included.toLocaleString()} (${pct}%)`);
-  console.log(`  ${chalk.cyan('Remaining:')}    ${data.credits.remaining.toLocaleString()}`);
+  console.log(
+    `  ${chalk.cyan('Credits:')}      ${data.credits.used.toLocaleString()} / ${totalCap.toLocaleString()} (${pct}%)`
+  );
+  console.log(`  ${chalk.cyan('Remaining:')}    ${remaining.toLocaleString()}`);
+  if (data.credits.additional_remaining && data.credits.additional_remaining > 0) {
+    console.log(
+      `  ${chalk.cyan('Monthly left:')} ${data.credits.monthly_remaining?.toLocaleString() ?? '0'}`
+    );
+    console.log(
+      `  ${chalk.cyan('Extra left:')}   ${data.credits.additional_remaining.toLocaleString()}`
+    );
+  }
   if (data.credits.overage > 0) {
     console.log(`  ${chalk.yellow('Overage:')}      ${data.credits.overage.toLocaleString()}`);
   }
