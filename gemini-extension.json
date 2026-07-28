@@ -1,6 +1,6 @@
 {
   "name": "dealmachine",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Search and enrich US property, owner, people, and company data with DealMachine.",
   "mcpServers": {
     "dealmachine": {
