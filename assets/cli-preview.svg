@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="800" viewBox="0 0 1280 800">
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#062c2d"/>
+      <stop offset="1" stop-color="#031717"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="24" stdDeviation="28" flood-color="#000000" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+
+  <rect width="1280" height="800" fill="url(#background)"/>
+  <circle cx="1120" cy="64" r="260" fill="#0d9488" opacity="0.12"/>
+  <circle cx="150" cy="760" r="290" fill="#14b8a6" opacity="0.08"/>
+
+  <text x="92" y="104" fill="#ffffff" font-family="Inter, Arial, sans-serif" font-size="38" font-weight="700">DealMachine CLI</text>
+  <text x="92" y="145" fill="#99f6e4" font-family="Inter, Arial, sans-serif" font-size="22">Property, people, and lead intelligence from your terminal</text>
+
+  <g filter="url(#shadow)">
+    <rect x="84" y="190" width="1112" height="520" rx="20" fill="#071212" stroke="#1f4d4b" stroke-width="2"/>
+    <path d="M84 210a20 20 0 0 1 20-20h1072a20 20 0 0 1 20 20v42H84z" fill="#102524"/>
+    <circle cx="120" cy="221" r="7" fill="#fb7185"/>
+    <circle cx="146" cy="221" r="7" fill="#fbbf24"/>
+    <circle cx="172" cy="221" r="7" fill="#34d399"/>
+    <text x="640" y="228" text-anchor="middle" fill="#94a3b8" font-family="SFMono-Regular, Menlo, monospace" font-size="15">dm</text>
+  </g>
+
+  <g font-family="SFMono-Regular, Menlo, Consolas, monospace" font-size="20">
+    <text x="122" y="300" fill="#5eead4">$</text>
+    <text x="148" y="300" fill="#f8fafc">npm install -g dealmachine</text>
+
+    <text x="122" y="350" fill="#5eead4">$</text>
+    <text x="148" y="350" fill="#f8fafc">dm --help</text>
+
+    <text x="122" y="400" fill="#cbd5e1">Usage: dm [options] [command]</text>
+    <text x="122" y="448" fill="#f8fafc">properties</text>
+    <text x="324" y="448" fill="#94a3b8">Search, count, inspect, and export properties</text>
+    <text x="122" y="486" fill="#f8fafc">people</text>
+    <text x="324" y="486" fill="#94a3b8">Find people and export targeted audiences</text>
+    <text x="122" y="524" fill="#f8fafc">enrich</text>
+    <text x="324" y="524" fill="#94a3b8">Look up properties and people by known data</text>
+    <text x="122" y="562" fill="#f8fafc">comps</text>
+    <text x="324" y="562" fill="#94a3b8">Find comparable property sales</text>
+    <text x="122" y="600" fill="#f8fafc">lists · crm · dialer · mail</text>
+    <text x="510" y="600" fill="#94a3b8">Run DealMachine workflows from scripts</text>
+
+    <text x="122" y="656" fill="#5eead4">$</text>
+    <text x="148" y="656" fill="#f8fafc">dm properties count --body-file search.json --json</text>
+  </g>
+
+  <rect x="934" y="86" width="260" height="54" rx="27" fill="#0d9488"/>
+  <text x="1064" y="121" text-anchor="middle" fill="#ffffff" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="700">npm: dealmachine</text>
+
+  <text x="92" y="756" fill="#5eead4" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="600">dealmachine.com</text>
+  <text x="1194" y="756" text-anchor="end" fill="#78908f" font-family="Inter, Arial, sans-serif" font-size="16">CLI 0.1.5</text>
+</svg>
