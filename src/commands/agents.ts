@@ -69,7 +69,7 @@ function getPlaybookCandidates(): string[] {
     new Set([
       path.resolve(currentDir, '../agents', PLAYBOOK_FILE_NAME),
       path.resolve(currentDir, '../../dist/agents', PLAYBOOK_FILE_NAME),
-      path.resolve(currentDir, '../../playbook/SKILL.md'),
+      path.resolve(currentDir, '../../playbook/PLAYBOOK.md'),
       path.resolve(currentDir, '../../../playbooks/playbook/SKILL.md'),
       path.resolve(process.cwd(), 'packages/playbooks/playbook/SKILL.md'),
       path.resolve(process.cwd(), '../playbooks/playbook/SKILL.md'),
