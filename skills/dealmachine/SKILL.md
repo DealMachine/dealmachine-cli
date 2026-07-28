@@ -15,6 +15,8 @@ Use DealMachine to turn a user's sales, marketing, lead generation, or real esta
 
 Never ask the user to paste an API key into chat.
 
+Read [REFERENCE.md](REFERENCE.md) when you need the exact MCP Tool ID, CLI command group, or current interface coverage. The reference tracks DealMachine CLI 0.1.5 and hosted MCP 0.3.0.
+
 ## Protect credits
 
 - Treat filters, fields, locations, usage, identity checks, and count operations as discovery steps.
@@ -45,23 +47,24 @@ Ask one focused question only when a missing detail would materially change the 
 
 - Use `dealmachine_filters` to find valid property, people, or company filters.
 - Use `dealmachine_fields` to find valid output fields.
-- Use `dealmachine_locations` to resolve supported locations.
+- Use `dealmachine_location_search` to resolve supported locations.
 - Use `dealmachine_usage` before large paid operations.
 - Use `dealmachine_whoami` when account context matters.
 
 ### Property workflows
 
-- Use `dealmachine_properties_count` before a broad search.
-- Use `dealmachine_properties_search` for a limited result set.
-- Use `dealmachine_property_get` or `dealmachine_properties_get_many` for known IDs.
-- Use `dealmachine_properties_export` only after confirming scope and credit impact.
-- Use `dealmachine_property_comps` for comparable sales.
+- Use `dealmachine_property_count` before a broad search.
+- Use `dealmachine_property_search` for a limited result set.
+- Use `dealmachine_property_get` or `dealmachine_property_get_many` for known IDs.
+- Use `dealmachine_property_export` only after confirming scope and credit impact.
+- Use `dealmachine_comps` for comparable sales.
 
 ### People and company workflows
 
-- Use `dealmachine_people_count` or `dealmachine_companies_count` before a broad search.
-- Use the matching search, get, or get-many tool for results.
-- Use an export tool only after confirming scope and credit impact.
+- Use `dealmachine_people_count` or `dealmachine_company_count` before a broad search.
+- Use the matching singular tool family, such as `dealmachine_people_search` or `dealmachine_company_search`, for results.
+- Company export is available through `dealmachine_company_export`. Confirm scope and credit impact first.
+- People search and lookup are available through MCP. Use the CLI for a people export.
 
 ### Enrichment
 
@@ -87,6 +90,8 @@ dm usage --json
 ```
 
 Use JSON output for automation. Store complex request bodies in a temporary JSON file instead of constructing fragile shell-escaped payloads.
+
+The CLI also supports saved lists, exports, account activity, address validation, CRM, tasks, dialer, direct mail, and developer license management. Use `dm <command> --help` and the command map in [REFERENCE.md](REFERENCE.md) before operating those workflows. Company search is currently available through the hosted MCP server, not as a `dm companies` CLI group.
 
 ## Present the result
 
