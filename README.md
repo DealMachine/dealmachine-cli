@@ -8,8 +8,44 @@ This package has **zero** `@dealmachine/*` dependencies -- it is a self-containe
 
 ---
 
+## AI agent integrations
+
+This repository is also the public distribution package for the DealMachine MCP server and DealMachine skill.
+
+- Hosted MCP server: `https://mcp.dealmachine.com`
+- API documentation: `https://api.docs.dealmachine.com`
+- Account and API keys: `https://dealmachine.com/settings/developer`
+- Privacy policy: `https://dealmachine.com/privacy-policy`
+- Terms of service: `https://dealmachine.com/terms-of-service`
+- Support: `support@dealmachine.com`
+
+The MCP server supports OAuth 2.1 for ChatGPT, Claude, Cursor, Codex, and other compatible clients. It can also use a DealMachine API key in developer clients that support bearer-token configuration.
+
+The plugin package includes:
+
+- A hosted MCP connection for property, people, company, enrichment, comparable-sales, and account tools
+- A credit-aware skill that discovers filters and fields, counts first, and confirms large paid operations
+- Manifests for OpenAI, Claude, Cursor, GitHub Copilot, and Gemini
+- Official MCP Registry metadata in `server.json`
+
+Example requests:
+
+- "Find high-equity absentee-owned properties in Austin and estimate the credit cost first."
+- "Look up the owner of this property and find available contact data."
+- "Find comparable sales for this property."
+- "Research companies that match these criteria for a targeted prospecting list."
+
+Direct skill installation:
+
+```bash
+npx skills add DealMachine/dealmachine-cli
+```
+
+---
+
 ## Table of Contents
 
+- [AI agent integrations](#ai-agent-integrations)
 - [Installation](#installation)
 - [Authentication](#authentication)
 - [Configuration](#configuration)

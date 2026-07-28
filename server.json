@@ -1,0 +1,17 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.DealMachine/dealmachine",
+  "title": "DealMachine",
+  "description": "Search and enrich US property, owner, people, and company data for sales and lead generation.",
+  "repository": {
+    "url": "https://github.com/DealMachine/dealmachine-cli",
+    "source": "github"
+  },
+  "version": "0.3.0",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://mcp.dealmachine.com"
+    }
+  ]
+}
