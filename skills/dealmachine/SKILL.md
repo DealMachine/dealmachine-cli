@@ -15,7 +15,7 @@ Use DealMachine to turn a user's sales, marketing, lead generation, or real esta
 
 Never ask the user to paste an API key into chat.
 
-Read [REFERENCE.md](REFERENCE.md) when you need the exact MCP Tool ID, CLI command group, or current interface coverage. The reference tracks DealMachine CLI 0.1.5 and hosted MCP 0.3.0.
+Read [REFERENCE.md](REFERENCE.md) when you need the exact MCP Tool ID, CLI command group, or current interface coverage. The reference tracks DealMachine CLI and hosted MCP 0.3.0.
 
 ## Protect credits
 

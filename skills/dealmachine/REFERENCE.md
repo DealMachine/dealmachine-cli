@@ -1,6 +1,6 @@
 # DealMachine interface reference
 
-This reference matches DealMachine CLI 0.1.5 and hosted MCP 0.3.0.
+This reference matches DealMachine CLI and hosted MCP 0.3.0.
 
 ## Hosted MCP Tools
 
@@ -40,7 +40,7 @@ People export is available through the CLI.
 - `dealmachine_company_get_many`
 - `dealmachine_company_export`
 
-Company intelligence is available through the hosted MCP server. DealMachine CLI 0.1.5 does not have a `dm companies` command group.
+Company intelligence is available through the hosted MCP server. DealMachine CLI 0.3.0 does not have a `dm companies` command group.
 
 ### Enrichment
 

@@ -1,6 +1,6 @@
 {
   "name": "@dealmachine/cli",
-  "version": "0.1.5",
+  "version": "0.3.0",
   "description": "DealMachine CLI for property intelligence, people lookup, and enrichment through the public API",
   "author": "DealMachine",
   "license": "MIT",
