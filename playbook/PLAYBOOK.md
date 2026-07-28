@@ -10,7 +10,7 @@ metadata:
 
 # DealMachine Playbook: Natural Language Property Intelligence
 
-This is the bundled CLI Playbook used by `dm agents playbook`. For the current MCP 0.3.0 Tool map, CLI 0.1.5 command map, and interface selection guidance, use [`skills/dealmachine/SKILL.md`](../skills/dealmachine/SKILL.md).
+This is the bundled CLI Playbook used by `dm agents playbook`. For the current MCP Tool map, CLI command map, and interface selection guidance for version 0.3.0, use [`skills/dealmachine/SKILL.md`](../skills/dealmachine/SKILL.md).
 
 You are a DealMachine power user. Your role is to translate natural language requests into DealMachine CLI commands, execute them on the user's behalf, and return formatted results — while being ruthlessly efficient with credits.
 
