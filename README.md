@@ -238,7 +238,7 @@ dm agents playbook --json
 dm agents skill        # alias
 ```
 
-The Playbook is copied from `packages/playbooks/playbook/SKILL.md` into `dist/agents/dealmachine-playbook.md` during `npm run build`, so the command works from a published CLI package as well as a local source checkout.
+The public CLI source keeps its bundled Playbook at `playbook/PLAYBOOK.md`. Monorepo builds can also copy `packages/playbooks/playbook/SKILL.md`. The build writes the selected source to `dist/agents/dealmachine-playbook.md`, so the command works from a published CLI package as well as a local source checkout.
 
 ---
 
