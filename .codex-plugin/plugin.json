@@ -1,0 +1,55 @@
+{
+  "name": "dealmachine",
+  "version": "0.1.0",
+  "description": "Search and enrich US property, owner, people, and company data with DealMachine.",
+  "author": {
+    "name": "DealMachine",
+    "email": "support@dealmachine.com",
+    "url": "https://dealmachine.com"
+  },
+  "homepage": "https://api.docs.dealmachine.com",
+  "repository": "https://github.com/DealMachine/dealmachine-cli",
+  "license": "MIT",
+  "keywords": [
+    "dealmachine",
+    "real-estate",
+    "sales-intelligence",
+    "marketing",
+    "lead-generation",
+    "prospecting",
+    "property-intelligence",
+    "owner-lookup",
+    "people-search",
+    "company-search",
+    "data-enrichment",
+    "contact-data",
+    "comparable-sales",
+    "mcp",
+    "cli"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "DealMachine",
+    "shortDescription": "Search and enrich real estate data",
+    "longDescription": "DealMachine connects AI assistants to US property, owner, people, and company intelligence. Search markets with live filters, estimate result counts before spending credits, enrich addresses and contacts, find comparable sales, and export targeted data. Use it for real estate sales, marketing, lead generation, prospecting, market research, and data enrichment.\n\nExample workflows:\n- Find high-equity absentee-owned properties in a target market\n- Identify property owners and enrich available phone or email data\n- Research people and companies for targeted prospecting\n- Pull comparable sales for a property\n- Count and preview a search before spending credits",
+    "developerName": "DealMachine",
+    "category": "Sales",
+    "capabilities": [
+      "Interactive",
+      "Read"
+    ],
+    "websiteURL": "https://dealmachine.com",
+    "privacyPolicyURL": "https://dealmachine.com/privacy-policy",
+    "termsOfServiceURL": "https://dealmachine.com/terms-of-service",
+    "defaultPrompt": [
+      "Find high-equity absentee-owned properties in Austin and estimate the credit cost first",
+      "Look up the owner of this property and find available contact data",
+      "Find comparable sales for this property"
+    ],
+    "brandColor": "#0D9488",
+    "composerIcon": "./assets/logo.png",
+    "logo": "./assets/logo.png",
+    "screenshots": []
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "dealmachine-plugins",
+  "description": "Official DealMachine plugins for property, owner, people, and company intelligence.",
+  "owner": {
+    "name": "DealMachine",
+    "url": "https://dealmachine.com",
+    "email": "support@dealmachine.com"
+  },
+  "plugins": [
+    {
+      "name": "dealmachine",
+      "source": "./",
+      "version": "0.1.0",
+      "description": "Search and enrich US property, owner, people, and company data with DealMachine.",
+      "author": {
+        "name": "DealMachine"
+      },
+      "homepage": "https://api.docs.dealmachine.com",
+      "repository": "https://github.com/DealMachine/dealmachine-cli",
+      "license": "MIT",
+      "keywords": [
+        "dealmachine",
+        "real-estate",
+        "sales-intelligence",
+        "marketing",
+        "lead-generation",
+        "prospecting",
+        "property-intelligence",
+        "owner-lookup",
+        "people-search",
+        "company-search",
+        "data-enrichment",
+        "contact-data",
+        "comparable-sales",
+        "mcp"
+      ],
+      "category": "sales"
+    }
+  ]
+}
