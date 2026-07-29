@@ -1,7 +1,7 @@
 {
   "name": "dealmachine",
   "version": "0.3.0",
-  "description": "DealMachine connects GitHub Copilot to US property, owner, people, and company intelligence. Search markets with live filters, estimate result counts before spending credits, enrich addresses and contacts, find comparable sales, and export targeted data. Use it for real estate sales, marketing, lead generation, prospecting, market research, and data enrichment.",
+  "description": "DealMachine connects GitHub Copilot to US property, owner, and people intelligence. Search markets with live filters, estimate result counts before spending credits, enrich addresses and contacts, find comparable sales, and export targeted data. Use it for real estate sales, marketing, lead generation, prospecting, market research, and data enrichment.",
   "author": {
     "name": "DealMachine",
     "email": "support@dealmachine.com",
@@ -20,7 +20,6 @@
     "property-intelligence",
     "owner-lookup",
     "people-search",
-    "company-search",
     "data-enrichment",
     "contact-data",
     "comparable-sales",

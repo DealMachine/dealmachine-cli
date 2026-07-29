@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
   "name": "dealmachine-plugins",
-  "description": "Official DealMachine plugins for property, owner, people, and company intelligence.",
+  "description": "Official DealMachine plugins for property, owner, and people intelligence.",
   "owner": {
     "name": "DealMachine",
     "url": "https://dealmachine.com",
@@ -12,7 +12,7 @@
       "name": "dealmachine",
       "source": "./",
       "version": "0.3.0",
-      "description": "Search and enrich US property, owner, people, and company data with DealMachine.",
+      "description": "Search and enrich US property, owner, and people data with DealMachine.",
       "author": {
         "name": "DealMachine"
       },
@@ -29,7 +29,6 @@
         "property-intelligence",
         "owner-lookup",
         "people-search",
-        "company-search",
         "data-enrichment",
         "contact-data",
         "comparable-sales",
