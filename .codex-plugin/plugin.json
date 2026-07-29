@@ -1,7 +1,7 @@
 {
   "name": "dealmachine",
   "version": "0.3.0",
-  "description": "Search and enrich US property, owner, people, and company data with DealMachine.",
+  "description": "Search and enrich US property, owner, and people data with DealMachine.",
   "author": {
     "name": "DealMachine",
     "email": "support@dealmachine.com",
@@ -20,7 +20,6 @@
     "property-intelligence",
     "owner-lookup",
     "people-search",
-    "company-search",
     "data-enrichment",
     "contact-data",
     "comparable-sales",
@@ -32,7 +31,7 @@
   "interface": {
     "displayName": "DealMachine",
     "shortDescription": "Search and enrich real estate data",
-    "longDescription": "DealMachine connects AI assistants to US property, owner, people, and company intelligence. Search markets with live filters, estimate result counts before spending credits, enrich addresses and contacts, find comparable sales, and export targeted data. Use it for real estate sales, marketing, lead generation, prospecting, market research, and data enrichment.\n\nExample workflows:\n- Find high-equity absentee-owned properties in a target market\n- Identify property owners and enrich available phone or email data\n- Research people and companies for targeted prospecting\n- Pull comparable sales for a property\n- Count and preview a search before spending credits",
+    "longDescription": "DealMachine connects AI assistants to US property, owner, and people intelligence. Search markets with live filters, estimate result counts before spending credits, enrich addresses and contacts, find comparable sales, and export targeted data. Use it for real estate sales, marketing, lead generation, prospecting, market research, and data enrichment.\n\nExample workflows:\n- Find high-equity absentee-owned properties in a target market\n- Identify property owners and enrich available phone or email data\n- Research people and property owners for targeted prospecting\n- Pull comparable sales for a property\n- Count and preview a search before spending credits",
     "developerName": "DealMachine",
     "category": "Sales",
     "capabilities": [
