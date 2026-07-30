@@ -91,7 +91,7 @@ dm usage --json
 
 Use JSON output for automation. Store complex request bodies in a temporary JSON file instead of constructing fragile shell-escaped payloads.
 
-The CLI also supports saved lists, exports, account activity, address validation, CRM, tasks, dialer, direct mail, and developer license management. Use `dm <command> --help` and the command map in [REFERENCE.md](REFERENCE.md) before operating those workflows.
+The CLI also supports saved lists, exports, account activity, address validation, CRM, tasks, direct mail, and developer license management. Use `dm <command> --help` and the command map in [REFERENCE.md](REFERENCE.md) before operating those workflows.
 
 ## Present the result
 

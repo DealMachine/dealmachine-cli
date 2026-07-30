@@ -83,15 +83,6 @@ Run `dm <command> --help` for options and examples. Prefer `--json` for automati
 - `dm crm subscribers list|add|remove`
 - `dm crm activity`
 
-### Dialer
-
-- `dm dialer calls list|get|stats`
-- `dm dialer notes list|create|delete`
-- `dm dialer queues list|create|delete`
-- `dm dialer items list|add|update|remove`
-- `dm dialer dispositions`
-- `dm dialer suppression list|check|add`
-
 ### Direct mail
 
 - `dm mail campaigns list|create|get|update|delete|send|pause|resume|recipients|analytics|cost-estimate`

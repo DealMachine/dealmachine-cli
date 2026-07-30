@@ -1966,333 +1966,343 @@ Examples:
 // ============================================================================
 // Dialer commands
 // ============================================================================
+// The dialer app is held back from launch and every /v1/dialer endpoint
+// returns 403 unless the org has the app enabled, so this command group is
+// not registered by default. Set DM_ENABLE_DIALER=1 (or "true") to register
+// it for internal use.
 
-const dialerCmd = program
-  .command('dialer')
-  .description('Manage dialer queues, calls, dispositions, and suppression');
+function registerDialerCommands(program: Command): void {
+  const dialerCmd = program
+    .command('dialer')
+    .description('Manage dialer queues, calls, dispositions, and suppression');
 
-// ── Calls ──
+  // ── Calls ──
 
-const dialerCallsCmd = dialerCmd.command('calls').description('View call history and stats');
+  const dialerCallsCmd = dialerCmd.command('calls').description('View call history and stats');
 
-dialerCallsCmd
-  .command('list')
-  .alias('ls')
-  .description('List call history')
-  .option(
-    '--status <status>',
-    'Filter by status: initiating, ringing, answered, completed, failed, busy, no_answer, cancelled'
-  )
-  .option('--search <term>', 'Search by contact name or phone number')
-  .option('--date-from <date>', 'Filter from date (ISO 8601)')
-  .option('--date-to <date>', 'Filter to date (ISO 8601)')
-  .option('-p, --page <n>', 'Page number')
-  .option('--per-page <n>', 'Results per page')
-  .option('--json', 'Output as JSON')
-  .addHelpText(
-    'after',
-    `
+  dialerCallsCmd
+    .command('list')
+    .alias('ls')
+    .description('List call history')
+    .option(
+      '--status <status>',
+      'Filter by status: initiating, ringing, answered, completed, failed, busy, no_answer, cancelled'
+    )
+    .option('--search <term>', 'Search by contact name or phone number')
+    .option('--date-from <date>', 'Filter from date (ISO 8601)')
+    .option('--date-to <date>', 'Filter to date (ISO 8601)')
+    .option('-p, --page <n>', 'Page number')
+    .option('--per-page <n>', 'Results per page')
+    .option('--json', 'Output as JSON')
+    .addHelpText(
+      'after',
+      `
 Examples:
   dm dialer calls list --json
   dm dialer calls list --status completed --date-from 2025-01-01
   dm dialer calls list --search "5125551234" --per-page 50`
-  )
-  .action(async (options) => {
-    await dialerCallsList(options);
-  });
+    )
+    .action(async (options) => {
+      await dialerCallsList(options);
+    });
 
-dialerCallsCmd
-  .command('get <uuid>')
-  .description('Get call details by UUID')
-  .option('--json', 'Output as JSON')
-  .addHelpText(
-    'after',
-    `
+  dialerCallsCmd
+    .command('get <uuid>')
+    .description('Get call details by UUID')
+    .option('--json', 'Output as JSON')
+    .addHelpText(
+      'after',
+      `
 Examples:
   dm dialer calls get call_uuid_123 --json`
-  )
-  .action(async (uuid, options) => {
-    await dialerCallsGet(uuid, options);
-  });
+    )
+    .action(async (uuid, options) => {
+      await dialerCallsGet(uuid, options);
+    });
 
-dialerCallsCmd
-  .command('stats')
-  .description('Get call statistics')
-  .option('--date-from <date>', 'Filter from date (ISO 8601)')
-  .option('--date-to <date>', 'Filter to date (ISO 8601)')
-  .option('--json', 'Output as JSON')
-  .addHelpText(
-    'after',
-    `
+  dialerCallsCmd
+    .command('stats')
+    .description('Get call statistics')
+    .option('--date-from <date>', 'Filter from date (ISO 8601)')
+    .option('--date-to <date>', 'Filter to date (ISO 8601)')
+    .option('--json', 'Output as JSON')
+    .addHelpText(
+      'after',
+      `
 Examples:
   dm dialer calls stats --json
   dm dialer calls stats --date-from 2025-01-01 --date-to 2025-01-31`
-  )
-  .action(async (options) => {
-    await dialerCallsStats(options);
-  });
+    )
+    .action(async (options) => {
+      await dialerCallsStats(options);
+    });
 
-// ── Call Notes ──
+  // ── Call Notes ──
 
-const dialerNotesCmd = dialerCmd.command('notes').description('Manage call notes');
+  const dialerNotesCmd = dialerCmd.command('notes').description('Manage call notes');
 
-dialerNotesCmd
-  .command('list <callUuid>')
-  .alias('ls')
-  .description('List notes for a call')
-  .option('--json', 'Output as JSON')
-  .addHelpText(
-    'after',
-    `
+  dialerNotesCmd
+    .command('list <callUuid>')
+    .alias('ls')
+    .description('List notes for a call')
+    .option('--json', 'Output as JSON')
+    .addHelpText(
+      'after',
+      `
 Examples:
   dm dialer notes list call_uuid_123 --json`
-  )
-  .action(async (callUuid, options) => {
-    await dialerNotesList(callUuid, options);
-  });
+    )
+    .action(async (callUuid, options) => {
+      await dialerNotesList(callUuid, options);
+    });
 
-dialerNotesCmd
-  .command('create <callUuid>')
-  .description('Add a note to a call')
-  .option('--body <json>', 'Request body as JSON string')
-  .option('-f, --file <path>', 'Read request body from a JSON file')
-  .option('--json', 'Output as JSON')
-  .addHelpText(
-    'after',
-    `
+  dialerNotesCmd
+    .command('create <callUuid>')
+    .description('Add a note to a call')
+    .option('--body <json>', 'Request body as JSON string')
+    .option('-f, --file <path>', 'Read request body from a JSON file')
+    .option('--json', 'Output as JSON')
+    .addHelpText(
+      'after',
+      `
 Examples:
   dm dialer notes create call_uuid_123 --body '{"content":"Left voicemail."}' --json`
-  )
-  .action(async (callUuid, options) => {
-    await dialerNotesCreate(callUuid, options);
-  });
+    )
+    .action(async (callUuid, options) => {
+      await dialerNotesCreate(callUuid, options);
+    });
 
-dialerNotesCmd
-  .command('delete <callUuid> <noteId>')
-  .description('Delete a call note')
-  .option('--dry-run', 'Preview what would be deleted without making changes')
-  .option('--json', 'Output as JSON')
-  .addHelpText(
-    'after',
-    `
+  dialerNotesCmd
+    .command('delete <callUuid> <noteId>')
+    .description('Delete a call note')
+    .option('--dry-run', 'Preview what would be deleted without making changes')
+    .option('--json', 'Output as JSON')
+    .addHelpText(
+      'after',
+      `
 Examples:
   dm dialer notes delete call_uuid_123 note_456
   dm dialer notes delete call_uuid_123 note_456 --dry-run`
-  )
-  .action(async (callUuid, noteId, options) => {
-    if (options.dryRun) {
-      console.log(`Would delete note ${noteId} from call ${callUuid}.`);
-      console.log('No changes made (--dry-run).');
-      return;
-    }
-    await dialerNotesDelete(callUuid, noteId, options);
-  });
+    )
+    .action(async (callUuid, noteId, options) => {
+      if (options.dryRun) {
+        console.log(`Would delete note ${noteId} from call ${callUuid}.`);
+        console.log('No changes made (--dry-run).');
+        return;
+      }
+      await dialerNotesDelete(callUuid, noteId, options);
+    });
 
-// ── Queues ──
+  // ── Queues ──
 
-const dialerQueuesCmd = dialerCmd.command('queues').description('Manage dialer queues');
+  const dialerQueuesCmd = dialerCmd.command('queues').description('Manage dialer queues');
 
-dialerQueuesCmd
-  .command('list')
-  .alias('ls')
-  .description('List all dialer queues')
-  .option('--json', 'Output as JSON')
-  .addHelpText(
-    'after',
-    `
+  dialerQueuesCmd
+    .command('list')
+    .alias('ls')
+    .description('List all dialer queues')
+    .option('--json', 'Output as JSON')
+    .addHelpText(
+      'after',
+      `
 Examples:
   dm dialer queues list --json`
-  )
-  .action(async (options) => {
-    await dialerQueuesList(options);
-  });
+    )
+    .action(async (options) => {
+      await dialerQueuesList(options);
+    });
 
-dialerQueuesCmd
-  .command('create')
-  .description('Create a new queue')
-  .option('--body <json>', 'Request body as JSON string')
-  .option('-f, --file <path>', 'Read request body from a JSON file')
-  .option('--json', 'Output as JSON')
-  .addHelpText(
-    'after',
-    `
+  dialerQueuesCmd
+    .command('create')
+    .description('Create a new queue')
+    .option('--body <json>', 'Request body as JSON string')
+    .option('-f, --file <path>', 'Read request body from a JSON file')
+    .option('--json', 'Output as JSON')
+    .addHelpText(
+      'after',
+      `
 Examples:
   dm dialer queues create --body '{"name":"Morning Calls"}' --json`
-  )
-  .action(async (options) => {
-    await dialerQueuesCreate(options);
-  });
+    )
+    .action(async (options) => {
+      await dialerQueuesCreate(options);
+    });
 
-dialerQueuesCmd
-  .command('delete <id>')
-  .description('Delete a queue')
-  .option('--dry-run', 'Preview what would be deleted without making changes')
-  .option('--json', 'Output as JSON')
-  .addHelpText(
-    'after',
-    `
+  dialerQueuesCmd
+    .command('delete <id>')
+    .description('Delete a queue')
+    .option('--dry-run', 'Preview what would be deleted without making changes')
+    .option('--json', 'Output as JSON')
+    .addHelpText(
+      'after',
+      `
 Examples:
   dm dialer queues delete queue_abc123
   dm dialer queues delete queue_abc123 --dry-run`
-  )
-  .action(async (id, options) => {
-    if (options.dryRun) {
-      console.log(`Would delete queue ${id} and all its items.`);
-      console.log('No changes made (--dry-run).');
-      return;
-    }
-    await dialerQueuesDelete(id, options);
-  });
+    )
+    .action(async (id, options) => {
+      if (options.dryRun) {
+        console.log(`Would delete queue ${id} and all its items.`);
+        console.log('No changes made (--dry-run).');
+        return;
+      }
+      await dialerQueuesDelete(id, options);
+    });
 
-// ── Queue Items ──
+  // ── Queue Items ──
 
-const dialerItemsCmd = dialerCmd.command('items').description('Manage queue items');
+  const dialerItemsCmd = dialerCmd.command('items').description('Manage queue items');
 
-dialerItemsCmd
-  .command('list <queueId>')
-  .alias('ls')
-  .description('List items in a queue')
-  .option(
-    '--status <status>',
-    'Filter by status: pending, in_progress, completed, skipped, deferred'
-  )
-  .option('-p, --page <n>', 'Page number')
-  .option('--per-page <n>', 'Results per page')
-  .option('--json', 'Output as JSON')
-  .addHelpText(
-    'after',
-    `
+  dialerItemsCmd
+    .command('list <queueId>')
+    .alias('ls')
+    .description('List items in a queue')
+    .option(
+      '--status <status>',
+      'Filter by status: pending, in_progress, completed, skipped, deferred'
+    )
+    .option('-p, --page <n>', 'Page number')
+    .option('--per-page <n>', 'Results per page')
+    .option('--json', 'Output as JSON')
+    .addHelpText(
+      'after',
+      `
 Examples:
   dm dialer items list queue_abc123 --json
   dm dialer items list queue_abc123 --status pending --per-page 50`
-  )
-  .action(async (queueId, options) => {
-    await dialerQueueItemsList(queueId, options);
-  });
+    )
+    .action(async (queueId, options) => {
+      await dialerQueueItemsList(queueId, options);
+    });
 
-dialerItemsCmd
-  .command('add <queueId>')
-  .description('Add items to a queue')
-  .option('--body <json>', 'Request body as JSON string')
-  .option('-f, --file <path>', 'Read request body from a JSON file')
-  .option('--json', 'Output as JSON')
-  .addHelpText(
-    'after',
-    `
+  dialerItemsCmd
+    .command('add <queueId>')
+    .description('Add items to a queue')
+    .option('--body <json>', 'Request body as JSON string')
+    .option('-f, --file <path>', 'Read request body from a JSON file')
+    .option('--json', 'Output as JSON')
+    .addHelpText(
+      'after',
+      `
 Examples:
   dm dialer items add queue_abc123 --body '{"phone_numbers":["5125551234"]}' --json`
-  )
-  .action(async (queueId, options) => {
-    await dialerQueueItemsAdd(queueId, options);
-  });
+    )
+    .action(async (queueId, options) => {
+      await dialerQueueItemsAdd(queueId, options);
+    });
 
-dialerItemsCmd
-  .command('update <queueId> <itemId>')
-  .description('Update a queue item')
-  .option('--body <json>', 'Request body as JSON string')
-  .option('-f, --file <path>', 'Read request body from a JSON file')
-  .option('--json', 'Output as JSON')
-  .addHelpText(
-    'after',
-    `
+  dialerItemsCmd
+    .command('update <queueId> <itemId>')
+    .description('Update a queue item')
+    .option('--body <json>', 'Request body as JSON string')
+    .option('-f, --file <path>', 'Read request body from a JSON file')
+    .option('--json', 'Output as JSON')
+    .addHelpText(
+      'after',
+      `
 Examples:
   dm dialer items update queue_abc123 item_456 --body '{"status":"skipped"}' --json`
-  )
-  .action(async (queueId, itemId, options) => {
-    await dialerQueueItemsUpdate(queueId, itemId, options);
-  });
+    )
+    .action(async (queueId, itemId, options) => {
+      await dialerQueueItemsUpdate(queueId, itemId, options);
+    });
 
-dialerItemsCmd
-  .command('remove <queueId> <itemId>')
-  .description('Remove an item from a queue')
-  .option('--dry-run', 'Preview what would be removed without making changes')
-  .option('--json', 'Output as JSON')
-  .addHelpText(
-    'after',
-    `
+  dialerItemsCmd
+    .command('remove <queueId> <itemId>')
+    .description('Remove an item from a queue')
+    .option('--dry-run', 'Preview what would be removed without making changes')
+    .option('--json', 'Output as JSON')
+    .addHelpText(
+      'after',
+      `
 Examples:
   dm dialer items remove queue_abc123 item_456
   dm dialer items remove queue_abc123 item_456 --dry-run`
-  )
-  .action(async (queueId, itemId, options) => {
-    if (options.dryRun) {
-      console.log(`Would remove item ${itemId} from queue ${queueId}.`);
-      console.log('No changes made (--dry-run).');
-      return;
-    }
-    await dialerQueueItemsRemove(queueId, itemId, options);
-  });
+    )
+    .action(async (queueId, itemId, options) => {
+      if (options.dryRun) {
+        console.log(`Would remove item ${itemId} from queue ${queueId}.`);
+        console.log('No changes made (--dry-run).');
+        return;
+      }
+      await dialerQueueItemsRemove(queueId, itemId, options);
+    });
 
-// ── Dispositions ──
+  // ── Dispositions ──
 
-dialerCmd
-  .command('dispositions')
-  .description('List call dispositions')
-  .option('--json', 'Output as JSON')
-  .addHelpText(
-    'after',
-    `
+  dialerCmd
+    .command('dispositions')
+    .description('List call dispositions')
+    .option('--json', 'Output as JSON')
+    .addHelpText(
+      'after',
+      `
 Examples:
   dm dialer dispositions --json`
-  )
-  .action(async (options) => {
-    await dialerDispositions(options);
-  });
+    )
+    .action(async (options) => {
+      await dialerDispositions(options);
+    });
 
-// ── Suppression ──
+  // ── Suppression ──
 
-const dialerSuppCmd = dialerCmd
-  .command('suppression')
-  .description('Manage suppression list (Do Not Call)');
+  const dialerSuppCmd = dialerCmd
+    .command('suppression')
+    .description('Manage suppression list (Do Not Call)');
 
-dialerSuppCmd
-  .command('list')
-  .alias('ls')
-  .description('List suppressed phone numbers')
-  .option('--search <term>', 'Search by phone number')
-  .option('-p, --page <n>', 'Page number')
-  .option('--per-page <n>', 'Results per page')
-  .option('--json', 'Output as JSON')
-  .addHelpText(
-    'after',
-    `
+  dialerSuppCmd
+    .command('list')
+    .alias('ls')
+    .description('List suppressed phone numbers')
+    .option('--search <term>', 'Search by phone number')
+    .option('-p, --page <n>', 'Page number')
+    .option('--per-page <n>', 'Results per page')
+    .option('--json', 'Output as JSON')
+    .addHelpText(
+      'after',
+      `
 Examples:
   dm dialer suppression list --json
   dm dialer suppression list --search "512" --per-page 100`
-  )
-  .action(async (options) => {
-    await dialerSuppressionList(options);
-  });
+    )
+    .action(async (options) => {
+      await dialerSuppressionList(options);
+    });
 
-dialerSuppCmd
-  .command('check <phoneNumber>')
-  .description('Check if a phone number is suppressed')
-  .option('--json', 'Output as JSON')
-  .addHelpText(
-    'after',
-    `
+  dialerSuppCmd
+    .command('check <phoneNumber>')
+    .description('Check if a phone number is suppressed')
+    .option('--json', 'Output as JSON')
+    .addHelpText(
+      'after',
+      `
 Examples:
   dm dialer suppression check 5125551234 --json`
-  )
-  .action(async (phoneNumber, options) => {
-    await dialerSuppressionCheck(phoneNumber, options);
-  });
+    )
+    .action(async (phoneNumber, options) => {
+      await dialerSuppressionCheck(phoneNumber, options);
+    });
 
-dialerSuppCmd
-  .command('add')
-  .description('Add a phone number to the suppression list')
-  .option('--body <json>', 'Request body as JSON string')
-  .option('-f, --file <path>', 'Read request body from a JSON file')
-  .option('--json', 'Output as JSON')
-  .addHelpText(
-    'after',
-    `
+  dialerSuppCmd
+    .command('add')
+    .description('Add a phone number to the suppression list')
+    .option('--body <json>', 'Request body as JSON string')
+    .option('-f, --file <path>', 'Read request body from a JSON file')
+    .option('--json', 'Output as JSON')
+    .addHelpText(
+      'after',
+      `
 Examples:
   dm dialer suppression add --body '{"phone_number":"5125551234","reason":"Do not contact"}' --json`
-  )
-  .action(async (options) => {
-    await dialerSuppressionAdd(options);
-  });
+    )
+    .action(async (options) => {
+      await dialerSuppressionAdd(options);
+    });
+}
+
+if (process.env.DM_ENABLE_DIALER === '1' || process.env.DM_ENABLE_DIALER === 'true') {
+  registerDialerCommands(program);
+}
 
 // ============================================================================
 // Mail commands
