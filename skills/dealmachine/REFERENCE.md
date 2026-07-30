@@ -70,18 +70,9 @@ Run `dm <command> --help` for options and examples. Prefer `--json` for automati
 - `dm exports list|get`
 - `dm activity search|get`
 
-### CRM and task operations
+### Task operations
 
 - `dm tasks list|get|create|update|delete`
-- `dm crm pipelines`
-- `dm crm opportunities list|get|create|update|delete|move`
-- `dm crm tasks list|create|update`
-- `dm crm notes list|create|update`
-- `dm crm records list|link|unlink`
-- `dm crm labels list|create|update|delete`
-- `dm crm opportunities labels add|remove`
-- `dm crm subscribers list|add|remove`
-- `dm crm activity`
 
 ### Direct mail
 

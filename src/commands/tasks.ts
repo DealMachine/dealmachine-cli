@@ -1,5 +1,5 @@
 /**
- * Tasks commands — top-level task management (not CRM-specific)
+ * Tasks commands for top-level task management
  */
 
 import chalk from 'chalk';
