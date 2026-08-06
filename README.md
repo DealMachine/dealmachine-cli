@@ -25,8 +25,26 @@ The plugin package includes:
 
 - A hosted MCP connection for property, people, enrichment, comparable-sales, and account tools
 - A credit-aware skill that discovers filters and fields, counts first, and confirms large paid operations
+- A portable [Agent Plugins](https://agent-plugins.org/) package for compatible clients
 - Manifests for OpenAI, Claude, Cursor, GitHub Copilot, and Gemini
 - Official MCP Registry metadata in `server.json`
+
+The portable package follows Agent Plugins 1.0.0:
+
+```text
+dealmachine-cli/
+├── plugin.json
+├── mcp.json
+└── skills/
+    └── dealmachine/
+        ├── SKILL.md
+        ├── REFERENCE.md
+        └── SETUP.md
+```
+
+Compatible clients discover the DealMachine skill from `skills/dealmachine/` and connect to the
+hosted Streamable HTTP MCP server declared in `mcp.json`. Client-specific manifests remain in the
+repository for compatibility, marketplace metadata, and richer presentation.
 
 Example requests:
 

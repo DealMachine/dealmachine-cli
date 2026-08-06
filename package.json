@@ -23,7 +23,8 @@
     "build": "tsc && node scripts/copy-agent-assets.mjs",
     "dev": "tsc --watch",
     "start": "node dist/index.js",
-    "test": "vitest run",
+    "test": "npm run validate:plugin && vitest run",
+    "validate:plugin": "node scripts/validate-agent-plugin.mjs",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {

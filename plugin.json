@@ -1,0 +1,30 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "dealmachine",
+  "version": "0.3.0",
+  "description": "Search and enrich US property, owner, and people data with DealMachine.",
+  "author": {
+    "name": "DealMachine",
+    "email": "support@dealmachine.com",
+    "url": "https://dealmachine.com"
+  },
+  "homepage": "https://api.docs.dealmachine.com",
+  "repository": "https://github.com/DealMachine/dealmachine-cli",
+  "license": "MIT",
+  "keywords": [
+    "dealmachine",
+    "real-estate",
+    "sales-intelligence",
+    "marketing",
+    "lead-generation",
+    "prospecting",
+    "property-intelligence",
+    "owner-lookup",
+    "people-search",
+    "data-enrichment",
+    "contact-data",
+    "comparable-sales",
+    "mcp",
+    "cli"
+  ]
+}
