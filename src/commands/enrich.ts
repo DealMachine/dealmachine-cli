@@ -20,6 +20,7 @@ import {
   truncate,
   createSpinner,
 } from '../lib/output.js';
+import { applyCreditSafety, printAutomaticEstimateNotice } from '../lib/creditSafety.js';
 
 // ============================================================================
 // Types
@@ -725,6 +726,7 @@ export async function enrichName(
     city?: string;
     includeProperties?: boolean;
     estimateCost?: boolean;
+    yes?: boolean;
     page?: string;
     perPage?: string;
     fields?: string;
@@ -761,7 +763,8 @@ export async function enrichName(
   }
   applyLocationOption(requestBody, options);
 
-  const isEstimate = requestBody.estimate_cost === true;
+  const creditSafety = applyCreditSafety(requestBody, options);
+  const isEstimate = creditSafety.isEstimate;
   const spinner = createSpinner(
     isEstimate ? 'Estimating name enrichment...' : 'Enriching by name...'
   ).start();
@@ -773,11 +776,17 @@ export async function enrichName(
 
   if (options.json) {
     printJson(data);
+    if (creditSafety.wasAutomaticallyEstimated) {
+      printAutomaticEstimateNotice('the same name enrichment command');
+    }
     return;
   }
 
   if (isNameEstimateResponse(data)) {
     printNameEstimateResult(data);
+    if (creditSafety.wasAutomaticallyEstimated) {
+      printAutomaticEstimateNotice('the same name enrichment command');
+    }
     return;
   }
 

@@ -4,13 +4,22 @@ Claude Code skill manifest for DealMachine property intelligence workflows.
 
 ## What's Inside
 
-This package is a **pure specification** -- it contains no executable code. The single file `SKILL.md` defines a Claude Code skill (Playbook) that translates natural language requests into DealMachine CLI commands.
+This package is a **pure specification** -- it contains no executable code. The `PLAYBOOK.md` file defines the bundled Claude Code skill content that translates natural language requests into DealMachine CLI commands.
 
 | File | Description |
 |------|-------------|
-| `SKILL.md` | Full skill manifest with states, workflows, CLI reference, and credit system |
+| `PLAYBOOK.md` | Full skill manifest with states, workflows, CLI reference, and credit system |
 
 ## How It Works
+
+Install the Playbook from the DealMachine CLI:
+
+```bash
+dm agents install claude-code
+```
+
+Use `dm agents permissions` to inspect the narrow permission allowlist. It pre-approves only free
+discovery and count commands. Paid and mutating DealMachine commands remain subject to approval.
 
 When a user installs this skill in Claude Code, the Playbook enables natural language property intelligence. It auto-activates on trigger phrases like "who owns...", "find properties in...", "what's this worth...", and any mention of real estate data.
 
@@ -58,7 +67,7 @@ The Playbook operates through 11 defined states:
 
 > Never spend a credit without the user knowing exactly what they're getting and what it costs. Count first, confirm second, execute third.
 
-## SKILL.md Structure
+## PLAYBOOK.md Structure
 
 The manifest is organized into these sections:
 

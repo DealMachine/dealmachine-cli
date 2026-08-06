@@ -2,6 +2,21 @@
 name: dealmachine
 description: Search and enrich US property, owner, and people data with DealMachine through its MCP tools or dm CLI. Use for real estate lead generation, property and owner lookup, contact enrichment, prospecting, comparable sales, market research, targeted lists or exports, and credit-aware DealMachine workflows.
 license: MIT
+allowed-tools:
+  - Bash(dm agents)
+  - Bash(dm agents guide *)
+  - Bash(dm agents playbook *)
+  - Bash(dm agents skill *)
+  - Bash(dm agents permissions *)
+  - Bash(dm whoami *)
+  - Bash(dm account *)
+  - Bash(dm usage *)
+  - Bash(dm filters *)
+  - Bash(dm fields *)
+  - Bash(dm locations *)
+  - Bash(dm properties count *)
+  - Bash(dm people count *)
+  - WebFetch(domain:api.docs.dealmachine.com)
 ---
 
 # DealMachine
@@ -27,6 +42,7 @@ Read [REFERENCE.md](REFERENCE.md) when you need the exact MCP Tool ID, CLI comma
 - Ask for confirmation before an export or an operation that can consume a material number of credits.
 - For property-only requests, do not add owner or resident contact enrichment.
 - For explicit single-record lookups, run the requested lookup and report whether credits were used.
+- For CLI property search, people search, and name enrichment, run the free `--estimate-cost` step first. Add `--yes` only after the user approves the displayed estimate.
 
 ## Require approval for external effects
 
@@ -72,6 +88,7 @@ Ask one focused question only when a missing detail would materially change the 
 - Use `dealmachine_people_count` before a broad search.
 - Use `dealmachine_people_search` for results and the matching get tools for known IDs.
 - People search and lookup are available through MCP. Use the CLI for a people export.
+- A specific person by name is enrichment, not People Search. Use `dealmachine_enrich_name` or `dm enrich name`, narrowed by state, ZIP code, county, or city place ID when available.
 
 ### Enrichment
 
@@ -89,9 +106,12 @@ Common patterns:
 dm filters --source-type properties --search "absentee owner" --json
 dm fields --source-type properties --search "equity" --json
 dm properties count --body-file search.json --json
-dm properties search --body-file search.json --json
+dm properties search --body-file search.json --estimate-cost --json
+dm properties search --body-file search.json --json --yes
 dm enrich address "123 Main St, Austin, TX" --json
 dm enrich phone "5125550100" --json
+dm enrich name "Jane Smith" --state TX --estimate-cost --json
+dm enrich name "Jane Smith" --state TX --json --yes
 dm comps PROPERTY_ID --json
 dm usage --json
 ```

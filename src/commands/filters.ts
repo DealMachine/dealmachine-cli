@@ -5,7 +5,18 @@
 import chalk from 'chalk';
 
 import { apiRequest } from '../lib/client.js';
-import { printJson, printHeader, printTable, printPagination, truncate, createSpinner } from '../lib/output.js';
+import {
+  printJson,
+  printHeader,
+  printTable,
+  printPagination,
+  printWarning,
+  truncate,
+  createSpinner,
+} from '../lib/output.js';
+
+const NAME_LOOKUP_SUGGESTION =
+  'People Search does not have a name filter. Use dm enrich name "First Last" with an optional --state, --zip, --county, or --city.';
 
 interface FilterItem {
   filter_id: string;
@@ -50,8 +61,13 @@ export async function filters(options: {
   const data = await apiRequest<FiltersResponse>('/filters', { query });
   spinner.stop();
 
+  const shouldSuggestNameLookup =
+    data.data.length === 0 &&
+    (!options.sourceType || options.sourceType === 'people') &&
+    /(^|[\s_-])(first[\s_-]?name|last[\s_-]?name|full[\s_-]?name|name)($|[\s_-])/i.test(options.search || '');
+
   if (options.json) {
-    printJson(data);
+    printJson(shouldSuggestNameLookup ? { ...data, suggestion: NAME_LOOKUP_SUGGESTION } : data);
     return;
   }
 
@@ -69,6 +85,8 @@ export async function filters(options: {
       operators: truncate(f.allowed_operators.join(', '), 30),
     }));
     printTable(rows, ['filter_id', 'name', 'type', 'premium', 'source', 'group', 'operators']);
+  } else if (shouldSuggestNameLookup) {
+    printWarning(NAME_LOOKUP_SUGGESTION);
   }
 
   printPagination(data.pagination);

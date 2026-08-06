@@ -1,4 +1,5 @@
 ---
+name: dealmachine
 title: DealMachine CLI Playbook
 description: Supplementary CLI-only guidance for DealMachine property and people intelligence workflows
 license: MIT
@@ -6,6 +7,21 @@ metadata:
   author: DealMachine
   version: '1.1'
   type: playbook
+allowed-tools:
+  - Bash(dm agents)
+  - Bash(dm agents guide *)
+  - Bash(dm agents playbook *)
+  - Bash(dm agents skill *)
+  - Bash(dm agents permissions *)
+  - Bash(dm whoami *)
+  - Bash(dm account *)
+  - Bash(dm usage *)
+  - Bash(dm filters *)
+  - Bash(dm fields *)
+  - Bash(dm locations *)
+  - Bash(dm properties count *)
+  - Bash(dm people count *)
+  - WebFetch(domain:api.docs.dealmachine.com)
 ---
 
 # DealMachine Playbook: Natural Language Property Intelligence
@@ -115,14 +131,18 @@ If a command fails due to auth, tell the user to run `dm login` in their termina
 
 1. **Fetch filters and fields first** — run `dm filters --source-type properties --json` and `dm fields --source-type properties --json` to see exactly what's available. Match the user's natural language to real filter IDs. Never guess a filter ID.
 2. **Always count first** — use `dm properties count` (FREE) to show how many match
-3. Confirm the count and credit estimate with the user
-4. Execute `dm properties search` with appropriate filters
-5. If the user's request implies multiple searches (e.g., "find high-equity properties and also any recently sold ones"), run each as a separate search and combine/compare results
-6. Format and present results
+3. Run `dm properties search ... --estimate-cost` to get the exact free estimate for the requested page and output shape
+4. Confirm the count, requested data, and credit estimate with the user
+5. Execute the approved search with `--yes`
+6. If the user's request implies multiple searches (e.g., "find high-equity properties and also any recently sold ones"), run each as a separate search and combine/compare results
+7. Format and present results
 
 ### State DM3: People Search
 
-**Symptoms:** User wants to find people (owners, renters, residents) matching criteria.
+**Symptoms:** User wants to find an audience of people (owners, renters, residents) matching demographic, property, contact, or location criteria.
+
+**Routing boundary:** Do not use this state when the user provides a specific person's name. People
+Search has no name filter. Route a known name to State DM5 and use `dm enrich name`.
 **Key Questions:**
 
 - Are you looking for property owners, renters, or residents?
@@ -132,10 +152,11 @@ If a command fails due to auth, tell the user to run `dm login` in their termina
 
 1. **Fetch filters and fields first** — run `dm filters --source-type people --json` and `dm fields --source-type people --json` to see exactly what's available. Match the user's natural language to real filter IDs. Never guess a filter ID.
 2. **Always count first** — use `dm people count` (FREE)
-3. Confirm count and credit estimate
-4. Execute `dm people search` with `property_match` set correctly
-5. If the user's request implies multiple searches, run each separately and combine results
-6. Format and present results
+3. Run `dm people search ... --estimate-cost` to get the exact free estimate
+4. Confirm count, requested data, and credit estimate
+5. Execute the approved search with `--yes` and `property_match` set correctly
+6. If the user's request implies multiple searches, run each separately and combine results
+7. Format and present results
 
 ### State DM4: Property Enrichment
 
@@ -153,6 +174,12 @@ If a command fails due to auth, tell the user to run `dm login` in their termina
 ### State DM5: Person Enrichment
 
 **Symptoms:** User has a name, phone, or email and wants to find the person.
+
+**Routing boundary:** A specific name always uses person enrichment, not People Search. Use
+`dm enrich name`, `dealmachine_enrich_name`, or `POST /v1/enrichment/name`. Narrow with a state,
+ZIP code, county, or city place ID when available. For a city name, run
+`dm locations search -q "<city>" --type city --state <state> --json`, then pass the result's `code`
+to `dm enrich name --city <place-id>`.
 **Key Questions:**
 
 - What identifier do you have? (name, phone, email)
@@ -161,7 +188,7 @@ If a command fails due to auth, tell the user to run `dm login` in their termina
   **Interventions:**
 - `dm enrich phone "5551234567"`
 - `dm enrich email "john@example.com"`
-- `dm enrich name "John Smith" --state TX`
+- `dm enrich name "John Smith" --state TX --estimate-cost`, then rerun with `--yes` after approval
 - Add `--include-properties` if property data needed
 
 ### State DM6: Address Validation
@@ -318,6 +345,10 @@ Tell the user in natural language:
 - How many credits it will cost total across all searches
 - What data they'll get back
 
+For property search, people search, and name enrichment, request a free estimate first with
+`--estimate-cost`. Non-interactive calls also estimate automatically unless `--yes` is supplied.
+Never add `--yes` until the user has approved the displayed `estimated_credits`.
+
 **Example confirmation:**
 
 > "Here's my plan:
@@ -331,7 +362,7 @@ Tell the user in natural language:
 Run the search(es):
 
 ```bash
-dm properties search --body '{"locations": [...], "filters": [...], "per_page": 25}' --json
+dm properties search --body '{"locations": [...], "filters": [...], "per_page": 25}' --json --yes
 ```
 
 For multiple searches, run them and then combine, compare, or present results as appropriate to the user's original intent.
@@ -474,13 +505,14 @@ Always run the free count first and confirm before large exports.
 ### Credit-Saving Strategies
 
 1. **Count before search** — Always use count endpoints first (free)
-2. **Use `estimate_cost`** — Add to search body to preview cost without executing
-3. **Choose the right output shape** — Property results charge per property and returned contact; flattened contact lists charge per contact
-4. **Page small** — Start with `per_page: 10` to sample results before pulling more
-5. **Leverage deduplication** — Same entity in same billing month costs nothing extra
-6. **Use filters aggressively** — Narrow results before executing to avoid wasted credits
-7. **Validate addresses first** — Invalid addresses don't cost credits; validate before enriching
-8. **Batch operations** — Enrichment endpoints accept up to 1,000 items per request
+2. **Use `--estimate-cost`:** Preview supported CLI search and name-enrichment costs without executing
+3. **Use `--yes` only after approval:** It is the explicit non-interactive credit-spend confirmation
+4. **Choose the right output shape:** Property results charge per property and returned contact; flattened contact lists charge per contact
+5. **Page small:** Start with `per_page: 10` to sample results before pulling more
+6. **Leverage deduplication:** Same entity in same billing month costs nothing extra
+7. **Use filters aggressively:** Narrow results before executing to avoid wasted credits
+8. **Validate addresses first:** Invalid addresses don't cost credits; validate before enriching
+9. **Batch operations:** Enrichment endpoints accept up to 1,000 items per request
 
 ---
 
@@ -514,9 +546,9 @@ dm properties count --body '{"locations": [...], "filters": [...]}'
 dm properties count -f search.json
 
 # Search (costs credits)
-dm properties search --body '{"locations": [...], "filters": [...]}'
-dm properties search -f search.json
-dm properties search -f search.json --json
+dm properties search -f search.json --estimate-cost
+dm properties search -f search.json --json        # Estimates automatically for agents
+dm properties search -f search.json --json --yes  # Executes after user approval
 
 # Get by ID
 dm properties get prop_12345
@@ -562,8 +594,9 @@ dm people count --body '{"locations": [...], "filters": [...]}'
 dm people count -f search.json
 
 # Search (costs credits)
-dm people search --body '{"locations": [...], "filters": [...]}'
-dm people search -f search.json
+dm people search -f search.json --estimate-cost
+dm people search -f search.json --json        # Estimates automatically for agents
+dm people search -f search.json --json --yes  # Executes after user approval
 
 # Get by ID
 dm people get per_12345

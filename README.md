@@ -68,7 +68,7 @@ npx skills add DealMachine/dealmachine-cli
 - [Authentication](#authentication)
 - [Configuration](#configuration)
 - [Commands](#commands)
-  - [Agents](#agents-commands) -- `agents`, `agents guide`, `agents playbook`
+  - [Agents](#agents-commands) -- `agents`, `agents guide`, `agents playbook`, `agents install`, `agents permissions`
   - [Auth](#auth-commands) -- `login`, `logout`, `whoami`
   - [Config](#config-commands) -- `config get`, `config set`, `config path`
   - [Account](#account-commands) -- `account`
@@ -258,6 +258,26 @@ dm agents skill        # alias
 
 The public CLI source keeps its bundled Playbook at `playbook/PLAYBOOK.md`. Monorepo builds can also copy `packages/playbooks/playbook/SKILL.md`. The build writes the selected source to `dist/agents/dealmachine-playbook.md`, so the command works from a published CLI package as well as a local source checkout.
 
+#### `dm agents install claude-code`
+
+Install the Playbook as a native Claude Code skill. Personal scope is the default. Project scope
+installs under the current repository.
+
+```bash
+dm agents install claude-code
+dm agents install claude-code --project
+```
+
+#### `dm agents permissions`
+
+Print the narrow Claude Code allowlist for free discovery and count commands. Paid and mutating
+commands are not pre-approved.
+
+```bash
+dm agents permissions
+dm agents permissions --json
+```
+
 ---
 
 ### Auth Commands
@@ -435,7 +455,11 @@ dm properties search -f search.json
 cat search.json | dm properties search
 
 # Machine-readable output
-dm properties search -f search.json --json
+dm properties search -f search.json --json              # Free estimate for scripts and agents
+dm properties search -f search.json --json --yes        # Run after approval
+
+# Explicit free estimate
+dm properties search -f search.json --estimate-cost
 
 # Query Builder protocol filters
 dm properties search --include-lists 123,456 --exclude-previously-exported --body '{"locations":[]}'
@@ -449,6 +473,8 @@ dm properties search --include-lists 123,456 --exclude-previously-exported --bod
 | `--exclude-lists <ids>`           | Comma-separated list IDs to exclude                                           |
 | `--exclude-previously-exported`   | Exclude records already exported by your organization                         |
 | `--bigquery-data-environment <n>` | Query Builder data environment (`1` production, `2` staging, `3` development) |
+| `--estimate-cost`                  | Preview counts and credit cost without consuming credits                     |
+| `--yes`                            | Confirm approved credit spend for non-interactive execution                  |
 | `--json`                          | Output as JSON                                                                |
 
 #### `dm properties count`
@@ -538,8 +564,13 @@ dm people search --body '{
   "filters": [{"filter_id": "age", "operator": "between", "value": [30, 50]}]
 }'
 dm people search -f people-search.json --json
+dm people search -f people-search.json --estimate-cost
+dm people search -f people-search.json --json --yes
 dm people search --include-lists 123 --exclude-lists 456 --exclude-previously-exported --body '{"locations":[]}'
 ```
+
+Non-interactive People Search returns a free estimate unless `--yes` is supplied. A specific person
+by name uses `dm enrich name`, not People Search.
 
 #### `dm people count`
 
@@ -692,8 +723,8 @@ dm enrich phone -f phones.csv --include-properties --fields estimated_value
 Look up people by name. Supports "First Last" or just "Last" format.
 
 ```bash
-dm enrich name "Jane Doe"
 dm enrich name "Jane Doe" --state TX --estimate-cost
+dm enrich name "Jane Doe" --state TX --json --yes
 dm enrich name "Doe" --state TX --page 2
 dm enrich name "Jane Doe" --zip 78704 --include-properties
 dm enrich name "Jane Doe" --fields estimated_household_income,estimated_value
@@ -706,6 +737,7 @@ dm enrich name "Jane Doe" --fields estimated_household_income,estimated_value
 | `--include-properties` | Include associated properties |
 | `--fields <csv>`       | Field IDs from `dm fields`     |
 | `--estimate-cost`      | Preview count and credits     |
+| `--yes`                | Confirm approved credit spend |
 | `--page <n>`           | Page number                   |
 | `--per-page <n>`       | Results per page              |
 
@@ -1152,7 +1184,14 @@ packages/cli/
 ```bash
 npm run build      # Compile TypeScript and bundle agent Playbook assets to dist/
 npm run dev        # Watch mode (tsc --watch)
+npm run eval:cold-start:local      # Verify a clean local install and routing contract
+npm run eval:cold-start:published  # Verify the latest public npm artifact
+npm run eval:cold-start:deployed   # Verify deployed documentation and skill assets
 ```
+
+The published and deployed checks are release gates. They are expected to fail before a release is
+published or the documentation deployment reaches production. The scenario catalog is stored in
+`evals/claude-code-name-lookup.json` so the same prompt variants remain visible and reviewable.
 
 ### Standalone Binary
 

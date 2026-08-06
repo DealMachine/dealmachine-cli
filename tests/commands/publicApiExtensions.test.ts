@@ -8,6 +8,7 @@ const { mockApiRequest, mockParseRequestBody, mockPrintTable } = vi.hoisted(() =
 
 vi.mock('../../src/lib/client.js', () => ({ apiRequest: mockApiRequest }));
 vi.mock('../../src/lib/output.js', () => ({
+  isQuiet: vi.fn(() => false),
   parseRequestBody: mockParseRequestBody,
   printJson: vi.fn(),
   printHeader: vi.fn(),
@@ -27,8 +28,8 @@ vi.mock('../../src/lib/output.js', () => ({
   })),
 }));
 
-import { peopleGet, peopleIds } from '../../src/commands/people.js';
-import { propertiesGet, propertiesIds } from '../../src/commands/properties.js';
+import { peopleGet, peopleIds, peopleSearch } from '../../src/commands/people.js';
+import { propertiesGet, propertiesIds, propertiesSearch } from '../../src/commands/properties.js';
 import {
   enrichAddress,
   enrichApn,
@@ -37,13 +38,11 @@ import {
   enrichName,
   enrichPhone,
 } from '../../src/commands/enrich.js';
-import {
-  addressesAutocomplete,
-  locationsAutocomplete,
-} from '../../src/commands/locations.js';
+import { addressesAutocomplete, locationsAutocomplete } from '../../src/commands/locations.js';
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockParseRequestBody.mockResolvedValue({});
   mockApiRequest.mockResolvedValue({
     data: [],
     totals: { submitted: 0, matched: 0, unmatched: 0, found: 0, not_found: 0 },
@@ -64,7 +63,11 @@ describe('CLI public API extensions', () => {
       query: { contact_audience: 'none' },
     });
 
-    await propertiesIds({ ids: ['prop_123'], contactAudience: 'none', json: true });
+    await propertiesIds({
+      ids: ['prop_123'],
+      contactAudience: 'none',
+      json: true,
+    });
     expect(mockApiRequest).toHaveBeenCalledWith('/properties/ids', {
       method: 'POST',
       body: { ids: ['prop_123'], contact_audience: 'none' },
@@ -173,7 +176,9 @@ describe('CLI public API extensions', () => {
 
     expect(mockApiRequest).toHaveBeenCalledWith(path, {
       method: 'POST',
-      body: expect.objectContaining({ fields: ['estimated_value', 'equity'] }),
+      body: expect.objectContaining({
+        fields: ['estimated_value', 'equity'],
+      }),
     });
   });
 
@@ -187,24 +192,124 @@ describe('CLI public API extensions', () => {
       path,
       expect.objectContaining({
         method: 'POST',
-        body: expect.objectContaining({ location: { type: 'city', code: '53584' } }),
+        body: expect.objectContaining({
+          location: { type: 'city', code: '53584' },
+        }),
       })
     );
   });
 
   it('passes a city place ID to name enrichment', async () => {
-    await enrichName('Jane Owner', { city: '53584', json: true });
+    await enrichName('Jane Owner', { city: '53584', json: true, yes: true });
 
     expect(mockApiRequest).toHaveBeenCalledWith('/enrichment/name', {
       method: 'POST',
-      body: expect.objectContaining({ location: { type: 'city', code: '53584' } }),
+      body: expect.objectContaining({
+        location: { type: 'city', code: '53584' },
+      }),
+    });
+  });
+
+  it.each([
+    ['property', propertiesSearch, '/properties/search'],
+    ['people', peopleSearch, '/people/search'],
+  ] as const)(
+    'automatically estimates a non-interactive %s search and executes only with --yes',
+    async (_label, command, endpoint) => {
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+      mockApiRequest.mockResolvedValue({
+        totals: { properties: 10, people: 10 },
+        pagination: {
+          page: 1,
+          per_page: 25,
+          total_results: 10,
+          total_pages: 1,
+          has_next_page: false,
+          has_previous_page: false,
+        },
+        estimated_credits: {
+          this_page: 10,
+          total_all_pages: 10,
+          breakdown: {
+            properties: 10,
+            people: 0,
+            already_accessed: 0,
+            note: 'Estimate only',
+          },
+        },
+      });
+
+      await command({ body: '{}', json: true });
+      expect(mockApiRequest).toHaveBeenLastCalledWith(endpoint, {
+        method: 'POST',
+        body: { estimate_cost: true },
+      });
+      expect(error).toHaveBeenCalledWith(expect.stringContaining('No credits were spent'));
+
+      mockParseRequestBody.mockResolvedValueOnce({});
+      await command({ body: '{}', json: true, yes: true });
+      expect(mockApiRequest).toHaveBeenLastCalledWith(endpoint, {
+        method: 'POST',
+        body: {},
+      });
+    }
+  );
+
+  it('automatically estimates non-interactive name enrichment and requires --yes to execute', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    mockApiRequest.mockResolvedValue({
+      totals: { people: 1, properties: 0 },
+      pagination: {
+        page: 1,
+        per_page: 25,
+        total_results: 1,
+        total_pages: 1,
+        has_next_page: false,
+        has_previous_page: false,
+      },
+      estimated_credits: {
+        this_page: 1,
+        total_all_pages: 1,
+        breakdown: {
+          people: 1,
+          properties: 0,
+          already_accessed: 0,
+          note: 'Estimate only',
+        },
+      },
+    });
+
+    await enrichName('Jane Owner', { state: 'TX', json: true });
+    expect(mockApiRequest).toHaveBeenLastCalledWith('/enrichment/name', {
+      method: 'POST',
+      body: {
+        data: [{ first_name: 'Jane', last_name: 'Owner' }],
+        location: { type: 'state', code: 'TX' },
+        estimate_cost: true,
+      },
+    });
+    expect(error).toHaveBeenCalledWith(expect.stringContaining('No credits were spent'));
+
+    await enrichName('Jane Owner', { state: 'TX', json: true, yes: true });
+    expect(mockApiRequest).toHaveBeenLastCalledWith('/enrichment/name', {
+      method: 'POST',
+      body: {
+        data: [{ first_name: 'Jane', last_name: 'Owner' }],
+        location: { type: 'state', code: 'TX' },
+      },
     });
   });
 
   it('passes autocomplete controls to the addresses endpoint', async () => {
     mockApiRequest.mockResolvedValue({
       data: [],
-      meta: { query: '1200 Barton', scope: 'all', limit: 5, returned: 0, partial_results: false },
+      meta: {
+        query: '1200 Barton',
+        scope: 'all',
+        limit: 5,
+        returned: 0,
+        partial_results: false,
+      },
     });
 
     await addressesAutocomplete({
@@ -232,10 +337,20 @@ describe('CLI public API extensions', () => {
   it('keeps the locations autocomplete command as a compatibility alias', async () => {
     mockApiRequest.mockResolvedValue({
       data: [],
-      meta: { query: 'Austin', scope: 'location', limit: 5, returned: 0, partial_results: false },
+      meta: {
+        query: 'Austin',
+        scope: 'location',
+        limit: 5,
+        returned: 0,
+        partial_results: false,
+      },
     });
 
-    await locationsAutocomplete({ query: 'Austin', scope: 'location', json: true });
+    await locationsAutocomplete({
+      query: 'Austin',
+      scope: 'location',
+      json: true,
+    });
 
     expect(mockApiRequest).toHaveBeenCalledWith('/addresses/autocomplete', {
       query: { q: 'Austin', scope: 'location' },
@@ -249,7 +364,7 @@ describe('CLI public API extensions', () => {
       credits: { used: 1, properties: 0, people: 1, deduplicated: 0 },
     });
 
-    await enrichName('Jane Owner', {});
+    await enrichName('Jane Owner', { yes: true });
 
     expect(mockPrintTable).toHaveBeenCalledWith(
       [expect.objectContaining({ properties: '7' })],
@@ -264,7 +379,13 @@ describe('CLI public API extensions', () => {
         {
           matched: true,
           input: { email: 'jane@example.com' },
-          contacts: [{ dm_person_id: 'per_123', full_name: 'Jane Owner', property_count: 7 }],
+          contacts: [
+            {
+              dm_person_id: 'per_123',
+              full_name: 'Jane Owner',
+              property_count: 7,
+            },
+          ],
         },
       ],
       totals: { submitted: 1, matched: 1, unmatched: 0 },

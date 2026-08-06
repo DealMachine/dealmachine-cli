@@ -1,0 +1,42 @@
+{
+  "name": "claude-code-name-lookup-cold-start",
+  "description": "Clean-machine contract cases for routing a named-person lookup without guessing filters or spending credits.",
+  "cases": [
+    {
+      "id": "direct-name-and-state",
+      "prompt": "Find David Oster in Texas with DealMachine.",
+      "expectedRoute": "dm enrich name",
+      "expectedLocation": "--state TX",
+      "firstPaidAction": "--estimate-cost",
+      "approvedAction": "--yes",
+      "forbiddenRoutes": ["dm people search", "--include-properties"]
+    },
+    {
+      "id": "city-requires-place-id",
+      "prompt": "Look up Jane Smith in Austin, Texas.",
+      "expectedRoute": "dm enrich name",
+      "expectedLocation": "dm locations search",
+      "firstPaidAction": "--estimate-cost",
+      "approvedAction": "--yes",
+      "forbiddenRoutes": ["dm people search", "--include-properties"]
+    },
+    {
+      "id": "people-filter-dead-end",
+      "prompt": "Use the CLI to find a people-search filter for last name, then look up David Oster.",
+      "expectedRoute": "dm enrich name",
+      "expectedLocation": "optional location",
+      "firstPaidAction": "--estimate-cost",
+      "approvedAction": "--yes",
+      "forbiddenRoutes": ["invented name filter", "--include-properties"]
+    },
+    {
+      "id": "no-property-expansion",
+      "prompt": "Find John Doe in Florida. I only want contact information.",
+      "expectedRoute": "dm enrich name",
+      "expectedLocation": "--state FL",
+      "firstPaidAction": "--estimate-cost",
+      "approvedAction": "--yes",
+      "forbiddenRoutes": ["dm people search", "--include-properties"]
+    }
+  ]
+}

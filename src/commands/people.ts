@@ -21,6 +21,11 @@ import {
   applySearchProtocolOptions,
   type SearchProtocolCliOptions,
 } from '../lib/searchProtocol.js';
+import {
+  applyCreditSafety,
+  printAutomaticEstimateNotice,
+  type CreditSafetyOptions,
+} from '../lib/creditSafety.js';
 
 // ============================================================================
 // Types
@@ -40,6 +45,23 @@ interface SearchResponse {
   };
   warning?: string;
 }
+
+interface SearchEstimateResponse {
+  totals: { people: number; properties: number };
+  pagination: SearchResponse['pagination'];
+  estimated_credits: {
+    this_page: number;
+    total_all_pages: number;
+    breakdown: {
+      people: number;
+      properties: number;
+      already_accessed: number;
+      note: string;
+    };
+  };
+}
+
+type SearchApiResponse = SearchResponse | SearchEstimateResponse;
 
 interface CountResponse {
   total_people: number;
@@ -84,13 +106,17 @@ export async function peopleSearch(
     body?: string;
     file?: string;
     json?: boolean;
-  } & SearchProtocolCliOptions
+  } & SearchProtocolCliOptions &
+    CreditSafetyOptions
 ): Promise<void> {
   const requestBody = await parseRequestBody(options);
   applySearchProtocolOptions(requestBody, options, 'people');
+  const creditSafety = applyCreditSafety(requestBody, options);
 
-  const spinner = createSpinner('Searching people...').start();
-  const data = await apiRequest<SearchResponse>('/people/search', {
+  const spinner = createSpinner(
+    creditSafety.isEstimate ? 'Estimating people search...' : 'Searching people...'
+  ).start();
+  const data = await apiRequest<SearchApiResponse>('/people/search', {
     method: 'POST',
     body: requestBody,
   });
@@ -98,6 +124,17 @@ export async function peopleSearch(
 
   if (options.json) {
     printJson(data);
+    if (creditSafety.wasAutomaticallyEstimated) {
+      printAutomaticEstimateNotice('the same people search');
+    }
+    return;
+  }
+
+  if (isSearchEstimateResponse(data)) {
+    printSearchEstimate(data);
+    if (creditSafety.wasAutomaticallyEstimated) {
+      printAutomaticEstimateNotice('the same people search');
+    }
     return;
   }
 
@@ -118,6 +155,24 @@ export async function peopleSearch(
 
   printPagination(data.pagination);
   printCredits(data.credits);
+  console.log();
+}
+
+function isSearchEstimateResponse(data: SearchApiResponse): data is SearchEstimateResponse {
+  return 'estimated_credits' in data;
+}
+
+function printSearchEstimate(data: SearchEstimateResponse): void {
+  printHeader('People Search Estimate');
+  printTotals(data.totals);
+  printPagination(data.pagination);
+  console.log();
+  console.log(
+    chalk.dim(
+      `  ${chalk.cyan('estimated credits')}: ${data.estimated_credits.this_page.toLocaleString()} this page | ${data.estimated_credits.total_all_pages.toLocaleString()} all pages`
+    )
+  );
+  console.log(chalk.dim(`  ${data.estimated_credits.breakdown.note}`));
   console.log();
 }
 

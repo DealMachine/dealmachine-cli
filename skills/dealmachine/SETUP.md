@@ -13,6 +13,7 @@ If the client does not support remote MCP OAuth, install the CLI:
 ```bash
 npm install -g dealmachine
 dm login
+dm agents install claude-code
 ```
 
 Do not paste an API key into chat or commit it to a repository.

@@ -22,6 +22,11 @@ import {
   applySearchProtocolOptions,
   type SearchProtocolCliOptions,
 } from '../lib/searchProtocol.js';
+import {
+  applyCreditSafety,
+  printAutomaticEstimateNotice,
+  type CreditSafetyOptions,
+} from '../lib/creditSafety.js';
 
 // ============================================================================
 // Types
@@ -41,6 +46,23 @@ interface SearchResponse {
   };
   warning?: string;
 }
+
+interface SearchEstimateResponse {
+  totals: { properties: number; people: number };
+  pagination: SearchResponse['pagination'];
+  estimated_credits: {
+    this_page: number;
+    total_all_pages: number;
+    breakdown: {
+      properties: number;
+      people: number;
+      already_accessed: number;
+      note: string;
+    };
+  };
+}
+
+type SearchApiResponse = SearchResponse | SearchEstimateResponse;
 
 interface CountResponse {
   total_properties: number;
@@ -85,13 +107,17 @@ export async function propertiesSearch(
     body?: string;
     file?: string;
     json?: boolean;
-  } & SearchProtocolCliOptions
+  } & SearchProtocolCliOptions &
+    CreditSafetyOptions
 ): Promise<void> {
   const requestBody = await parseRequestBody(options);
   applySearchProtocolOptions(requestBody, options, 'properties');
+  const creditSafety = applyCreditSafety(requestBody, options);
 
-  const spinner = createSpinner('Searching properties...').start();
-  const data = await apiRequest<SearchResponse>('/properties/search', {
+  const spinner = createSpinner(
+    creditSafety.isEstimate ? 'Estimating property search...' : 'Searching properties...'
+  ).start();
+  const data = await apiRequest<SearchApiResponse>('/properties/search', {
     method: 'POST',
     body: requestBody,
   });
@@ -99,6 +125,17 @@ export async function propertiesSearch(
 
   if (options.json) {
     printJson(data);
+    if (creditSafety.wasAutomaticallyEstimated) {
+      printAutomaticEstimateNotice('the same property search');
+    }
+    return;
+  }
+
+  if (isSearchEstimateResponse(data)) {
+    printSearchEstimate(data);
+    if (creditSafety.wasAutomaticallyEstimated) {
+      printAutomaticEstimateNotice('the same property search');
+    }
     return;
   }
 
@@ -122,6 +159,24 @@ export async function propertiesSearch(
 
   printPagination(data.pagination);
   printCredits(data.credits);
+  console.log();
+}
+
+function isSearchEstimateResponse(data: SearchApiResponse): data is SearchEstimateResponse {
+  return 'estimated_credits' in data;
+}
+
+function printSearchEstimate(data: SearchEstimateResponse): void {
+  printHeader('Property Search Estimate');
+  printTotals(data.totals);
+  printPagination(data.pagination);
+  console.log();
+  console.log(
+    chalk.dim(
+      `  ${chalk.cyan('estimated credits')}: ${data.estimated_credits.this_page.toLocaleString()} this page | ${data.estimated_credits.total_all_pages.toLocaleString()} all pages`
+    )
+  );
+  console.log(chalk.dim(`  ${data.estimated_credits.breakdown.note}`));
   console.log();
 }
 

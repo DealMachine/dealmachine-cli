@@ -25,6 +25,10 @@
     "start": "node dist/index.js",
     "test": "npm run validate:plugin && vitest run",
     "validate:plugin": "node scripts/validate-agent-plugin.mjs",
+    "eval:cold-start:local": "npm run build && node scripts/eval-cold-start.mjs local",
+    "eval:cold-start:published": "node scripts/eval-cold-start.mjs published",
+    "eval:cold-start:deployed": "node scripts/eval-cold-start.mjs deployed",
+    "eval:cold-start:all": "npm run build && node scripts/eval-cold-start.mjs all",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {

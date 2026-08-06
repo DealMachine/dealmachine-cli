@@ -49,6 +49,8 @@ Run `dm <command> --help` for options and examples. Prefer `--json` for automati
 
 - `dm login`
 - `dm whoami`, `dm usage`
+- `dm agents guide|playbook|permissions`
+- `dm agents install claude-code` for native Claude Code skill installation
 
 ### Data discovery and research
 
@@ -60,6 +62,10 @@ Run `dm <command> --help` for options and examples. Prefer `--json` for automati
 - `dm comps`
 - `dm addresses autocomplete|validate`
 - `dm phones dnc`
+
+A specific person by name uses `dm enrich name`, not `dm people search`. Property search, people
+search, and name enrichment accept `--estimate-cost`; non-interactive paid execution requires
+explicit `--yes` after approval.
 
 Commands that create or mutate lists, tasks, mail, billing, subscriptions,
 account settings, or developer licenses are outside this skill. Do not invoke

@@ -8,7 +8,12 @@ import { whoami } from './commands/whoami.js';
 import { configGet, configSet, configPath } from './commands/config.js';
 import { account } from './commands/account.js';
 import { usage } from './commands/usage.js';
-import { agentsGuide, agentsPlaybook } from './commands/agents.js';
+import {
+  agentsGuide,
+  agentsInstallClaudeCode,
+  agentsPermissions,
+  agentsPlaybook,
+} from './commands/agents.js';
 import { checkout, plans, signup } from './commands/onboarding.js';
 import {
   propertiesSearch,
@@ -117,6 +122,7 @@ Tip: Every subcommand supports --help with examples.
 Agents:
   dm agents guide                       Print concise agent usage guidance
   dm agents playbook                    Print the full DealMachine Playbook
+  dm agents install claude-code         Install the Playbook as a Claude Code skill
 
 Agent defaults: use --json and --quiet, fetch filters and fields before searches,
 and count before credit-consuming commands.`
@@ -137,10 +143,15 @@ Examples:
   dm agents                              Print concise agent usage guidance
   dm agents guide --json                 Print agent guidance as JSON
   dm agents playbook                     Print the full DealMachine Playbook
+  dm agents install claude-code          Install the Playbook for Claude Code
+  dm agents permissions                  Print a safe Claude Code allowlist
   dm agents skill                        Alias for dm agents playbook`
   )
   .action(async (options: { json?: boolean }) => {
-    await agentsGuide(options);
+    await agentsGuide({
+      ...options,
+      json: options.json || agentsCmd.opts().json,
+    });
   });
 
 agentsCmd
@@ -155,7 +166,10 @@ Examples:
   dm agents guide --json                 Print agent guidance as JSON`
   )
   .action(async (options: { json?: boolean }) => {
-    await agentsGuide(options);
+    await agentsGuide({
+      ...options,
+      json: options.json || agentsCmd.opts().json,
+    });
   });
 
 agentsCmd
@@ -172,7 +186,62 @@ Examples:
   dm agents skill                        Alias for dm agents playbook`
   )
   .action(async (options: { json?: boolean }) => {
-    await agentsPlaybook(options);
+    await agentsPlaybook({
+      ...options,
+      json: options.json || agentsCmd.opts().json,
+    });
+  });
+
+agentsCmd
+  .command('install <agent>')
+  .description('Install the bundled Playbook for a supported coding agent')
+  .option('--project', 'Install in the current project instead of the personal Claude config')
+  .option('--force', 'Replace a different existing DealMachine skill')
+  .option('--json', 'Output as JSON')
+  .addHelpText(
+    'after',
+    `
+Supported agents:
+  claude-code
+
+Examples:
+  dm agents install claude-code
+  dm agents install claude-code --project
+  dm agents install claude-code --force --json`
+  )
+  .action(
+    async (agent: string, options: { project?: boolean; force?: boolean; json?: boolean }) => {
+      const normalizedOptions = {
+        ...options,
+        json: options.json || agentsCmd.opts().json,
+      };
+      if (agent !== 'claude-code') {
+        const message = `Unsupported agent "${agent}". Supported agents: claude-code`;
+        if (normalizedOptions.json) console.log(JSON.stringify({ error: message }, null, 2));
+        else console.error(message);
+        process.exitCode = 1;
+        return;
+      }
+      await agentsInstallClaudeCode(normalizedOptions);
+    }
+  );
+
+agentsCmd
+  .command('permissions')
+  .description('Print the recommended Claude Code allowlist for free DealMachine commands')
+  .option('--json', 'Output as JSON')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  dm agents permissions
+  dm agents permissions --json`
+  )
+  .action(async (options: { json?: boolean }) => {
+    await agentsPermissions({
+      ...options,
+      json: options.json || agentsCmd.opts().json,
+    });
   });
 
 // ============================================================================
@@ -201,7 +270,11 @@ Examples:
     if (options.env) {
       process.env.DM_ENV = options.env;
     }
-    await login({ noBrowser: options.browser === false, key: options.key, env: options.env });
+    await login({
+      noBrowser: options.browser === false,
+      key: options.key,
+      env: options.env,
+    });
   });
 
 program
@@ -559,14 +632,17 @@ propertiesCmd
     '--bigquery-data-environment <n>',
     'Query Builder data environment: 1 production, 2 staging, 3 development'
   )
+  .option('--estimate-cost', 'Return counts and estimated credits without consuming credits')
+  .option('--yes', 'Confirm the estimated credit spend for non-interactive execution')
   .option('--json', 'Output as JSON')
   .addHelpText(
     'after',
     `
 Examples:
   dm properties search --body '{"locations":[{"type":"zip_code","code":"78704"}]}'
-  dm properties search -f search-query.json
-  dm properties search -f query.json --json
+  dm properties search -f search-query.json --estimate-cost
+  dm properties search -f query.json --json             Estimate automatically
+  dm properties search -f query.json --json --yes       Run after approval
   cat query.json | dm properties search --json`
   )
   .action(async (options) => {
@@ -927,7 +1003,16 @@ Examples:
 // People commands
 // ============================================================================
 
-const peopleCmd = program.command('people').description('Search and look up people');
+const peopleCmd = program
+  .command('people')
+  .description('Search and look up people')
+  .addHelpText(
+    'after',
+    `
+Looking up one specific person by name, email, or phone?
+  Use dm enrich name, dm enrich email, or dm enrich phone.
+  People Search is for filtered audiences and does not have a name filter.`
+  );
 
 peopleCmd
   .command('search')
@@ -941,13 +1026,19 @@ peopleCmd
     '--bigquery-data-environment <n>',
     'Query Builder data environment: 1 production, 2 staging, 3 development'
   )
+  .option('--estimate-cost', 'Return counts and estimated credits without consuming credits')
+  .option('--yes', 'Confirm the estimated credit spend for non-interactive execution')
   .option('--json', 'Output as JSON')
   .addHelpText(
     'after',
     `
 Examples:
-  dm people search -f people-query.json --json
-  dm people search --body '{"locations":[{"type":"zip_code","code":"78704"}]}'`
+  dm people search -f people-query.json --estimate-cost
+  dm people search -f people-query.json --json            Estimate automatically
+  dm people search -f people-query.json --json --yes      Run after approval
+
+Specific person by name:
+  dm enrich name "Jane Smith" --state TX --estimate-cost`
   )
   .action(async (options) => {
     await peopleSearch(options);
@@ -1183,6 +1274,7 @@ enrichCmd
   .option('--city <place-id>', 'Narrow by city place ID from dm locations search')
   .option('--include-properties', 'Include associated properties')
   .option('--estimate-cost', 'Return match count and estimated credits without consuming credits')
+  .option('--yes', 'Confirm the estimated credit spend for non-interactive execution')
   .option('--page <n>', 'Page number')
   .option('--per-page <n>', 'Results per page')
   .option('--fields <csv>', 'Comma-separated field IDs from dm fields')
@@ -1191,9 +1283,10 @@ enrichCmd
     'after',
     `
 Examples:
-  dm enrich name "David Oster" --city 53584 --json
+  dm enrich name "David Oster" --city 53584 --json         Estimate automatically
   dm enrich name "David Oster" --state TX --estimate-cost
-  dm enrich name "Jane Smith" --zip 78704 --include-properties
+  dm enrich name "Jane Smith" --zip 78704 --json --yes      Run after approval
+  dm enrich name "Jane Smith" --zip 78704 --include-properties --yes
   dm enrich name -f names.csv --state TX`
   )
   .action(async (name, options) => {
