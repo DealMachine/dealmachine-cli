@@ -32,6 +32,12 @@ Use these exact Tool IDs. Do not pluralize `property`.
 
 People export is available through the CLI.
 
+People Search builds audiences from demographic, property, contact, and location filters. It has no
+person-name filter. For a specific person by name, use `dealmachine_enrich_name` or
+`dm enrich name`. For city narrowing, resolve the city with `dealmachine_location_search` or
+`dm locations search -q "Austin" --type city --state TX --json`, then pass its `code` as the city
+place ID.
+
 ### Enrichment
 
 - `dealmachine_enrich_address`

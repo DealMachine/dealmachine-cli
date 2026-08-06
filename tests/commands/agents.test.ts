@@ -14,6 +14,12 @@ describe('agent commands', () => {
 
     expect(log).toHaveBeenCalledWith(expect.stringContaining('dm agents playbook'));
     expect(log).toHaveBeenCalledWith(expect.stringContaining('Credit-Safe Workflow'));
+    expect(log).toHaveBeenCalledWith(
+      expect.stringContaining('A specific person by name uses `dm enrich name`')
+    );
+    expect(log).toHaveBeenCalledWith(
+      expect.stringContaining('People Search does not have a name filter')
+    );
   });
 
   it('prints agent guidance as JSON', async () => {
@@ -27,6 +33,7 @@ describe('agent commands', () => {
       recommended_first_command: 'dm agents playbook',
     });
     expect(payload.content).toContain('DealMachine CLI Agent Guide');
+    expect(payload.content).toContain('A specific person by name uses `dm enrich name`');
   });
 
   it('prints the DealMachine Playbook as JSON', async () => {
@@ -40,5 +47,8 @@ describe('agent commands', () => {
       type: 'playbook',
     });
     expect(payload.content).toContain('DealMachine Playbook: Natural Language Property Intelligence');
+    expect(payload.content).toContain(
+      'A specific name always uses person enrichment, not People Search.'
+    );
   });
 });

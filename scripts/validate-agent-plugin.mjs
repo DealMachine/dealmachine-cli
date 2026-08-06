@@ -92,6 +92,12 @@ assert.deepEqual(mcp.mcpServers.dealmachine, {
 
 assert.match(skill, /^---\nname: dealmachine\n/, 'DealMachine skill front matter is missing');
 assert.match(skill, /\ndescription: .+\n/, 'DealMachine skill description is missing');
+assert.match(
+  skill,
+  /People Search builds audiences[\s\S]+it has no name filter/,
+  'DealMachine skill must distinguish People Search from person-name enrichment'
+);
+assert.match(skill, /dealmachine_enrich_name/, 'DealMachine skill must route names to enrichment');
 
 const demoVideoPath = resolve(packageRoot, 'assets/plugin-demo/dealmachine-agent-plugin-demo.mp4');
 const demoVideo = await stat(demoVideoPath);

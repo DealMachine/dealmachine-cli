@@ -28,6 +28,14 @@ dm agents playbook
 - Check auth with \`dm whoami --verify --json\`. If auth fails, ask the user to run \`dm login\`.
 - Use request files or stdin for structured bodies instead of hand-editing long shell strings.
 
+## People Lookup Routing
+
+- A specific person by name uses \`dm enrich name\`. People Search does not have a name filter.
+- A specific person by email or phone uses the matching \`dm enrich\` command.
+- \`dm people search\` is only for audiences defined by demographic, property, contact, or location filters.
+- A known DealMachine person ID uses \`dm people get\`.
+- Name enrichment supports an optional state, ZIP code, county, or city place ID. Resolve a city with \`dm locations search\`, then pass its \`code\` to \`dm enrich name --city\`.
+
 ## Credit-Safe Workflow
 
 1. Discover live filters and fields before searches:
