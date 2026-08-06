@@ -46,10 +46,6 @@ Compatible clients discover the DealMachine skill from `skills/dealmachine/` and
 hosted Streamable HTTP MCP server declared in `mcp.json`. Client-specific manifests remain in the
 repository for compatibility, marketplace metadata, and richer presentation.
 
-[![DealMachine Agent Plugin demo](assets/plugin-demo/dealmachine-agent-plugin-poster.png)](assets/plugin-demo/dealmachine-agent-plugin-demo.mp4)
-
-[Watch the 53-second DealMachine Agent Plugin demo](assets/plugin-demo/dealmachine-agent-plugin-demo.mp4).
-
 Example requests:
 
 - "Find high-equity absentee-owned properties in Austin and estimate the credit cost first."
