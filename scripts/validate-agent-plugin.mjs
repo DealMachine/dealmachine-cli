@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFile, stat } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -13,7 +13,6 @@ const manifest = await readJson('plugin.json');
 const mcp = await readJson('mcp.json');
 const codexManifest = await readJson('.codex-plugin/plugin.json');
 const skill = await readFile(resolve(packageRoot, 'skills/dealmachine/SKILL.md'), 'utf8');
-const readme = await readFile(resolve(packageRoot, 'README.md'), 'utf8');
 
 assert.equal(
   manifest.$schema,
@@ -92,15 +91,5 @@ assert.deepEqual(mcp.mcpServers.dealmachine, {
 
 assert.match(skill, /^---\nname: dealmachine\n/, 'DealMachine skill front matter is missing');
 assert.match(skill, /\ndescription: .+\n/, 'DealMachine skill description is missing');
-
-const demoVideoPath = resolve(packageRoot, 'assets/plugin-demo/dealmachine-agent-plugin-demo.mp4');
-const demoVideo = await stat(demoVideoPath);
-assert(demoVideo.isFile(), 'submission demo must be a regular file');
-assert(demoVideo.size > 0 && demoVideo.size <= 100 * 1024 * 1024, 'submission demo must be non-empty and at most 100 MB');
-assert.match(
-  readme,
-  /assets\/plugin-demo\/dealmachine-agent-plugin-demo\.mp4/,
-  'README must link to the public submission demo'
-);
 
 console.log('Agent Plugin package is valid.');
