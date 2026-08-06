@@ -47,11 +47,8 @@ Run `dm <command> --help` for options and examples. Prefer `--json` for automati
 
 ### Authentication and account
 
-- `dm login`, `dm logout`, `dm signup`
-- `dm whoami`, `dm account`, `dm usage`
-- `dm plans`, `dm checkout`
-- `dm subscription status`
-- `dm config get|set|path`
+- `dm login`
+- `dm whoami`, `dm usage`
 
 ### Data discovery and research
 
@@ -64,26 +61,6 @@ Run `dm <command> --help` for options and examples. Prefer `--json` for automati
 - `dm addresses autocomplete|validate`
 - `dm phones dnc`
 
-### Lists, exports, and activity
-
-- `dm lists search|create|get|update|delete|build|import|items|add|remove|export`
-- `dm exports list|get`
-- `dm activity search|get`
-
-### Task operations
-
-- `dm tasks list|get|create|update|delete`
-
-### Direct mail
-
-- `dm mail campaigns list|create|get|update|delete|send|pause|resume|recipients|analytics|cost-estimate`
-- `dm mail designs list|create|get|update|delete`
-- `dm mail return-addresses list|create|get|update|delete|set-default`
-- `dm mail wallet balance|add-funds|transactions|pricing`
-- `dm mail settings get|update`
-- `dm mail analytics summary|timeseries`
-
-### Developer utilities
-
-- `dm agents`, `dm agents guide`, `dm agents playbook`
-- `dm dev license add|list|remove`
+Commands that create or mutate lists, tasks, mail, billing, subscriptions,
+account settings, or developer licenses are outside this skill. Do not invoke
+them from an OpenAI plugin workflow.
