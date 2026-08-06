@@ -30,15 +30,16 @@
   "mcpServers": "./.mcp.json",
   "interface": {
     "displayName": "DealMachine",
-    "shortDescription": "Search and enrich real estate data",
+    "shortDescription": "Find and enrich property data",
     "longDescription": "DealMachine connects AI assistants to US property, owner, and people intelligence. Search markets with live filters, estimate result counts before spending credits, enrich addresses and contacts, find comparable sales, and export targeted data. Use it for real estate sales, marketing, lead generation, prospecting, market research, and data enrichment.\n\nExample workflows:\n- Find high-equity absentee-owned properties in a target market\n- Identify property owners and enrich available phone or email data\n- Research people and property owners for targeted prospecting\n- Pull comparable sales for a property\n- Count and preview a search before spending credits",
     "developerName": "DealMachine",
-    "category": "Sales",
+    "category": "Business & Operations",
     "capabilities": [
       "Interactive",
       "Read"
     ],
     "websiteURL": "https://dealmachine.com",
+    "supportURL": "https://help.dealmachine.com/en/collections/13955772-support",
     "privacyPolicyURL": "https://dealmachine.com/privacy-policy",
     "termsOfServiceURL": "https://dealmachine.com/terms-of-service",
     "defaultPrompt": [

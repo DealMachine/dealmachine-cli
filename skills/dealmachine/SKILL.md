@@ -28,6 +28,13 @@ Read [REFERENCE.md](REFERENCE.md) when you need the exact MCP Tool ID, CLI comma
 - For property-only requests, do not add owner or resident contact enrichment.
 - For explicit single-record lookups, run the requested lookup and report whether credits were used.
 
+## Require approval for external effects
+
+- Immediately before any operation that can consume credits, create an export, write or delete data, send mail, change account settings, or initiate a purchase, state the exact effect and obtain explicit user approval.
+- A broad request to "handle it" is not approval for an irreversible action. Prefer a count, cost estimate, preview, or dry run first.
+- Never use the plugin or CLI to open checkout, add funds, change a subscription, or purchase digital credits. Explain the limitation and point to DealMachine account settings only when the user asks.
+- Do not execute task, list, direct-mail, account, developer-license, or other CLI write commands from this skill. Limit the CLI fallback to the research workflows documented below.
+
 ## Plan the request
 
 Identify:
@@ -91,7 +98,7 @@ dm usage --json
 
 Use JSON output for automation. Store complex request bodies in a temporary JSON file instead of constructing fragile shell-escaped payloads.
 
-The CLI also supports saved lists, exports, account activity, address validation, tasks, direct mail, and developer license management. Use `dm <command> --help` and the command map in [REFERENCE.md](REFERENCE.md) before operating those workflows.
+Use the CLI fallback only for the property, people, enrichment, comparable-sales, discovery, count, and explicitly approved export workflows documented in [REFERENCE.md](REFERENCE.md).
 
 ## Present the result
 
