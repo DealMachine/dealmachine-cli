@@ -49,6 +49,22 @@ Identify:
 
 Ask one focused question only when a missing detail would materially change the search or credit cost.
 
+## Choose the correct people workflow
+
+| User intent | Correct workflow |
+| --- | --- |
+| Find a specific person by name | `dealmachine_enrich_name` or `dm enrich name` |
+| Find a specific person by email or phone | Use the matching enrichment MCP Tool or CLI command |
+| Find an audience using demographic, property, contact, or location criteria | `dealmachine_people_search` or `dm people search` |
+| Fetch a known DealMachine person ID | `dealmachine_people_get` or `dm people get` |
+
+Do not search the People Search filter catalog for a person's name. People Search builds audiences
+from filters and locations, and it has no name filter. Name enrichment accepts first and last name
+with an optional state, ZIP code, county, or city place ID. Resolve a city name with
+`dealmachine_location_search` or `dm locations search`, then use the result's `code` for the name
+lookup. For broad name matches, use `estimate_cost: true` with the MCP Tool or `--estimate-cost`
+with the CLI before retrieving records.
+
 ## Use MCP tools
 
 ### Discovery
@@ -70,14 +86,17 @@ Ask one focused question only when a missing detail would materially change the 
 ### People workflows
 
 - Use `dealmachine_people_count` before a broad search.
-- Use `dealmachine_people_search` for results and the matching get tools for known IDs.
+- Use `dealmachine_people_search` only for an audience defined by filters and locations. It does not
+  accept a person's name as a filter.
+- Use the matching get tools for known DealMachine person IDs.
 - People search and lookup are available through MCP. Use the CLI for a people export.
 
 ### Enrichment
 
 - Use the address, latitude and longitude, or APN enrichment tool for a property.
 - Use the email, phone, or name enrichment tool for a person.
-- Narrow name searches with a location.
+- A specific person's name always uses `dealmachine_enrich_name` or `dm enrich name`.
+- Narrow name searches with a state, ZIP code, county, or city place ID.
 
 ## Use the CLI
 

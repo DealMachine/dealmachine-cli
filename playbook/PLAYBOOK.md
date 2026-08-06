@@ -122,7 +122,11 @@ If a command fails due to auth, tell the user to run `dm login` in their termina
 
 ### State DM3: People Search
 
-**Symptoms:** User wants to find people (owners, renters, residents) matching criteria.
+**Symptoms:** User wants to find an audience of people (owners, renters, residents) matching demographic, property, contact, or location criteria.
+
+**Routing boundary:** Do not use this state when the user provides a specific person's name. People
+Search has no name filter. Route a known name to State DM5 and use `dm enrich name`.
+
 **Key Questions:**
 
 - Are you looking for property owners, renters, or residents?
@@ -153,15 +157,22 @@ If a command fails due to auth, tell the user to run `dm login` in their termina
 ### State DM5: Person Enrichment
 
 **Symptoms:** User has a name, phone, or email and wants to find the person.
+
+**Routing boundary:** A specific name always uses person enrichment, not People Search. Use
+`dm enrich name` or `dealmachine_enrich_name`. Narrow with a state, ZIP code, county, or city place
+ID when available. For a city name, run
+`dm locations search -q "<city>" --type city --state <state> --json`, then pass the result's `code`
+to `dm enrich name --city <place-id>`.
+
 **Key Questions:**
 
 - What identifier do you have? (name, phone, email)
-- For name searches: do you know their state or ZIP? (narrows results, saves credits)
+- For name searches: do you know their state, ZIP, county, or city? (narrows results, saves credits)
 - Do you need their associated properties?
   **Interventions:**
 - `dm enrich phone "5551234567"`
 - `dm enrich email "john@example.com"`
-- `dm enrich name "John Smith" --state TX`
+- `dm enrich name "John Smith" --state TX --estimate-cost`
 - Add `--include-properties` if property data needed
 
 ### State DM6: Address Validation
@@ -600,6 +611,8 @@ dm enrich phone "5551234567" --include-properties
 dm enrich name "John Smith"
 dm enrich name "John Smith" --state TX
 dm enrich name "John Smith" --zip 78704
+dm locations search -q "Austin" --type city --state TX --json
+dm enrich name "John Smith" --city 7333 --estimate-cost
 dm enrich name "Smith"                       # Last name only
 dm enrich name "John Smith" --include-properties
 ```

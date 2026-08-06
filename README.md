@@ -534,7 +534,8 @@ dm properties export --body '{"locations": [...]}' --mobile-only --json
 
 #### `dm people search`
 
-Search people with filters and locations.
+Build an audience of people using demographic, property, contact, and location filters. This command
+does not accept a person's name as a filter. Use `dm enrich name` for a specific person by name.
 
 ```bash
 dm people search --body '{
@@ -693,7 +694,8 @@ dm enrich phone -f phones.csv --include-properties --fields estimated_value
 
 #### `dm enrich name [name]`
 
-Look up people by name. Supports "First Last" or just "Last" format.
+Look up a specific person by name. Supports "First Last" or just "Last" format. People Search does
+not have a name filter, so use this command whenever the input is a person's name.
 
 ```bash
 dm enrich name "Jane Doe"
@@ -701,12 +703,16 @@ dm enrich name "Jane Doe" --state TX --estimate-cost
 dm enrich name "Doe" --state TX --page 2
 dm enrich name "Jane Doe" --zip 78704 --include-properties
 dm enrich name "Jane Doe" --fields estimated_household_income,estimated_value
+dm locations search -q "Austin" --type city --state TX --json
+dm enrich name "Jane Doe" --city 7333 --estimate-cost
 ```
 
 | Option                 | Description                   |
 | ---------------------- | ----------------------------- |
 | `--state <code>`       | Narrow by state               |
 | `--zip <code>`         | Narrow by ZIP code            |
+| `--county <fips>`      | Narrow by county FIPS         |
+| `--city <place-id>`    | Narrow by city place ID       |
 | `--include-properties` | Include associated properties |
 | `--fields <csv>`       | Field IDs from `dm fields`     |
 | `--estimate-cost`      | Preview count and credits     |
