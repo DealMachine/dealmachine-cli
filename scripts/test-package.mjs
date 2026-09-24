@@ -3,7 +3,7 @@ import { execFile, execFileSync } from 'node:child_process';
 import { createServer } from 'node:http';
 import { once } from 'node:events';
 import { promisify } from 'node:util';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -36,6 +36,25 @@ try {
   assert.equal(readFileSync(join(temporary, '.claude/skills/dealmachine/SKILL.md'), 'utf8'), playbook.content);
   const program = run(process.execPath, ['--input-type=module', '--eval', "const { program } = await import('@dealmachine/cli/dist/index.js'); console.log(program.name());"]);
   assert.equal(program.trim(), 'dm');
+  // Use the normal encrypted-file credential fallback inside a temporary home.
+  // Never call the developer's OS keychain or read their personal CLI login.
+  const fixtureHome = join(temporary, 'home');
+  mkdirSync(fixtureHome);
+  const credentialIsolation = join(temporary, 'credential-isolation.mjs');
+  writeFileSync(credentialIsolation, [
+    "import os from 'node:os';",
+    "import childProcess from 'node:child_process';",
+    "import { syncBuiltinESMExports } from 'node:module';",
+    `os.homedir = () => ${JSON.stringify(fixtureHome)};`,
+    "childProcess.execFileSync = () => { throw new Error('OS credential store disabled in package fixture'); };",
+    'syncBuiltinESMExports();',
+  ].join('\n'));
+  run(process.execPath, ['--import', credentialIsolation, '--input-type=module', '--eval',
+    "const { writeConfig } = await import('@dealmachine/cli/dist/lib/config.js'); writeConfig({ apiKey: 'dm-package-test', keyId: 'fixture', organizationId: 1, organizationName: 'Package fixture', organizationSlug: 'fixture' });",
+  ]);
+  const fixtureConfig = JSON.parse(readFileSync(join(fixtureHome, '.dealmachine/config.json'), 'utf8'));
+  assert.equal(fixtureConfig.credentialStore, 'encrypted-file');
+  assert.equal(fixtureConfig.apiKey, undefined);
   const requests = [];
   const server = createServer(async (request, response) => {
     const chunks = [];
@@ -55,12 +74,13 @@ try {
       [['lists', 'import', '123', '--ids', '456'], '/lists/123/import'],
     ]) {
       for (const optOut of [false, true]) {
-        await execute(binary, [...args, '--json', ...(optOut ? ['--no-prospects'] : [])], {
+        await execute(process.execPath, ['--import', credentialIsolation, binary, ...args, '--json', ...(optOut ? ['--no-prospects'] : [])], {
           cwd: temporary,
           timeout: 10000,
-          env: { ...process.env, DM_API_URL: `http://127.0.0.1:${server.address().port}/v1`, DM_API_KEY: 'dm-package-test' },
+          env: { ...process.env, DM_API_URL: `http://127.0.0.1:${server.address().port}/v1`, DM_API_KEY: 'unrelated-environment-key' },
         });
         const request = requests.pop();
+        assert.equal(request.headers.authorization, 'Bearer dm-package-test');
         assert.equal(request.method, 'POST');
         assert.equal(request.path, `/v1${path}`);
         assert.equal(request.body.add_as_prospects, optOut ? false : undefined);

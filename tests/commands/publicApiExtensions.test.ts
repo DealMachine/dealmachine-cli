@@ -5,8 +5,12 @@ const { mockApiRequest, mockParseRequestBody } = vi.hoisted(() => ({
   mockParseRequestBody: vi.fn().mockResolvedValue({}),
 }));
 
-vi.mock('../../src/lib/client.js', () => ({ apiRequest: mockApiRequest }));
+vi.mock('../../src/lib/client.js', () => ({
+  apiRequest: mockApiRequest,
+  formatDate: () => 'Sep 24, 2026',
+}));
 vi.mock('../../src/lib/output.js', () => ({
+  isQuiet: vi.fn(() => false),
   parseRequestBody: mockParseRequestBody,
   printJson: vi.fn(),
   printHeader: vi.fn(),
@@ -26,7 +30,7 @@ vi.mock('../../src/lib/output.js', () => ({
   })),
 }));
 
-import { printJson } from '../../src/lib/output.js';
+import { printJson, printTable } from '../../src/lib/output.js';
 import { peopleGet, peopleIds, peopleSearch } from '../../src/commands/people.js';
 import { propertiesGet, propertiesIds, propertiesSearch } from '../../src/commands/properties.js';
 import {
@@ -40,6 +44,8 @@ import {
 import { addressesAutocomplete, locationsAutocomplete } from '../../src/commands/locations.js';
 import { drivingGet, drivingList } from '../../src/commands/driving.js';
 import { prospectsList } from '../../src/commands/prospects.js';
+import { listsItems } from '../../src/commands/lists.js';
+import { phonesDnc } from '../../src/commands/phones.js';
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -294,6 +300,7 @@ describe('CLI public API extensions', () => {
 
     await addressesAutocomplete({
       query: '1200 Barton',
+      scope: 'all',
       state: 'TX',
       limit: '5',
       latitude: '30.26',
@@ -304,6 +311,7 @@ describe('CLI public API extensions', () => {
     expect(mockApiRequest).toHaveBeenCalledWith('/addresses/autocomplete', {
       query: {
         q: '1200 Barton',
+        scope: 'all',
         state: 'TX',
         limit: '5',
         latitude: '30.26',
@@ -318,12 +326,164 @@ describe('CLI public API extensions', () => {
       meta: { query: '1200 Barton', limit: 5, returned: 0, partial_results: false },
     });
 
-    await locationsAutocomplete({ query: '1200 Barton', json: true });
+    await locationsAutocomplete({ query: 'Austin', scope: 'location', json: true });
 
     expect(mockApiRequest).toHaveBeenCalledWith('/addresses/autocomplete', {
-      query: { q: '1200 Barton' },
+      query: { q: 'Austin', scope: 'location' },
     });
   });
+  it('renders legacy location suggestions alongside property address suggestions', async () => {
+    mockApiRequest.mockResolvedValue({
+      data: [
+        {
+          suggestion_id: 'loc_1',
+          kind: 'location',
+          label: 'Austin, TX',
+          location: { location_id: 'loc_city_1', state: 'TX' },
+        },
+        {
+          suggestion_id: 'addr_1',
+          kind: 'address',
+          label: '123 Main St',
+          property_id: 'prop_123',
+          address: { city: 'Austin', state: 'TX', zip: '78701' },
+        },
+      ],
+      meta: { query: 'Austin', scope: 'all', partial_results: false },
+    });
+
+    await addressesAutocomplete({ query: 'Austin', scope: 'all' });
+
+    expect(printTable).toHaveBeenCalledWith(
+      [
+        expect.objectContaining({
+          kind: 'location',
+          location_id: 'loc_city_1',
+          state: 'TX',
+        }),
+        expect.objectContaining({
+          kind: 'address',
+          property_id: 'prop_123',
+          city: 'Austin',
+          zip: '78701',
+        }),
+      ],
+      expect.arrayContaining(['kind', 'location_id', 'property_id'])
+    );
+  });
+
+  it('keeps the legacy autocomplete columns when the response has no property IDs', async () => {
+    mockApiRequest.mockResolvedValue({
+      data: [
+        {
+          suggestion_id: 'addr_1',
+          kind: 'address',
+          label: '123 Main St',
+          address: { city: 'Austin', state: 'TX' },
+        },
+      ],
+      meta: { query: '123 Main', scope: 'address', partial_results: false },
+    });
+
+    await addressesAutocomplete({ query: '123 Main', scope: 'address' });
+
+    expect(printTable).toHaveBeenCalledWith(
+      [
+        {
+          kind: 'address',
+          label: '123 Main St',
+          location_id: '-',
+          city: 'Austin',
+          state: 'TX',
+          zip: '-',
+        },
+      ],
+      ['kind', 'label', 'location_id', 'city', 'state', 'zip']
+    );
+  });
+
+  it('shows the free property count before falling back to included records in name enrichment', async () => {
+    mockApiRequest.mockResolvedValue({
+      data: [
+        {
+          dm_person_id: 'per_123',
+          full_name: 'Jane Owner',
+          property_count: 7,
+          properties: [{}, {}],
+        },
+        { dm_person_id: 'per_124', full_name: 'Zero Owner', property_count: 0 },
+        {
+          dm_person_id: 'per_125',
+          full_name: 'Legacy Owner',
+          properties: [{}],
+        },
+      ],
+      pagination: { page: 1, per_page: 25, total: 3, total_pages: 1 },
+      credits: { used: 3, properties: 0, people: 3, deduplicated: 0 },
+    });
+
+    await enrichName('Jane Owner', { yes: true });
+
+    expect(printTable).toHaveBeenCalledWith(
+      [
+        expect.objectContaining({ properties: '7' }),
+        expect.objectContaining({ properties: '0' }),
+        expect.objectContaining({ properties: '1' }),
+      ],
+      ['id', 'name', 'phones', 'emails', 'properties']
+    );
+  });
+
+  it.each([
+    ['email', enrichEmail, 'jane@example.com'],
+    ['phone', enrichPhone, '5125551234'],
+  ] as const)(
+    'keeps the free property count in %s enrichment output',
+    async (_name, command, value) => {
+      const output = vi.spyOn(console, 'log').mockImplementation(() => {});
+      mockApiRequest.mockResolvedValue({
+        data: [
+          {
+            matched: true,
+            input: { value },
+            contacts: [
+              {
+                dm_person_id: 'per_123',
+                full_name: 'Jane Owner',
+                property_count: 7,
+              },
+            ],
+          },
+        ],
+        totals: { submitted: 1, matched: 1, unmatched: 0 },
+        credits: { used: 1, properties: 0, people: 1, deduplicated: 0 },
+      });
+      try {
+        await command(value, {});
+        expect(output.mock.calls.flat().join('\n')).toContain('properties: 7');
+      } finally {
+        output.mockRestore();
+      }
+    }
+  );
+
+  it('keeps numeric list person IDs and uses opaque IDs only when the numeric ID is unavailable', async () => {
+    mockApiRequest.mockResolvedValue({
+      data: [
+        { list_item_id: 'item_1', internal_property_id: null, internal_person_id: 123, dm_person_id: 'per_123' },
+        { list_item_id: 'item_2', internal_property_id: null, internal_person_id: null, dm_person_id: 'per_9007199254740993' },
+      ],
+      pagination: { page: 1, total: 2, has_more: false },
+    });
+
+    await listsItems('list_1', {});
+
+    expect(printTable).toHaveBeenCalledWith([
+      expect.objectContaining({ person_id: 123 }),
+      expect.objectContaining({ person_id: 'per_9007199254740993' }),
+    ], ['item_id', 'property_id', 'person_id', 'added']);
+  });
+
 });
 
 describe('CLI phone carrier (DEA-2144)', () => {
@@ -368,25 +528,46 @@ describe('CLI phone carrier (DEA-2144)', () => {
 
   it.each([
     ['people get', peopleGet],
-  ])('%s prints the carrier beside the line type', async (_name, get) => {
+  ])('%s keeps the existing phone display when carrier metadata is returned', async (_name, get) => {
     mockApiRequest.mockResolvedValue(personResponse);
     const printed = captureLog();
     await get('per_123', {});
     const output = printed();
 
-    expect(output).toContain('5125551234 (wireless, AT&T Mobility)');
+    expect(output).toContain('5125551234 (wireless)');
+    expect(output).not.toContain('AT&T Mobility');
     // An unknown carrier prints nothing rather than "null".
     expect(output).toContain('5125559876 (landline)');
     expect(output).not.toContain('null');
   });
 
-  it('enrich prints the carrier on nested contact phones', async () => {
+  it('enrich keeps the existing nested contact phone display', async () => {
     mockApiRequest.mockResolvedValue(enrichResponse);
     const printed = captureLog();
     await enrichPhone('5125551234', {});
     const output = printed();
 
-    expect(output).toContain('5125551234 (wireless, AT&T Mobility)');
-    expect(output).toContain('5125559876 (landline)');
+    expect(output).toContain('phone: 5125551234');
+    expect(output).toContain('phone: 5125559876');
+    expect(output).not.toContain('wireless');
+    expect(output).not.toContain('AT&T Mobility');
   });
+
+  it('preserves DNC text formatting and keeps carrier metadata available in JSON', async () => {
+    const response = {
+      data: [{ input: { number: '5125551234' }, matched: true, do_not_call: false, phone_type: 'wireless', carrier: 'AT&T Mobility' }],
+      totals: { submitted: 1, matched: 1, unmatched: 0 },
+      credits: { used: 1 },
+    };
+    mockApiRequest.mockResolvedValue(response);
+    await phonesDnc('5125551234', { json: true });
+    expect(printJson).toHaveBeenLastCalledWith(response);
+
+    const printed = captureLog();
+    await phonesDnc('5125551234', {});
+    const output = printed();
+    expect(output).toContain('5125551234  OK (wireless)');
+    expect(output).not.toContain('AT&T Mobility');
+  });
+
 });

@@ -40,8 +40,6 @@ export function getApiBaseUrl(): string {
 }
 
 export function getApiKey(): string {
-  const environmentKey = process.env.DM_API_KEY?.trim();
-  if (environmentKey) return environmentKey;
   const config = readConfig();
   if (!config?.apiKey) {
     console.error(chalk.red('Not logged in. Run `dm login` first.'));

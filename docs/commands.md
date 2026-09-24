@@ -962,14 +962,14 @@ dm addresses autocomplete "46 Joyce St" --limit 5 --json
 
 | Option                 | Description                                     |
 | ---------------------- | ----------------------------------------------- |
+| `--scope <scope>`      | Legacy scope: all (default), address, location; available types depend on the server |
 | `--state <code>`       | Narrow to a two-letter state abbreviation       |
 | `--limit <n>`          | Maximum suggestions, default 5 and max 10       |
 | `--latitude <number>`  | Latitude for nearby ranking, requires longitude |
 | `--longitude <number>` | Longitude for nearby ranking, requires latitude |
 | `--json`               | Output raw JSON response                        |
 
-Each suggestion includes a DealMachine `property_id`. Autocomplete does not request fields, perform
-enrichment, or consume data credits.
+Current address suggestions include a DealMachine `property_id`. The CLI also accepts legacy normalized-location responses and preserves the `--scope` option on both autocomplete entrypoints. Autocomplete does not request fields, perform enrichment, or consume data credits.
 
 #### `dm addresses validate [address]`
 

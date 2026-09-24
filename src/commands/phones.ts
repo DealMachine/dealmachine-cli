@@ -87,8 +87,7 @@ export async function phonesDnc(
           : item.do_not_call === false
             ? chalk.green('OK')
             : chalk.yellow('UNKNOWN');
-      const meta = [item.phone_type, item.carrier].filter(Boolean).join(', ');
-      const type = meta ? chalk.dim(` (${meta})`) : '';
+      const type = item.phone_type ? chalk.dim(` (${item.phone_type})`) : '';
       console.log(`  ${chalk.green('✓ matched')}   ${item.input.number}  ${dnc}${type}`);
     } else {
       const reason = item.match_failure?.reason || 'No match';

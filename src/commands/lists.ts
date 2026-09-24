@@ -399,7 +399,7 @@ export async function listsItems(
     const rows = data.data.map((item) => ({
       item_id: truncate(item.list_item_id, 16),
       property_id: item.internal_property_id ?? '—',
-      person_id: item.dm_person_id ?? item.internal_person_id ?? '—',
+      person_id: item.internal_person_id ?? item.dm_person_id ?? '—',
       added: formatDate(item.created_at),
     }));
     printTable(rows, ['item_id', 'property_id', 'person_id', 'added']);

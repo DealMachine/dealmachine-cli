@@ -2,7 +2,7 @@
 
 `@dealmachine/cli` is the implementation and `dealmachine` is the short install alias. Both are public on npmjs.org. They must have the same version; the alias pins the exact implementation version. The version command also updates `src/version.ts`, and packed-install checks verify the reported version against the manifest. Agent plugin and hosted MCP manifest versions follow their own release lifecycle.
 
-The extraction candidate is `0.4.0-rc.0`; `0.3.0` remains the published baseline until a new release runs. Review the newly moved Commands against the intended API environment before promoting a stable release.
+The extraction candidate is `0.4.0-rc.1`; `0.3.0` remains the published baseline until a new release runs. Review the newly moved Commands against the intended API environment before promoting a stable release.
 
 ```sh
 npm run release:version -- 0.4.0-rc.1
@@ -28,7 +28,7 @@ For **both** npm package settings, configure a GitHub trusted publisher with org
 After the source PR is reviewed and merged, an authorized maintainer can dispatch:
 
 ```sh
-gh workflow run publish-npm.yml --repo DealMachine/dealmachine-cli --ref master -f version=0.4.0-rc.0 -f channel=next
+gh workflow run publish-npm.yml --repo DealMachine/dealmachine-cli --ref master -f version=0.4.0-rc.1 -f channel=next
 ```
 
 To publish a stable version, set a new stable version, rerun validation, merge the reviewed change and dispatch with `channel=latest`. Removing `-rc` creates a new artifact; moving a tag does not rename a version. Never overwrite an existing npm version.
@@ -38,8 +38,8 @@ To publish a stable version, set a new stable version, rerun validation, merge t
 ```sh
 npm view @dealmachine/cli dist-tags --json
 npm view dealmachine dist-tags --json
-npx --yes --package=dealmachine@0.4.0-rc.0 dm --version
-npx --yes --package=dealmachine@0.4.0-rc.0 dm agents playbook
+npx --yes --package=dealmachine@0.4.0-rc.1 dm --version
+npx --yes --package=dealmachine@0.4.0-rc.1 dm agents playbook
 ```
 
 Use exact versions for release verification. `eval:cold-start:published` checks the existing default npm channel; it does not select a prerelease automatically. `eval:cold-start:deployed` checks the hosted docs surface and can fail independently of a valid CLI package.
