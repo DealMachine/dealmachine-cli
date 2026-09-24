@@ -1,6 +1,6 @@
 {
   "name": "@dealmachine/cli",
-  "version": "0.3.0",
+  "version": "0.4.0-rc.1",
   "description": "DealMachine CLI for property intelligence, people lookup, and enrichment through the public API",
   "author": "DealMachine",
   "license": "MIT",
@@ -20,7 +20,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc && node scripts/copy-agent-assets.mjs",
+    "build": "node scripts/build.mjs",
     "dev": "tsc --watch",
     "start": "node dist/index.js",
     "test": "npm run validate:plugin && vitest run",
@@ -29,7 +29,16 @@
     "eval:cold-start:published": "node scripts/eval-cold-start.mjs published",
     "eval:cold-start:deployed": "node scripts/eval-cold-start.mjs deployed",
     "eval:cold-start:all": "npm run build && node scripts/eval-cold-start.mjs all",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run check",
+    "typecheck": "tsc --noEmit --composite false --incremental false",
+    "check": "npm run typecheck && npm run build && npm test && npm run check:artifact",
+    "check:artifact": "node scripts/check-public-artifact.mjs",
+    "test:package": "node scripts/test-package.mjs",
+    "release:version": "node scripts/release-version.mjs",
+    "release:pack": "node scripts/release.mjs pack",
+    "release:dry-run": "node scripts/release.mjs dry-run",
+    "release:publish": "node scripts/release.mjs publish",
+    "prepack": "npm run build && npm run check:artifact"
   },
   "dependencies": {
     "chalk": "^5.3.0",
@@ -39,6 +48,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "tsx": "^4.20.0",
     "typescript": "^5.6.3",
     "vitest": "^4.1.8"
   },
@@ -46,7 +56,8 @@
     "node": ">=18"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
   },
   "keywords": [
     "dealmachine",

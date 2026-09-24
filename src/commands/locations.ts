@@ -45,6 +45,7 @@ interface AutocompleteSuggestion {
   suggestion_id: string;
   kind: 'address' | 'location';
   label: string;
+  property_id?: string;
   address?: {
     address: string;
     city?: string;
@@ -62,7 +63,7 @@ interface AutocompleteResponse {
   data: AutocompleteSuggestion[];
   meta: {
     query: string;
-    scope: 'all' | 'address' | 'location';
+    scope?: 'all' | 'address' | 'location';
     limit: number;
     returned: number;
     partial_results: boolean;
@@ -150,6 +151,7 @@ export async function addressesAutocomplete(options: {
   console.log();
 
   if (data.data.length > 0) {
+    const hasPropertyIds = data.data.some((suggestion) => suggestion.property_id != null);
     const rows = data.data.map((suggestion) => ({
       kind: suggestion.kind,
       label: truncate(suggestion.label, 56),
@@ -157,8 +159,11 @@ export async function addressesAutocomplete(options: {
       city: suggestion.address?.city || '-',
       state: suggestion.address?.state || suggestion.location?.state || '-',
       zip: suggestion.address?.zip || '-',
+      ...(hasPropertyIds && { property_id: suggestion.property_id || '-' }),
     }));
-    printTable(rows, ['kind', 'label', 'location_id', 'city', 'state', 'zip']);
+    const columns = ['kind', 'label', 'location_id', 'city', 'state', 'zip'];
+    if (hasPropertyIds) columns.push('property_id');
+    printTable(rows, columns);
   } else {
     console.log(chalk.dim('  No suggestions found.'));
   }
@@ -176,10 +181,7 @@ export const locationsAutocomplete = addressesAutocomplete;
 // Get by ID
 // ============================================================================
 
-export async function locationsGet(
-  locationId: string,
-  options: { json?: boolean }
-): Promise<void> {
+export async function locationsGet(locationId: string, options: { json?: boolean }): Promise<void> {
   const spinner = createSpinner('Fetching location...').start();
   const data = await apiRequest<LocationItem>(`/locations/${locationId}`);
   spinner.stop();
@@ -191,12 +193,12 @@ export async function locationsGet(
 
   printHeader(`Location ${data.location_id}`);
   printKeyValue({
-    'Type': data.type,
-    'Name': data.name,
-    'Code': data.code,
-    'State': data.state || '-',
+    Type: data.type,
+    Name: data.name,
+    Code: data.code,
+    State: data.state || '-',
     'State Name': data.state_name || '-',
-    'Properties': data.property_count.toLocaleString(),
+    Properties: data.property_count.toLocaleString(),
   });
   console.log();
 }

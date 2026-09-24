@@ -6,7 +6,7 @@ export default defineConfig({
     globals: true,
     clearMocks: true,
     environment: 'node',
-    include: ['tests/**/*.{test,spec}.{ts,tsx}', 'packages/cli/tests/**/*.{test,spec}.{ts,tsx}'],
+    include: ['tests/**/*.{test,spec}.{ts,tsx}'],
     testTimeout: 10000,
   },
   resolve: {

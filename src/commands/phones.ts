@@ -23,6 +23,7 @@ interface DncResult {
   matched: boolean;
   do_not_call?: boolean;
   phone_type?: string;
+  carrier?: string | null;
   match_failure?: { code: string; reason: string };
 }
 

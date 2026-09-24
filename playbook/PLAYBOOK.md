@@ -1,12 +1,11 @@
 ---
 name: dealmachine
-title: DealMachine CLI Playbook
-description: Supplementary CLI-only guidance for DealMachine property and people intelligence workflows
+description: Natural language interface to the DealMachine CLI. Use when the user wants property or owner lookups, property or people searches, comps and valuations, skip tracing or contact enrichment, address validation, list building, or exports, including "who owns...", "find absentee owners in...", "comps for...", or any mention of DealMachine or the dm CLI.
 license: MIT
 metadata:
   author: DealMachine
-  version: '1.1'
-  type: playbook
+  version: '1.0'
+  type: application
 allowed-tools:
   - Bash(dm agents)
   - Bash(dm agents guide *)
@@ -25,8 +24,6 @@ allowed-tools:
 ---
 
 # DealMachine Playbook: Natural Language Property Intelligence
-
-This is the bundled CLI Playbook used by `dm agents playbook`. For the current MCP Tool map, CLI command map, and interface selection guidance for version 0.3.0, use [`skills/dealmachine/SKILL.md`](../skills/dealmachine/SKILL.md).
 
 You are a DealMachine power user. Your role is to translate natural language requests into DealMachine CLI commands, execute them on the user's behalf, and return formatted results — while being ruthlessly efficient with credits.
 
@@ -143,6 +140,7 @@ If a command fails due to auth, tell the user to run `dm login` in their termina
 
 **Routing boundary:** Do not use this state when the user provides a specific person's name. People
 Search has no name filter. Route a known name to State DM5 and use `dm enrich name`.
+
 **Key Questions:**
 
 - Are you looking for property owners, renters, or residents?
@@ -154,7 +152,7 @@ Search has no name filter. Route a known name to State DM5 and use `dm enrich na
 2. **Always count first** — use `dm people count` (FREE)
 3. Run `dm people search ... --estimate-cost` to get the exact free estimate
 4. Confirm count, requested data, and credit estimate
-5. Execute the approved search with `--yes` and `property_match` set correctly
+5. Execute the approved search with `--yes`. People searches accept people filters only — if the user's criteria include property attributes, run them from the property side instead: `dm properties count -f query.json` with `"contact_audience": "owners"` in the body for a free owner count, then `dm properties export -f query.json --contact-audience owners` for owner rows
 6. If the user's request implies multiple searches, run each separately and combine results
 7. Format and present results
 
@@ -180,6 +178,7 @@ Search has no name filter. Route a known name to State DM5 and use `dm enrich na
 ZIP code, county, or city place ID when available. For a city name, run
 `dm locations search -q "<city>" --type city --state <state> --json`, then pass the result's `code`
 to `dm enrich name --city <place-id>`.
+
 **Key Questions:**
 
 - What identifier do you have? (name, phone, email)
@@ -287,9 +286,9 @@ Parse the natural language request to determine:
 - **What format** they want (table, JSON, specific fields)
 - **How many searches** this requires — a single request may need multiple searches (e.g., "find high-equity properties and also recently sold ones" = two separate searches)
 
-### Step 2: Fetch Available Filters and Fields (MANDATORY)
+### Step 2: Fetch Available Filters and Fields
 
-**ALWAYS run this before any search. No exceptions.** You must know what filters and fields actually exist before constructing a query. Never assume or guess a filter ID.
+Run this before any search. Filter ids and value shapes come only from the live API; a guessed id fails or silently filters the wrong field.
 
 ```bash
 # Run these in parallel — both are FREE
@@ -309,7 +308,7 @@ After fetching:
 4. If a filter the user wants doesn't exist, tell them — don't fabricate one
 5. If the user's request is ambiguous, use `dm filters --search "<keyword>"` to find the best match
 
-**This step is non-negotiable.** The filter and field lists are the source of truth. Your built-in knowledge of common filters is a starting point, but you must verify against the live API before executing.
+The filter and field lists are the source of truth. Your knowledge of common filters is a starting point; verify each against these lists before executing.
 
 ### Step 3: Plan Searches
 
@@ -403,10 +402,11 @@ Ask if they want to:
 | "worth between 200K and 500K"            | `{"filter_id": "estimated_value", "operator": "range", "value": {"min": 200000, "max": 500000}}` |
 | "3+ bedrooms" / "at least 3 beds"        | `{"filter_id": "num_bedrooms", "operator": "greater_than_or_equal", "value": 3}`                 |
 | "built before 1990"                      | `{"filter_id": "year_built", "operator": "less_than", "value": 1990}`                            |
-| "owner-occupied"                         | `{"filter_id": "owner_occupied", "operator": "equals", "value": true}`                           |
-| "absentee owners" / "not owner-occupied" | `{"filter_id": "owner_occupied", "operator": "equals", "value": false}`                          |
-| "high equity" / "lots of equity"         | `{"filter_id": "estimated_equity_percentage", "operator": "greater_than", "value": 50}`          |
-| "free and clear" / "no mortgage"         | `{"filter_id": "num_mortgages", "operator": "equals", "value": 0}`                               |
+| "owner-occupied"                         | `{"filter_id": "is_owner_occupied", "operator": "equals", "value": true}`                        |
+| "absentee owners" / "not owner-occupied" | `{"filter_id": "has_absentee_owners", "operator": "equals", "value": true}`                      |
+| "high equity" / "lots of equity"         | `{"filter_id": "estimated_equity_percentage", "operator": "greater_than", "value": 50}` (50 is a common starting point; honor any number the user gives) |
+| "free and clear" / "no mortgage"         | `{"filter_id": "is_free_and_clear", "operator": "equals", "value": true}` (use `num_mortgages` equals 0 only when the user literally means no recorded mortgages) |
+| "off market" / "not listed"              | `{"filter_id": "is_off_market", "operator": "equals", "value": true}` (never the Market status "Off Market" option)  |
 | "sold in the last year"                  | `{"filter_id": "last_sale_date", "operator": "relative_time", "value": "last_12_months"}`        |
 
 **When unsure about a filter:** Run `dm filters --source-type properties --search "<keyword>" --json` to find matching filters. Always verify the filter exists before using it.
@@ -757,8 +757,10 @@ Every command supports:
 ```json
 {
   "locations": [{ "type": "state", "code": "TX" }],
-  "filters": [{ "filter_id": "estimated_value", "operator": "greater_than", "value": 500000 }],
-  "property_match": "owner",
+  "filters": [
+    { "filter_id": "estimated_household_income", "operator": "greater_than", "value": 100000 },
+    { "filter_id": "has_active_phone_number", "value": true }
+  ],
   "page": 1,
   "per_page": 25
 }
@@ -768,6 +770,7 @@ Every command supports:
 
 - **Locations:** OR logic (match if in ANY location)
 - **Filters:** AND logic (ALL filters must match)
+- **Filter source:** filters cannot be mixed across catalogs. Property endpoints take `source_type=properties` filters; people endpoints take `source_type=people` filters. Crossing them returns `filter_source_mismatch`. To gate people on property criteria, put the property filters in a property request: `dm properties count -f query.json` (add `"contact_audience": "owners"` to the body for the owner count) or `dm properties export -f query.json --contact-audience owners`
 - For OR-like behavior within a filter, use `contains_any` or `any_of` operators
 
 ### Filter Types & Operators
@@ -868,7 +871,7 @@ These fields are always returned, even without requesting `fields`:
 ### Always-Included Person Fields
 
 - `dm_person_id`, `full_name`, `first_name`, `last_name`
-- `phones` (array: number, type, do_not_call)
+- `phones` (array: number, type, do_not_call, carrier)
 - `emails` (array: address)
 - `residence` (address, city, state, zip, full_address)
 

@@ -4,6 +4,7 @@
 
 import chalk from 'chalk';
 import { apiRequest, formatDate } from '../lib/client.js';
+import { printJson } from '../lib/output.js';
 
 interface AccountResponse {
   data: {
@@ -19,8 +20,13 @@ interface AccountResponse {
   };
 }
 
-export async function account(): Promise<void> {
-  const { data } = await apiRequest<AccountResponse>('/account');
+export async function account(options: { json?: boolean } = {}): Promise<void> {
+  const response = await apiRequest<AccountResponse>('/account');
+  if (options.json) {
+    printJson(response);
+    return;
+  }
+  const { data } = response;
 
   console.log();
   console.log(chalk.bold('Account'));

@@ -879,8 +879,7 @@ function printMatchWarnings(items: Record<string, unknown>[]): void {
     .map((item, i) => ({
       i,
       w: (item as any).match_warning as
-        | { code?: string; message?: string; hint?: Record<string, unknown> }
-        | undefined,
+        { code?: string; message?: string; hint?: Record<string, unknown> } | undefined,
     }))
     .filter((entry) => entry.w);
   if (warned.length === 0) return;

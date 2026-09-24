@@ -93,14 +93,12 @@ assert.deepEqual(mcp.mcpServers.dealmachine, {
 assert.match(skill, /^---\nname: dealmachine\n/, 'DealMachine skill front matter is missing');
 assert.match(skill, /\ndescription: .+\n/, 'DealMachine skill description is missing');
 
-const demoVideoPath = resolve(packageRoot, 'assets/plugin-demo/dealmachine-agent-plugin-demo.mp4');
-const demoVideo = await stat(demoVideoPath);
-assert(demoVideo.isFile(), 'submission demo must be a regular file');
-assert(demoVideo.size > 0 && demoVideo.size <= 100 * 1024 * 1024, 'submission demo must be non-empty and at most 100 MB');
-assert.match(
-  readme,
-  /assets\/plugin-demo\/dealmachine-agent-plugin-demo\.mp4/,
-  'README must link to the public submission demo'
-);
+// Submission media is optional; a documented local demo must be present and usable.
+const demoPath = 'assets/plugin-demo/dealmachine-agent-plugin-demo.mp4';
+if (readme.includes(demoPath)) {
+  const demoVideo = await stat(resolve(packageRoot, demoPath));
+  assert(demoVideo.isFile(), 'submission demo must be a regular file');
+  assert(demoVideo.size > 0 && demoVideo.size <= 100 * 1024 * 1024, 'submission demo must be non-empty and at most 100 MB');
+}
 
 console.log('Agent Plugin package is valid.');

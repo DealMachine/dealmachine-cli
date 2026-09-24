@@ -51,6 +51,8 @@ interface ListItemRecord {
   list_item_id: string;
   internal_property_id: number | null;
   internal_person_id: number | null;
+  /** per_<id>, exact for every id. internal_person_id is null past 2^53 - 1. */
+  dm_person_id?: string | null;
   created_at: string;
 }
 
@@ -62,6 +64,18 @@ interface ListItemsResponse {
     total: number;
     has_more: boolean;
   };
+}
+
+/**
+ * One --ids entry for a request body. A safe integer stays a JSON number (the
+ * shape the API has always taken); a larger id goes as its decimal string so
+ * a 64-bit person id is not rounded. Accepts a per_ prefix for person ids.
+ */
+function parseRecordIdArg(raw: string): number | string {
+  const text = raw.trim().replace(/^per_/, '');
+  if (!/^\d+$/.test(text)) return parseInt(text, 10);
+  const numeric = Number(text);
+  return Number.isSafeInteger(numeric) ? numeric : text;
 }
 
 // ============================================================================
@@ -127,16 +141,21 @@ export async function listsCreate(options: {
   body?: string;
   file?: string;
   json?: boolean;
+  /** Commander's `--no-prospects` sets this false; undefined means the API default (true). */
+  prospects?: boolean;
 }): Promise<void> {
   let requestBody: Record<string, unknown> = { name: options.name };
 
   if (options.sourceType) {
     requestBody.source_type = options.sourceType;
   }
+  if (options.prospects === false) {
+    requestBody.add_as_prospects = false;
+  }
 
   // Parse --ids into record_ids array
   if (options.ids) {
-    requestBody.record_ids = options.ids.split(',').map((id) => parseInt(id.trim(), 10));
+    requestBody.record_ids = options.ids.split(',').map(parseRecordIdArg);
   }
 
   // Merge in filters/locations from --body or -f
@@ -268,9 +287,12 @@ export async function listsDelete(
 
 export async function listsBuild(
   listId: string,
-  options: { body?: string; file?: string; json?: boolean }
+  options: { body?: string; file?: string; json?: boolean; prospects?: boolean }
 ): Promise<void> {
   const requestBody = await parseRequestBody(options);
+  if (options.prospects === false) {
+    requestBody.add_as_prospects = false;
+  }
 
   const spinner = createSpinner('Starting list build...').start();
   const data = await apiRequest<SingleListResponse>(`/lists/${listId}/build`, {
@@ -308,16 +330,20 @@ export async function listsImport(
     body?: string;
     file?: string;
     json?: boolean;
+    prospects?: boolean;
   }
 ): Promise<void> {
   let requestBody: Record<string, unknown>;
 
   if (options.ids) {
-    const ids = options.ids.split(',').map((id) => parseInt(id.trim(), 10));
+    const ids = options.ids.split(',').map(parseRecordIdArg);
     requestBody = { ids };
     if (options.sourceType) requestBody.source_type = options.sourceType;
   } else {
     requestBody = await parseRequestBody(options);
+  }
+  if (options.prospects === false) {
+    requestBody.add_as_prospects = false;
   }
 
   const spinner = createSpinner('Starting import...').start();
@@ -373,7 +399,7 @@ export async function listsItems(
     const rows = data.data.map((item) => ({
       item_id: truncate(item.list_item_id, 16),
       property_id: item.internal_property_id ?? '—',
-      person_id: item.internal_person_id ?? '—',
+      person_id: item.internal_person_id ?? item.dm_person_id ?? '—',
       added: formatDate(item.created_at),
     }));
     printTable(rows, ['item_id', 'property_id', 'person_id', 'added']);
@@ -393,16 +419,17 @@ export async function listsItems(
 
 export async function listsAdd(
   listId: string,
-  options: { ids: string; idType?: string; json?: boolean }
+  options: { ids: string; idType?: string; json?: boolean; prospects?: boolean }
 ): Promise<void> {
   if (!options.ids) {
     console.error(chalk.red('Error: --ids is required (comma-separated list of IDs)'));
     process.exit(1);
   }
 
-  const ids = options.ids.split(',').map((id) => parseInt(id.trim(), 10));
+  const ids = options.ids.split(',').map(parseRecordIdArg);
   const requestBody: Record<string, unknown> = { ids };
   if (options.idType) requestBody.id_type = options.idType;
+  if (options.prospects === false) requestBody.add_as_prospects = false;
 
   const spinner = createSpinner('Adding items...').start();
   const data = await apiRequest<{ data: { added: number } }>(`/lists/${listId}/items`, {
@@ -433,7 +460,7 @@ export async function listsRemove(
     process.exit(1);
   }
 
-  const ids = options.ids.split(',').map((id) => parseInt(id.trim(), 10));
+  const ids = options.ids.split(',').map(parseRecordIdArg);
   const requestBody: Record<string, unknown> = { ids };
   if (options.idType) requestBody.id_type = options.idType;
 

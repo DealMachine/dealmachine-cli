@@ -57,12 +57,10 @@ describe('filter lookup guidance', () => {
   });
 
   it('does not suggest name enrichment for unrelated empty filter searches', async () => {
-    await filters({
-      sourceType: 'people',
-      search: 'household income',
-      json: true,
-    });
+    await filters({ sourceType: 'people', search: 'household income', json: true });
 
-    expect(mockPrintJson).toHaveBeenCalledWith(expect.not.objectContaining({ suggestion: expect.anything() }));
+    expect(mockPrintJson).toHaveBeenCalledWith(
+      expect.not.objectContaining({ suggestion: expect.anything() })
+    );
   });
 });

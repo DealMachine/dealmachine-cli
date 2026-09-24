@@ -1,3 +1,5 @@
 #!/usr/bin/env node
 
-import '@dealmachine/cli/dist/index.js';
+import { program } from '@dealmachine/cli/dist/index.js';
+
+await program.parseAsync();

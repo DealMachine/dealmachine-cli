@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import manifest from '../../package.json';
 import { verifyCredentials } from '../../src/lib/api';
 
 describe('CLI API helpers', () => {
@@ -35,7 +36,7 @@ describe('CLI API helpers', () => {
       method: 'GET',
       headers: {
         'Authorization': 'Bearer dm_sk_live_test',
-        'User-Agent': 'dm-cli/0.3.0',
+        'User-Agent': `dm-cli/${manifest.version}`,
       },
     });
   });
