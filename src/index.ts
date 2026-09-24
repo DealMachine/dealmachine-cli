@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+import { realpathSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { Command } from 'commander';
 import { CLI_VERSION } from './version.js';
 import { login } from './commands/login.js';
@@ -66,6 +68,26 @@ import {
   listsExport,
 } from './commands/lists.js';
 import { tasksList, tasksGet, tasksCreate, tasksUpdate, tasksDelete } from './commands/tasks.js';
+import { drivingList, drivingGet } from './commands/driving.js';
+import {
+  dialerCallsList,
+  dialerCallsGet,
+  dialerCallsStats,
+  dialerNotesList,
+  dialerNotesCreate,
+  dialerNotesDelete,
+  dialerQueuesList,
+  dialerQueuesCreate,
+  dialerQueuesDelete,
+  dialerQueueItemsList,
+  dialerQueueItemsAdd,
+  dialerQueueItemsUpdate,
+  dialerQueueItemsRemove,
+  dialerDispositions,
+  dialerSuppressionList,
+  dialerSuppressionCheck,
+  dialerSuppressionAdd,
+} from './commands/dialer.js';
 import {
   mailCampaignsList,
   mailCampaignsCreate,
@@ -98,8 +120,59 @@ import {
   mailAnalyticsSummary,
   mailAnalyticsTimeseries,
 } from './commands/mail.js';
+import {
+  prospectsList,
+  prospectsGet,
+  prospectsGetByRecord,
+  prospectsAdd,
+  prospectsArchive,
+  prospectsRemove,
+  prospectsReactivate,
+  prospectsOpportunity,
+  prospectsFavorite,
+  prospectsCheck,
+  prospectsCounts,
+  prospectsActivity,
+  prospectNotesList,
+  prospectNotesGet,
+  prospectNotesAdd,
+  prospectNotesEdit,
+  prospectNotesRemove,
+  prospectFilesList,
+  prospectFilesUpload,
+  prospectFilesDownload,
+  prospectFilesRemove,
+  prospectPhotosList,
+  prospectPhotosAdd,
+  prospectPhotosRemove,
+  prospectTagsList,
+  prospectTagsSet,
+  prospectTagsAdd,
+  prospectTagsRemove,
+} from './commands/prospects.js';
+import {
+  tagsList,
+  tagsGet,
+  tagsCreate,
+  tagsUpdate,
+  tagsDelete,
+  tagsReorder,
+} from './commands/tags.js';
+import {
+  webhooksList,
+  webhooksGet,
+  webhooksCreate,
+  webhooksUpdate,
+  webhooksDelete,
+  webhooksTest,
+  webhooksRotateSecret,
+  webhooksDeliveries,
+  webhooksDeliveryGet,
+  webhooksRedeliver,
+  webhooksEvents,
+} from './commands/webhooks.js';
 
-const program = new Command();
+export const program = new Command();
 
 program
   .name('dm')
@@ -148,10 +221,7 @@ Examples:
   dm agents skill                        Alias for dm agents playbook`
   )
   .action(async (options: { json?: boolean }) => {
-    await agentsGuide({
-      ...options,
-      json: options.json || agentsCmd.opts().json,
-    });
+    await agentsGuide({ ...options, json: options.json || agentsCmd.opts().json });
   });
 
 agentsCmd
@@ -166,10 +236,7 @@ Examples:
   dm agents guide --json                 Print agent guidance as JSON`
   )
   .action(async (options: { json?: boolean }) => {
-    await agentsGuide({
-      ...options,
-      json: options.json || agentsCmd.opts().json,
-    });
+    await agentsGuide({ ...options, json: options.json || agentsCmd.opts().json });
   });
 
 agentsCmd
@@ -186,10 +253,7 @@ Examples:
   dm agents skill                        Alias for dm agents playbook`
   )
   .action(async (options: { json?: boolean }) => {
-    await agentsPlaybook({
-      ...options,
-      json: options.json || agentsCmd.opts().json,
-    });
+    await agentsPlaybook({ ...options, json: options.json || agentsCmd.opts().json });
   });
 
 agentsCmd
@@ -211,10 +275,7 @@ Examples:
   )
   .action(
     async (agent: string, options: { project?: boolean; force?: boolean; json?: boolean }) => {
-      const normalizedOptions = {
-        ...options,
-        json: options.json || agentsCmd.opts().json,
-      };
+      const normalizedOptions = { ...options, json: options.json || agentsCmd.opts().json };
       if (agent !== 'claude-code') {
         const message = `Unsupported agent "${agent}". Supported agents: claude-code`;
         if (normalizedOptions.json) console.log(JSON.stringify({ error: message }, null, 2));
@@ -238,10 +299,7 @@ Examples:
   dm agents permissions --json`
   )
   .action(async (options: { json?: boolean }) => {
-    await agentsPermissions({
-      ...options,
-      json: options.json || agentsCmd.opts().json,
-    });
+    await agentsPermissions({ ...options, json: options.json || agentsCmd.opts().json });
   });
 
 // ============================================================================
@@ -270,11 +328,7 @@ Examples:
     if (options.env) {
       process.env.DM_ENV = options.env;
     }
-    await login({
-      noBrowser: options.browser === false,
-      key: options.key,
-      env: options.env,
-    });
+    await login({ noBrowser: options.browser === false, key: options.key, env: options.env });
   });
 
 program
@@ -432,7 +486,7 @@ Examples:
   dm account --json                      Show account details as JSON`
   )
   .action(async (options) => {
-    await account();
+    await account(options);
   });
 
 program
@@ -512,7 +566,6 @@ locationsCmd
   .command('autocomplete <query>')
   .alias('complete')
   .description('Deprecated alias for dm addresses autocomplete')
-  .option('--scope <scope>', 'Suggestion scope: all, address, location', 'all')
   .option('--state <code>', 'Prefer a state (two-letter abbreviation, e.g., TX)')
   .option('--limit <n>', 'Maximum suggestions (default 5, max 10)', '5')
   .option('--latitude <number>', 'Latitude for nearby address ranking')
@@ -523,8 +576,7 @@ locationsCmd
     `
 Examples:
   dm locations autocomplete "1200 Barton Springs" --state TX
-  dm locations autocomplete "saint louis 63101" --scope location --json
-  dm loc autocomplete "Harris County" --limit 5`
+  dm loc autocomplete "46 Joyce St" --limit 5 --json`
   )
   .action(async (query, options) => {
     await locationsAutocomplete({ query, ...options });
@@ -819,6 +871,7 @@ listsCmd
   .option('--ids <csv>', 'Comma-separated record IDs to pre-populate (max 250)')
   .option('--body <json>', 'Request body as JSON (filters/locations)')
   .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--no-prospects', 'File the records without adding them as prospects (default adds them)')
   .option('--json', 'Output as JSON')
   .addHelpText(
     'after',
@@ -826,7 +879,8 @@ listsCmd
 Examples:
   dm lists create --name "Austin Leads"
   dm lists create --name "TX Owners" --source-type properties --json
-  dm lists create --name "Import" --ids 100,200,300`
+  dm lists create --name "Import" --ids 100,200,300
+  dm lists create --name "Mailing only" --ids 100,200 --no-prospects`
   )
   .action(async (options) => {
     await listsCreate(options);
@@ -889,6 +943,7 @@ listsCmd
   .description('Build a list from search filters')
   .option('--body <json>', 'Request body as JSON (filters/locations)')
   .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--no-prospects', 'File the records without adding them as prospects (default adds them)')
   .option('--json', 'Output as JSON')
   .addHelpText(
     'after',
@@ -910,6 +965,7 @@ listsCmd
   .option('--source-type <type>', 'Source type: properties or people')
   .option('--body <json>', 'Request body as JSON')
   .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--no-prospects', 'File the records without adding them as prospects (default adds them)')
   .option('--json', 'Output as JSON')
   .addHelpText(
     'after',
@@ -946,6 +1002,7 @@ listsCmd
   .description('Add items to a list')
   .requiredOption('--ids <csv>', 'Comma-separated list of IDs to add')
   .option('--id-type <type>', 'ID type: internal_property_id or internal_person_id')
+  .option('--no-prospects', 'File the records without adding them as prospects (default adds them)')
   .option('--json', 'Output as JSON')
   .addHelpText(
     'after',
@@ -1395,8 +1452,7 @@ const addressesCmd = program
 addressesCmd
   .command('autocomplete <query>')
   .alias('complete')
-  .description('Suggest street addresses and normalized DealMachine locations')
-  .option('--scope <scope>', 'Suggestion scope: all, address, location', 'all')
+  .description('Suggest DealMachine property addresses with property IDs')
   .option('--state <code>', 'Prefer a state (two-letter abbreviation, e.g., TX)')
   .option('--limit <n>', 'Maximum suggestions (default 5, max 10)', '5')
   .option('--latitude <number>', 'Latitude for nearby address ranking')
@@ -1407,8 +1463,7 @@ addressesCmd
     `
 Examples:
   dm addresses autocomplete "1200 Barton Springs" --state TX
-  dm addresses autocomplete "saint louis 63101" --scope location --json
-  dm addresses autocomplete "Harris County" --limit 5`
+  dm addresses autocomplete "46 Joyce St" --limit 5 --json`
   )
   .action(async (query, options) => {
     await addressesAutocomplete({ query, ...options });
@@ -1534,6 +1589,898 @@ Examples:
       return;
     }
     await tasksDelete(id, options);
+  });
+
+// ============================================================================
+// Dialer commands
+// ============================================================================
+// The dialer app is launch-held (HIDDEN_APP_SLUGS in launchVisibility.ts) and
+// every /v1/dialer endpoint returns 403 unless the org has the app enabled, so
+// this command group is not registered by default. Set DM_ENABLE_DIALER=1 (or
+// "true") to register it for internal use.
+
+function registerDialerCommands(program: Command): void {
+  const dialerCmd = program
+    .command('dialer')
+    .description('Manage dialer queues, calls, dispositions, and suppression');
+
+  // ── Calls ──
+
+  const dialerCallsCmd = dialerCmd.command('calls').description('View call history and stats');
+
+  dialerCallsCmd
+    .command('list')
+    .alias('ls')
+    .description('List call history')
+    .option(
+      '--status <status>',
+      'Filter by status: initiating, ringing, answered, completed, failed, busy, no_answer, cancelled'
+    )
+    .option('--search <term>', 'Search by contact name or phone number')
+    .option('--date-from <date>', 'Filter from date (ISO 8601)')
+    .option('--date-to <date>', 'Filter to date (ISO 8601)')
+    .option('-p, --page <n>', 'Page number')
+    .option('--per-page <n>', 'Results per page')
+    .option('--json', 'Output as JSON')
+    .addHelpText(
+      'after',
+      `
+Examples:
+  dm dialer calls list --json
+  dm dialer calls list --status completed --date-from 2025-01-01
+  dm dialer calls list --search "5125551234" --per-page 50`
+    )
+    .action(async (options) => {
+      await dialerCallsList(options);
+    });
+
+  dialerCallsCmd
+    .command('get <uuid>')
+    .description('Get call details by UUID')
+    .option('--json', 'Output as JSON')
+    .addHelpText(
+      'after',
+      `
+Examples:
+  dm dialer calls get call_uuid_123 --json`
+    )
+    .action(async (uuid, options) => {
+      await dialerCallsGet(uuid, options);
+    });
+
+  dialerCallsCmd
+    .command('stats')
+    .description('Get call statistics')
+    .option('--date-from <date>', 'Filter from date (ISO 8601)')
+    .option('--date-to <date>', 'Filter to date (ISO 8601)')
+    .option('--json', 'Output as JSON')
+    .addHelpText(
+      'after',
+      `
+Examples:
+  dm dialer calls stats --json
+  dm dialer calls stats --date-from 2025-01-01 --date-to 2025-01-31`
+    )
+    .action(async (options) => {
+      await dialerCallsStats(options);
+    });
+
+  // ── Call Notes ──
+
+  const dialerNotesCmd = dialerCmd.command('notes').description('Manage call notes');
+
+  dialerNotesCmd
+    .command('list <callUuid>')
+    .alias('ls')
+    .description('List notes for a call')
+    .option('--json', 'Output as JSON')
+    .addHelpText(
+      'after',
+      `
+Examples:
+  dm dialer notes list call_uuid_123 --json`
+    )
+    .action(async (callUuid, options) => {
+      await dialerNotesList(callUuid, options);
+    });
+
+  dialerNotesCmd
+    .command('create <callUuid>')
+    .description('Add a note to a call')
+    .option('--body <json>', 'Request body as JSON string')
+    .option('-f, --file <path>', 'Read request body from a JSON file')
+    .option('--json', 'Output as JSON')
+    .addHelpText(
+      'after',
+      `
+Examples:
+  dm dialer notes create call_uuid_123 --body '{"content":"Left voicemail."}' --json`
+    )
+    .action(async (callUuid, options) => {
+      await dialerNotesCreate(callUuid, options);
+    });
+
+  dialerNotesCmd
+    .command('delete <callUuid> <noteId>')
+    .description('Delete a call note')
+    .option('--dry-run', 'Preview what would be deleted without making changes')
+    .option('--json', 'Output as JSON')
+    .addHelpText(
+      'after',
+      `
+Examples:
+  dm dialer notes delete call_uuid_123 note_456
+  dm dialer notes delete call_uuid_123 note_456 --dry-run`
+    )
+    .action(async (callUuid, noteId, options) => {
+      if (options.dryRun) {
+        console.log(`Would delete note ${noteId} from call ${callUuid}.`);
+        console.log('No changes made (--dry-run).');
+        return;
+      }
+      await dialerNotesDelete(callUuid, noteId, options);
+    });
+
+  // ── Queues ──
+
+  const dialerQueuesCmd = dialerCmd.command('queues').description('Manage dialer queues');
+
+  dialerQueuesCmd
+    .command('list')
+    .alias('ls')
+    .description('List all dialer queues')
+    .option('--json', 'Output as JSON')
+    .addHelpText(
+      'after',
+      `
+Examples:
+  dm dialer queues list --json`
+    )
+    .action(async (options) => {
+      await dialerQueuesList(options);
+    });
+
+  dialerQueuesCmd
+    .command('create')
+    .description('Create a new queue')
+    .option('--body <json>', 'Request body as JSON string')
+    .option('-f, --file <path>', 'Read request body from a JSON file')
+    .option('--json', 'Output as JSON')
+    .addHelpText(
+      'after',
+      `
+Examples:
+  dm dialer queues create --body '{"name":"Morning Calls"}' --json`
+    )
+    .action(async (options) => {
+      await dialerQueuesCreate(options);
+    });
+
+  dialerQueuesCmd
+    .command('delete <id>')
+    .description('Delete a queue')
+    .option('--dry-run', 'Preview what would be deleted without making changes')
+    .option('--json', 'Output as JSON')
+    .addHelpText(
+      'after',
+      `
+Examples:
+  dm dialer queues delete queue_abc123
+  dm dialer queues delete queue_abc123 --dry-run`
+    )
+    .action(async (id, options) => {
+      if (options.dryRun) {
+        console.log(`Would delete queue ${id} and all its items.`);
+        console.log('No changes made (--dry-run).');
+        return;
+      }
+      await dialerQueuesDelete(id, options);
+    });
+
+  // ── Queue Items ──
+
+  const dialerItemsCmd = dialerCmd.command('items').description('Manage queue items');
+
+  dialerItemsCmd
+    .command('list <queueId>')
+    .alias('ls')
+    .description('List items in a queue')
+    .option(
+      '--status <status>',
+      'Filter by status: pending, in_progress, completed, skipped, deferred'
+    )
+    .option('-p, --page <n>', 'Page number')
+    .option('--per-page <n>', 'Results per page')
+    .option('--json', 'Output as JSON')
+    .addHelpText(
+      'after',
+      `
+Examples:
+  dm dialer items list queue_abc123 --json
+  dm dialer items list queue_abc123 --status pending --per-page 50`
+    )
+    .action(async (queueId, options) => {
+      await dialerQueueItemsList(queueId, options);
+    });
+
+  dialerItemsCmd
+    .command('add <queueId>')
+    .description('Add items to a queue')
+    .option('--body <json>', 'Request body as JSON string')
+    .option('-f, --file <path>', 'Read request body from a JSON file')
+    .option('--json', 'Output as JSON')
+    .addHelpText(
+      'after',
+      `
+Examples:
+  dm dialer items add queue_abc123 --body '{"phone_numbers":["5125551234"]}' --json`
+    )
+    .action(async (queueId, options) => {
+      await dialerQueueItemsAdd(queueId, options);
+    });
+
+  dialerItemsCmd
+    .command('update <queueId> <itemId>')
+    .description('Update a queue item')
+    .option('--body <json>', 'Request body as JSON string')
+    .option('-f, --file <path>', 'Read request body from a JSON file')
+    .option('--json', 'Output as JSON')
+    .addHelpText(
+      'after',
+      `
+Examples:
+  dm dialer items update queue_abc123 item_456 --body '{"status":"skipped"}' --json`
+    )
+    .action(async (queueId, itemId, options) => {
+      await dialerQueueItemsUpdate(queueId, itemId, options);
+    });
+
+  dialerItemsCmd
+    .command('remove <queueId> <itemId>')
+    .description('Remove an item from a queue')
+    .option('--dry-run', 'Preview what would be removed without making changes')
+    .option('--json', 'Output as JSON')
+    .addHelpText(
+      'after',
+      `
+Examples:
+  dm dialer items remove queue_abc123 item_456
+  dm dialer items remove queue_abc123 item_456 --dry-run`
+    )
+    .action(async (queueId, itemId, options) => {
+      if (options.dryRun) {
+        console.log(`Would remove item ${itemId} from queue ${queueId}.`);
+        console.log('No changes made (--dry-run).');
+        return;
+      }
+      await dialerQueueItemsRemove(queueId, itemId, options);
+    });
+
+  // ── Dispositions ──
+
+  dialerCmd
+    .command('dispositions')
+    .description('List call dispositions')
+    .option('--json', 'Output as JSON')
+    .addHelpText(
+      'after',
+      `
+Examples:
+  dm dialer dispositions --json`
+    )
+    .action(async (options) => {
+      await dialerDispositions(options);
+    });
+
+  // ── Suppression ──
+
+  const dialerSuppCmd = dialerCmd
+    .command('suppression')
+    .description('Manage suppression list (Do Not Call)');
+
+  dialerSuppCmd
+    .command('list')
+    .alias('ls')
+    .description('List suppressed phone numbers')
+    .option('--search <term>', 'Search by phone number')
+    .option('-p, --page <n>', 'Page number')
+    .option('--per-page <n>', 'Results per page')
+    .option('--json', 'Output as JSON')
+    .addHelpText(
+      'after',
+      `
+Examples:
+  dm dialer suppression list --json
+  dm dialer suppression list --search "512" --per-page 100`
+    )
+    .action(async (options) => {
+      await dialerSuppressionList(options);
+    });
+
+  dialerSuppCmd
+    .command('check <phoneNumber>')
+    .description('Check if a phone number is suppressed')
+    .option('--json', 'Output as JSON')
+    .addHelpText(
+      'after',
+      `
+Examples:
+  dm dialer suppression check 5125551234 --json`
+    )
+    .action(async (phoneNumber, options) => {
+      await dialerSuppressionCheck(phoneNumber, options);
+    });
+
+  dialerSuppCmd
+    .command('add')
+    .description('Add a phone number to the suppression list')
+    .option('--body <json>', 'Request body as JSON string')
+    .option('-f, --file <path>', 'Read request body from a JSON file')
+    .option('--json', 'Output as JSON')
+    .addHelpText(
+      'after',
+      `
+Examples:
+  dm dialer suppression add --body '{"phone_number":"5125551234","reason":"Do not contact"}' --json`
+    )
+    .action(async (options) => {
+      await dialerSuppressionAdd(options);
+    });
+}
+
+if (process.env.DM_ENABLE_DIALER === '1' || process.env.DM_ENABLE_DIALER === 'true') {
+  registerDialerCommands(program);
+}
+
+// ============================================================================
+// Driving commands
+// ============================================================================
+
+const drivingCmd = program.command('driving').description('Read recorded drive history');
+
+drivingCmd
+  .command('list')
+  .alias('ls')
+  .description('List recorded drives')
+  .option('--driver-user-id <id>', 'Only drives by this user')
+  .option('--mode <mode>', 'free_drive, route_plan, or area_drive')
+  .option('--started-after <date>', 'Inclusive start date or timestamp')
+  .option('--started-before <date>', 'Inclusive end date or timestamp')
+  .option('-p, --page <n>', 'Page number')
+  .option('--per-page <n>', 'Results per page (max 100)')
+  .option('--json', 'Output as JSON')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  dm driving list
+  dm driving list --mode free_drive --started-after 2026-08-01 --json`
+  )
+  .action(async (options) => {
+    await drivingList(options);
+  });
+
+drivingCmd
+  .command('get <id>')
+  .description('Show a drive with visits, events, and prospects added')
+  .option('--json', 'Output as JSON')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  dm driving get drive_session_501
+  dm driving get drive_route_7 --json`
+  )
+  .action(async (id, options) => {
+    await drivingGet(id, options);
+  });
+
+// ============================================================================
+// Prospects commands
+// ============================================================================
+
+const prospectsCmd = program
+  .command('prospects')
+  .description('Work prospects: add, list, archive, notes, files, photos, tags, activity');
+
+prospectsCmd
+  .command('list')
+  .alias('ls')
+  .description('List prospects')
+  .option('--record-type <type>', 'property (default) or person')
+  .option('--lifecycle <lifecycle>', 'active (default), opportunity, or archived')
+  .option('--source <source>', 'Filter by source, e.g. driving, import, api, cli, or mcp')
+  .option('--favorites', 'Only starred prospects')
+  .option('--list <listId>', 'Only members of this list')
+  .option('--tag <tagId>', 'Only prospects with this tag, e.g. tag_5')
+  .option('--search <term>', 'Address words for properties; name or city for people')
+  .option('--sort <order>', 'newest (default) or oldest')
+  .option('-p, --page <n>', 'Page number')
+  .option('--per-page <n>', 'Results per page (max 100)')
+  .option('--json', 'Output as JSON')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  dm prospects list
+  dm prospects list --source driving
+  dm prospects list --lifecycle opportunity --tag tag_1
+  dm prospects list --record-type person --search "austin" --json`
+  )
+  .action(async (options) => {
+    await prospectsList(options);
+  });
+
+prospectsCmd
+  .command('get <id>')
+  .description('Show one prospect')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await prospectsGet(id, options);
+  });
+
+prospectsCmd
+  .command('get-by-record <recordId>')
+  .description('Find a prospect by its property, person, or company record ID')
+  .option('--record-type <type>', 'property (default), person, or company')
+  .option('--json', 'Output as JSON')
+  .action(async (recordId, options) => {
+    await prospectsGetByRecord({ ...options, recordId });
+  });
+
+prospectsCmd
+  .command('add')
+  .description('Track records as prospects (up to 1,000)')
+  .option('--ids <csv>', 'Comma-separated record IDs, e.g. prop_123,prop_456')
+  .option('--record-type <type>', 'property (default), person, or company')
+  .option('--favorite', 'Also star them')
+  .option('--body <json>', 'Request body as JSON')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--json', 'Output as JSON')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  dm prospects add --ids prop_12345,prop_67890
+  dm prospects add --ids person_777 --record-type person --favorite`
+  )
+  .action(async (options) => {
+    await prospectsAdd(options);
+  });
+
+prospectsCmd
+  .command('archive <id>')
+  .description('Archive a prospect (ends its mail and keeps its lists and opportunities)')
+  .option('--no-cascade', 'Skip optional archive cleanup; mail always ends and deals stay open')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await prospectsArchive(id, { json: options.json, noCascade: options.cascade === false });
+  });
+
+prospectsCmd
+  .command('remove <id>')
+  .alias('rm')
+  .description('Archive a prospect through the remove endpoint')
+  .option('--no-cascade', 'Skip optional archive cleanup; mail always ends and deals stay open')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await prospectsRemove(id, { json: options.json, noCascade: options.cascade === false });
+  });
+
+prospectsCmd
+  .command('reactivate <id>')
+  .description('Return an archived prospect to active')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await prospectsReactivate(id, options);
+  });
+
+prospectsCmd
+  .command('opportunity <id>')
+  .description('Mark a prospect as an opportunity')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await prospectsOpportunity(id, options);
+  });
+
+prospectsCmd
+  .command('favorite <id>')
+  .description('Star a prospect (or --off to unstar)')
+  .option('--off', 'Remove the star')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await prospectsFavorite(id, options);
+  });
+
+prospectsCmd
+  .command('check')
+  .description('See which records are prospects')
+  .requiredOption('--ids <csv>', 'Comma-separated record IDs (max 500)')
+  .option('--record-type <type>', 'property (default), person, or company')
+  .option('--json', 'Output as JSON')
+  .action(async (options) => {
+    await prospectsCheck(options);
+  });
+
+prospectsCmd
+  .command('counts')
+  .description('Prospect counts by lifecycle and record type')
+  .option('--list <listId>', 'Count only members of this list')
+  .option('--json', 'Output as JSON')
+  .action(async (options) => {
+    await prospectsCounts(options);
+  });
+
+prospectsCmd
+  .command('activity <id>')
+  .description('Show the prospect activity feed')
+  .option(
+    '--category <category>',
+    'record, note, tag, list, communication, crm, driving, enrichment'
+  )
+  .option('--since <iso>', 'Only activity after this ISO 8601 time')
+  .option('-p, --page <n>', 'Page number')
+  .option('--per-page <n>', 'Results per page (max 100)')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await prospectsActivity(id, options);
+  });
+
+const prospectNotesCmd = prospectsCmd.command('notes').description('Notes on a prospect');
+prospectNotesCmd
+  .command('list <id>')
+  .description('List notes')
+  .option('-p, --page <n>', 'Page number')
+  .option('--per-page <n>', 'Results per page')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await prospectNotesList(id, options);
+  });
+prospectNotesCmd
+  .command('get <id> <noteId>')
+  .description('Show one note')
+  .option('--json', 'Output as JSON')
+  .action(async (id, noteId, options) => {
+    await prospectNotesGet(id, noteId, options);
+  });
+prospectNotesCmd
+  .command('add <id> [text]')
+  .description('Add a note')
+  .option('--body <json>', 'Request body as JSON ({"body": "..."})')
+  .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--json', 'Output as JSON')
+  .addHelpText(
+    'after',
+    `\nExamples:\n  dm prospects notes add prospect_8812 "Owner wants an offer by Friday"`
+  )
+  .action(async (id, text, options) => {
+    await prospectNotesAdd(id, text, options);
+  });
+prospectNotesCmd
+  .command('edit <id> <noteId> <text>')
+  .description('Edit a note')
+  .option('--json', 'Output as JSON')
+  .action(async (id, noteId, text, options) => {
+    await prospectNotesEdit(id, noteId, text, options);
+  });
+prospectNotesCmd
+  .command('remove <id> <noteId>')
+  .alias('rm')
+  .description('Delete a note')
+  .option('--json', 'Output as JSON')
+  .action(async (id, noteId, options) => {
+    await prospectNotesRemove(id, noteId, options);
+  });
+
+const prospectFilesCmd = prospectsCmd.command('files').description('Files on a prospect');
+prospectFilesCmd
+  .command('list <id>')
+  .description('List files')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await prospectFilesList(id, options);
+  });
+prospectFilesCmd
+  .command('upload <id> <path>')
+  .description('Attach a local file (up to 25 MB)')
+  .option('--content-type <mime>', 'MIME type, e.g. application/pdf')
+  .option('--name <fileName>', 'Name to show instead of the local file name')
+  .option('--json', 'Output as JSON')
+  .addHelpText(
+    'after',
+    `\nExamples:\n  dm prospects files upload prospect_8812 ./inspection.pdf --content-type application/pdf`
+  )
+  .action(async (id, path, options) => {
+    await prospectFilesUpload(id, path, options);
+  });
+prospectFilesCmd
+  .command('download <id> <fileId>')
+  .description('Download a file')
+  .option('-o, --out <path>', 'Where to save it')
+  .option('--json', 'Print the signed URL instead of downloading')
+  .action(async (id, fileId, options) => {
+    await prospectFilesDownload(id, fileId, options);
+  });
+prospectFilesCmd
+  .command('remove <id> <fileId>')
+  .alias('rm')
+  .description('Delete a file')
+  .option('--json', 'Output as JSON')
+  .action(async (id, fileId, options) => {
+    await prospectFilesRemove(id, fileId, options);
+  });
+
+const prospectPhotosCmd = prospectsCmd
+  .command('photos')
+  .description('Property photos on a prospect');
+prospectPhotosCmd
+  .command('list <id>')
+  .description('List photos')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await prospectPhotosList(id, options);
+  });
+prospectPhotosCmd
+  .command('add <id>')
+  .description('Add a photo from a local file (under 700 KB) or a public https URL')
+  .option('--file <path>', 'Local JPEG, PNG, or WebP')
+  .option('--url <url>', 'Public https image URL (up to 10 MB)')
+  .option(
+    '--type <type>',
+    'street_view, property_front, property_side, property_back, condition, damage, other'
+  )
+  .option('--caption <text>', 'Caption')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await prospectPhotosAdd(id, options);
+  });
+prospectPhotosCmd
+  .command('remove <id> <photoId>')
+  .alias('rm')
+  .description('Delete a photo')
+  .option('--json', 'Output as JSON')
+  .action(async (id, photoId, options) => {
+    await prospectPhotosRemove(id, photoId, options);
+  });
+
+const prospectTagsCmd = prospectsCmd.command('tags').description('Tags on a prospect');
+prospectTagsCmd
+  .command('list <id>')
+  .description('Show the catalog with what is assigned')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await prospectTagsList(id, options);
+  });
+prospectTagsCmd
+  .command('set <id>')
+  .description('Replace the prospect tags with exactly these')
+  .requiredOption('--ids <csv>', 'Comma-separated tag IDs (empty string clears)')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await prospectTagsSet(id, options);
+  });
+prospectTagsCmd
+  .command('add <id> <tagId>')
+  .description('Add one tag')
+  .option('--json', 'Output as JSON')
+  .action(async (id, tagId, options) => {
+    await prospectTagsAdd(id, tagId, options);
+  });
+prospectTagsCmd
+  .command('remove <id> <tagId>')
+  .alias('rm')
+  .description('Remove one tag')
+  .option('--json', 'Output as JSON')
+  .action(async (id, tagId, options) => {
+    await prospectTagsRemove(id, tagId, options);
+  });
+
+// ============================================================================
+// Tags commands (catalog)
+// ============================================================================
+
+const tagsCmd = program.command('tags').description('Manage the prospect tag catalog');
+
+tagsCmd
+  .command('list')
+  .alias('ls')
+  .description('List built-in and workspace tags')
+  .option('--include-inactive', 'Show archived tags too')
+  .option('--json', 'Output as JSON')
+  .action(async (options) => {
+    await tagsList(options);
+  });
+
+tagsCmd
+  .command('get <id>')
+  .description('Show one tag')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await tagsGet(id, options);
+  });
+
+tagsCmd
+  .command('create')
+  .description('Create a workspace tag')
+  .requiredOption('--name <name>', 'Tag name (unique in the workspace)')
+  .option('--description <text>', 'What the tag means')
+  .option('--color <variant>', 'default, secondary, info, warning, or destructive')
+  .option('--order <n>', 'Sort order (lower first)')
+  .option('--json', 'Output as JSON')
+  .addHelpText('after', `\nExamples:\n  dm tags create --name Probate --color info`)
+  .action(async (options) => {
+    await tagsCreate(options);
+  });
+
+tagsCmd
+  .command('update <id>')
+  .description('Change a workspace tag')
+  .option('--name <name>', 'New name')
+  .option('--description <text>', 'New description')
+  .option('--color <variant>', 'default, secondary, info, warning, or destructive')
+  .option('--order <n>', 'Sort order')
+  .option('--archive', 'Hide the tag without removing it from prospects')
+  .option('--restore', 'Show an archived tag again')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await tagsUpdate(id, options);
+  });
+
+tagsCmd
+  .command('delete <id>')
+  .description('Delete a workspace tag')
+  .option('--force', 'Remove it from every prospect first')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await tagsDelete(id, options);
+  });
+
+tagsCmd
+  .command('reorder')
+  .description('Set the display order of workspace tags')
+  .requiredOption('--ids <csv>', 'Comma-separated tag IDs in the order you want')
+  .option('--json', 'Output as JSON')
+  .action(async (options) => {
+    await tagsReorder(options);
+  });
+
+// ============================================================================
+// Webhooks commands
+// ============================================================================
+
+const webhooksCmd = program
+  .command('webhooks')
+  .description('Receive prospect and list events at your own URLs');
+
+webhooksCmd
+  .command('list')
+  .alias('ls')
+  .description('List webhooks with their health')
+  .option('--include-zapier', 'Also show subscriptions the Zapier app created')
+  .option('--json', 'Output as JSON')
+  .action(async (options) => {
+    await webhooksList(options);
+  });
+
+webhooksCmd
+  .command('get <id>')
+  .description('Show one webhook')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await webhooksGet(id, options);
+  });
+
+webhooksCmd
+  .command('create')
+  .description('Register a URL (the signing secret is shown once)')
+  .requiredOption('--url <url>', 'Public https URL that accepts POST requests')
+  .requiredOption(
+    '--events <csv>',
+    'Event types, e.g. prospect.added,prospect.tags_changed (or prospect.* or *)'
+  )
+  .option('--description <text>', 'What this webhook is for')
+  .option('--batch-max <n>', 'Most events per request (1 to 100, default 50)')
+  .option('--include-contacts', 'Include phone numbers and emails on person prospects')
+  .option('--json', 'Output as JSON')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  dm webhooks create --url https://example.com/hooks/dm --events prospect.added
+  dm webhooks create --url https://example.com/hooks/dm --events "prospect.*" --batch-max 10`
+  )
+  .action(async (options) => {
+    await webhooksCreate(options);
+  });
+
+webhooksCmd
+  .command('update <id>')
+  .description('Change a webhook or turn it on or off')
+  .option('--url <url>', 'New URL')
+  .option('--events <csv>', 'New event types')
+  .option('--description <text>', 'New description')
+  .option('--batch-max <n>', 'Most events per request')
+  .option('--include-contacts', 'Include contact data')
+  .option('--no-include-contacts', 'Stop including contact data')
+  .option('--enable', 'Turn on (also clears a failure lockout)')
+  .option('--disable', 'Turn off')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await webhooksUpdate(id, {
+      ...options,
+      includeContacts: options.includeContacts === true ? true : undefined,
+      noIncludeContacts: options.includeContacts === false ? true : undefined,
+    });
+  });
+
+webhooksCmd
+  .command('delete <id>')
+  .description('Delete a webhook and its delivery log')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await webhooksDelete(id, options);
+  });
+
+webhooksCmd
+  .command('test <id>')
+  .description('Send a signed ping event now and show the response')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await webhooksTest(id, options);
+  });
+
+webhooksCmd
+  .command('rotate-secret <id>')
+  .description('Issue a new signing secret (the old one works for 24 hours)')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await webhooksRotateSecret(id, options);
+  });
+
+webhooksCmd
+  .command('deliveries <id>')
+  .description('Show the delivery log')
+  .option('--status <status>', 'pending, processing, delivered, failed, abandoned, or skipped')
+  .option('--event-type <type>', 'Only this event type')
+  .option('--since <iso>', 'Only deliveries after this ISO 8601 time')
+  .option('-p, --page <n>', 'Page number')
+  .option('--per-page <n>', 'Results per page (max 100)')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await webhooksDeliveries(id, options);
+  });
+
+webhooksCmd
+  .command('delivery <id> <deliveryId>')
+  .description('Show one delivery attempt')
+  .option('--json', 'Output as JSON')
+  .action(async (id, deliveryId, options) => {
+    await webhooksDeliveryGet(id, deliveryId, options);
+  });
+
+webhooksCmd
+  .command('redeliver <id> [deliveryId]')
+  .description('Send a delivery again, or every delivery since a time')
+  .option('--since <iso>', 'Resend everything created after this ISO 8601 time')
+  .option('--json', 'Output as JSON')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  dm webhooks redeliver whk_12 dlv_9001
+  dm webhooks redeliver whk_12 --since 2026-08-26T00:00:00Z`
+  )
+  .action(async (id, deliveryId, options) => {
+    await webhooksRedeliver(id, deliveryId, options);
+  });
+
+webhooksCmd
+  .command('events')
+  .description('List event types, or print an example body')
+  .option('--example <type>', 'Print the full example request body for one event type')
+  .option('--json', 'Output as JSON')
+  .action(async (options) => {
+    await webhooksEvents(options);
   });
 
 // ============================================================================
@@ -2142,4 +3089,16 @@ devLicenseCmd
 // Parse and execute
 // ============================================================================
 
-program.parse();
+function isMainModule(): boolean {
+  if (!process.argv[1]) return false;
+  try {
+    return realpathSync(process.argv[1]) === fileURLToPath(import.meta.url);
+  } catch {
+    // Importing the program must not depend on the caller's entry file existing.
+    return false;
+  }
+}
+
+if (isMainModule()) {
+  program.parse();
+}

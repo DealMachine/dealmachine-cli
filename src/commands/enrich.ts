@@ -799,12 +799,7 @@ export async function enrichName(
       name: truncate(String(p.full_name || ''), 25),
       phones: Array.isArray(p.phones) ? String(p.phones.length) : '—',
       emails: Array.isArray(p.emails) ? String(p.emails.length) : '—',
-      properties:
-        p.property_count != null
-          ? String(p.property_count)
-          : Array.isArray(p.properties)
-            ? String(p.properties.length)
-            : '—',
+      properties: Array.isArray(p.properties) ? String(p.properties.length) : '—',
     }));
     printTable(rows, ['id', 'name', 'phones', 'emails', 'properties']);
   } else {
@@ -879,8 +874,7 @@ function printMatchWarnings(items: Record<string, unknown>[]): void {
     .map((item, i) => ({
       i,
       w: (item as any).match_warning as
-        | { code?: string; message?: string; hint?: Record<string, unknown> }
-        | undefined,
+        { code?: string; message?: string; hint?: Record<string, unknown> } | undefined,
     }))
     .filter((entry) => entry.w);
   if (warned.length === 0) return;
@@ -925,7 +919,10 @@ function printPersonEnrichResult(title: string, data: PersonEnrichResponse): voi
       const phones = ct.phones as Record<string, unknown>[] | undefined;
       if (phones && phones.length > 0) {
         for (const ph of phones) {
-          console.log(`      ${chalk.dim('phone:')} ${ph.number || ph.phone || '—'}`);
+          const meta = [ph.type, ph.carrier].filter(Boolean).join(', ');
+          console.log(
+            `      ${chalk.dim('phone:')} ${ph.number || ph.phone || '—'}${meta ? chalk.dim(` (${meta})`) : ''}`
+          );
         }
       }
 
@@ -934,10 +931,6 @@ function printPersonEnrichResult(title: string, data: PersonEnrichResponse): voi
         for (const em of emails) {
           console.log(`      ${chalk.dim('email:')} ${em.address || em.email || '—'}`);
         }
-      }
-
-      if (ct.property_count != null) {
-        console.log(`      ${chalk.dim('properties:')} ${String(ct.property_count)}`);
       }
     }
   }

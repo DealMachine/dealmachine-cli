@@ -16,6 +16,7 @@ export interface ApiError {
   error?: {
     code?: string;
     message?: string;
+    details?: Record<string, unknown>;
   };
 }
 
@@ -39,6 +40,8 @@ export function getApiBaseUrl(): string {
 }
 
 export function getApiKey(): string {
+  const environmentKey = process.env.DM_API_KEY?.trim();
+  if (environmentKey) return environmentKey;
   const config = readConfig();
   if (!config?.apiKey) {
     console.error(chalk.red('Not logged in. Run `dm login` first.'));
@@ -79,6 +82,8 @@ export async function apiRequest<T>(
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
       'User-Agent': CLI_USER_AGENT,
+      // Names the CLI as the source on prospects and the activity feed.
+      'X-DealMachine-Source': 'cli',
     },
     ...(body && { body: JSON.stringify(body) }),
   });
@@ -91,6 +96,22 @@ export async function apiRequest<T>(
     console.error(chalk.dim(`  ${method} ${path} -> ${response.status}`));
     if (response.status === 401) {
       console.error(chalk.dim('  Run `dm login` to re-authenticate.'));
+    } else if (response.status === 402 && error.error?.code === 'prospect_limit_reached') {
+      const details = error.error?.details as
+        | { limit?: number; used?: number; remaining?: number }
+        | undefined;
+      if (details?.limit != null) {
+        console.error(
+          chalk.dim(
+            `  Prospects: ${(details.used ?? 0).toLocaleString()} of ${details.limit.toLocaleString()} used.`
+          )
+        );
+      }
+      console.error(
+        chalk.dim('  Add capacity in Billing settings or remove prospects, then retry.')
+      );
+    } else if (response.status === 402) {
+      console.error(chalk.dim('  Your plan does not cover this request. Check Billing settings.'));
     } else if (response.status === 422) {
       console.error(chalk.dim('  Check your request body. Use --body or -f with valid JSON.'));
     } else if (response.status === 404) {

@@ -2,7 +2,12 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { agentsGuide, agentsInstallClaudeCode, agentsPermissions, agentsPlaybook } from '../../src/commands/agents';
+import {
+  agentsGuide,
+  agentsInstallClaudeCode,
+  agentsPermissions,
+  agentsPlaybook,
+} from '../../src/commands/agents';
 
 const temporaryDirectories: string[] = [];
 
@@ -23,8 +28,13 @@ describe('agent commands', () => {
 
     expect(log).toHaveBeenCalledWith(expect.stringContaining('dm agents playbook'));
     expect(log).toHaveBeenCalledWith(expect.stringContaining('Credit-Safe Workflow'));
-    expect(log).toHaveBeenCalledWith(expect.stringContaining('A specific person by name uses `dm enrich name`'));
-    expect(log).toHaveBeenCalledWith(expect.stringContaining('People Search does not have a name filter'));
+    expect(log.mock.calls.flat().join(' ')).not.toMatch(/V2|dm query|include-companies/);
+    expect(log).toHaveBeenCalledWith(
+      expect.stringContaining('A specific person by name uses `dm enrich name`')
+    );
+    expect(log).toHaveBeenCalledWith(
+      expect.stringContaining('People Search does not have a name filter')
+    );
   });
 
   it('prints agent guidance as JSON', async () => {
@@ -51,8 +61,12 @@ describe('agent commands', () => {
       name: 'DealMachine Playbook',
       type: 'playbook',
     });
-    expect(payload.content).toContain('DealMachine Playbook: Natural Language Property Intelligence');
-    expect(payload.content).toContain('A specific name always uses person enrichment, not People Search.');
+    expect(payload.content).toContain(
+      'DealMachine Playbook: Natural Language Property Intelligence'
+    );
+    expect(payload.content).toContain(
+      'A specific name always uses person enrichment, not People Search.'
+    );
     expect(payload.content).toContain('allowed-tools:');
     expect(payload.content).not.toContain('Bash(dm *)');
   });

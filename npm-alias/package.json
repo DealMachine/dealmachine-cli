@@ -1,6 +1,6 @@
 {
   "name": "dealmachine",
-  "version": "0.3.0",
+  "version": "0.4.0-rc.0",
   "description": "Short install alias for the DealMachine property intelligence CLI",
   "author": "DealMachine",
   "license": "MIT",
@@ -23,13 +23,14 @@
     "LICENSE"
   ],
   "dependencies": {
-    "@dealmachine/cli": "0.3.0"
+    "@dealmachine/cli": "0.4.0-rc.0"
   },
   "engines": {
     "node": ">=18"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
   },
   "keywords": [
     "dealmachine",

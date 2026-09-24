@@ -23,6 +23,7 @@ interface DncResult {
   matched: boolean;
   do_not_call?: boolean;
   phone_type?: string;
+  carrier?: string | null;
   match_failure?: { code: string; reason: string };
 }
 
@@ -86,7 +87,8 @@ export async function phonesDnc(
           : item.do_not_call === false
             ? chalk.green('OK')
             : chalk.yellow('UNKNOWN');
-      const type = item.phone_type ? chalk.dim(` (${item.phone_type})`) : '';
+      const meta = [item.phone_type, item.carrier].filter(Boolean).join(', ');
+      const type = meta ? chalk.dim(` (${meta})`) : '';
       console.log(`  ${chalk.green('✓ matched')}   ${item.input.number}  ${dnc}${type}`);
     } else {
       const reason = item.match_failure?.reason || 'No match';

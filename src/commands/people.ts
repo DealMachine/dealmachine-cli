@@ -245,9 +245,8 @@ export async function peopleGet(
     console.log();
     console.log(chalk.bold(`  Phones (${phones.length})`));
     for (const ph of phones) {
-      console.log(
-        `    ${ph.number || ph.phone || '—'}${ph.type ? chalk.dim(` (${ph.type})`) : ''}`
-      );
+      const meta = [ph.type, ph.carrier].filter(Boolean).join(', ');
+      console.log(`    ${ph.number || ph.phone || '—'}${meta ? chalk.dim(` (${meta})`) : ''}`);
     }
   }
 

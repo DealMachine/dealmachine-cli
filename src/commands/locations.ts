@@ -43,9 +43,10 @@ interface LocationsResponse {
 
 interface AutocompleteSuggestion {
   suggestion_id: string;
-  kind: 'address' | 'location';
+  kind: 'address';
   label: string;
-  address?: {
+  property_id: string;
+  address: {
     address: string;
     city?: string;
     county?: string;
@@ -62,7 +63,6 @@ interface AutocompleteResponse {
   data: AutocompleteSuggestion[];
   meta: {
     query: string;
-    scope: 'all' | 'address' | 'location';
     limit: number;
     returned: number;
     partial_results: boolean;
@@ -123,7 +123,6 @@ export async function locationsSearch(options: {
 
 export async function addressesAutocomplete(options: {
   query: string;
-  scope?: string;
   state?: string;
   limit?: string;
   latitude?: string;
@@ -131,13 +130,12 @@ export async function addressesAutocomplete(options: {
   json?: boolean;
 }): Promise<void> {
   const query: Record<string, string> = { q: options.query };
-  if (options.scope) query.scope = options.scope;
   if (options.state) query.state = options.state;
   if (options.limit) query.limit = options.limit;
   if (options.latitude) query.latitude = options.latitude;
   if (options.longitude) query.longitude = options.longitude;
 
-  const spinner = createSpinner('Finding address and location suggestions...').start();
+  const spinner = createSpinner('Finding property addresses...').start();
   const data = await apiRequest<AutocompleteResponse>('/addresses/autocomplete', { query });
   spinner.stop();
 
@@ -146,25 +144,24 @@ export async function addressesAutocomplete(options: {
     return;
   }
 
-  printHeader('Address and Location Suggestions');
+  printHeader('Address Suggestions');
   console.log();
 
   if (data.data.length > 0) {
     const rows = data.data.map((suggestion) => ({
-      kind: suggestion.kind,
+      property_id: suggestion.property_id,
       label: truncate(suggestion.label, 56),
-      location_id: suggestion.location?.location_id || '-',
-      city: suggestion.address?.city || '-',
-      state: suggestion.address?.state || suggestion.location?.state || '-',
-      zip: suggestion.address?.zip || '-',
+      city: suggestion.address.city || '-',
+      state: suggestion.address.state || '-',
+      zip: suggestion.address.zip || '-',
     }));
-    printTable(rows, ['kind', 'label', 'location_id', 'city', 'state', 'zip']);
+    printTable(rows, ['property_id', 'label', 'city', 'state', 'zip']);
   } else {
     console.log(chalk.dim('  No suggestions found.'));
   }
 
   if (data.meta.partial_results) {
-    console.log(chalk.yellow('  Address suggestions are temporarily unavailable.'));
+    console.log(chalk.yellow('  Fuzzy address matching is temporarily unavailable.'));
   }
   console.log();
 }
@@ -176,10 +173,7 @@ export const locationsAutocomplete = addressesAutocomplete;
 // Get by ID
 // ============================================================================
 
-export async function locationsGet(
-  locationId: string,
-  options: { json?: boolean }
-): Promise<void> {
+export async function locationsGet(locationId: string, options: { json?: boolean }): Promise<void> {
   const spinner = createSpinner('Fetching location...').start();
   const data = await apiRequest<LocationItem>(`/locations/${locationId}`);
   spinner.stop();
@@ -191,12 +185,12 @@ export async function locationsGet(
 
   printHeader(`Location ${data.location_id}`);
   printKeyValue({
-    'Type': data.type,
-    'Name': data.name,
-    'Code': data.code,
-    'State': data.state || '-',
+    Type: data.type,
+    Name: data.name,
+    Code: data.code,
+    State: data.state || '-',
     'State Name': data.state_name || '-',
-    'Properties': data.property_count.toLocaleString(),
+    Properties: data.property_count.toLocaleString(),
   });
   console.log();
 }

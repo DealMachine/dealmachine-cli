@@ -110,9 +110,6 @@ function getPlaybookCandidates(): string[] {
       path.resolve(currentDir, '../agents', PLAYBOOK_FILE_NAME),
       path.resolve(currentDir, '../../dist/agents', PLAYBOOK_FILE_NAME),
       path.resolve(currentDir, '../../playbook/PLAYBOOK.md'),
-      path.resolve(currentDir, '../../../playbooks/playbook/SKILL.md'),
-      path.resolve(process.cwd(), 'packages/playbooks/playbook/SKILL.md'),
-      path.resolve(process.cwd(), '../playbooks/playbook/SKILL.md'),
     ])
   );
 }
@@ -128,7 +125,7 @@ function loadPlaybook(): { content: string; path: string } {
   }
 
   throw new Error(
-    `Could not find the DealMachine Playbook. Rebuild the CLI with "npm run build" from packages/cli and try again.`
+    `Could not find the DealMachine Playbook. Rebuild the CLI with "npm run build" from the CLI repository and try again.`
   );
 }
 
@@ -181,7 +178,8 @@ export async function agentsPlaybook(options: AgentOptions): Promise<void> {
 
     console.log(playbook.content);
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Could not load the DealMachine Playbook.';
+    const message =
+      error instanceof Error ? error.message : 'Could not load the DealMachine Playbook.';
     if (options.json) {
       printJson({ error: message });
       process.exitCode = 1;
@@ -203,12 +201,7 @@ export async function agentsInstallClaudeCode(options: AgentInstallOptions): Pro
     const current = fs.existsSync(target) ? fs.readFileSync(target, 'utf-8') : undefined;
 
     if (current === playbook.content) {
-      const result = {
-        status: 'already_installed',
-        agent: 'claude-code',
-        scope,
-        path: target,
-      };
+      const result = { status: 'already_installed', agent: 'claude-code', scope, path: target };
       if (options.json) printJson(result);
       else console.log(`DealMachine Playbook is already installed at ${target}`);
       return;
@@ -220,10 +213,7 @@ export async function agentsInstallClaudeCode(options: AgentInstallOptions): Pro
       );
     }
 
-    fs.mkdirSync(path.dirname(target), {
-      recursive: true,
-      mode: options.project ? 0o755 : 0o700,
-    });
+    fs.mkdirSync(path.dirname(target), { recursive: true, mode: options.project ? 0o755 : 0o700 });
     const temporary = path.join(path.dirname(target), `.SKILL.md.${process.pid}.tmp`);
     try {
       fs.writeFileSync(temporary, playbook.content, {
@@ -247,7 +237,8 @@ export async function agentsInstallClaudeCode(options: AgentInstallOptions): Pro
       console.log('Restart Claude Code or start a new session so it discovers the skill.');
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Could not install the DealMachine Playbook.';
+    const message =
+      error instanceof Error ? error.message : 'Could not install the DealMachine Playbook.';
     if (options.json) printJson({ error: message });
     else console.error(message);
     process.exitCode = 1;

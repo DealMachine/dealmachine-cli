@@ -1,76 +1,20 @@
 # DealMachine CLI
 
-Maintainers: [agent instructions](AGENTS.md), [development](docs/development.md), [current Command reference](docs/commands.md), and [npm releases](docs/releases.md).
-
 DealMachine CLI (`dm`) -- property intelligence from the command line.
 
-A standalone Commander.js CLI that talks to the DealMachine REST API. Provides Commands for authentication, property and people research, enrichment, lists, prospects, tags, webhooks, mail and developer utilities. Compiles to ESM JavaScript via `tsc`.
+A standalone Commander.js CLI that talks to the DealMachine REST API. It covers agent guidance, authentication, property search, people lookup, enrichment, comps, drive history, Prospect management, mail, and developer utilities. Compiles to a single ESM bundle via `tsc`.
 
 This package has **zero** `@dealmachine/*` dependencies -- it is a self-contained binary that communicates exclusively through the public API.
 
 ---
 
-## AI agent integrations
-
-This repository is also the public distribution package for the DealMachine MCP server and DealMachine skill.
-
-- Hosted MCP server: `https://mcp.dealmachine.com`
-- API documentation: `https://api.docs.dealmachine.com`
-- Account and API keys: `https://dealmachine.com/settings/developer`
-- Privacy policy: `https://dealmachine.com/privacy-policy`
-- Terms of service: `https://dealmachine.com/terms-of-service`
-- Support: `support@dealmachine.com`
-
-The MCP server supports OAuth 2.1 for ChatGPT, Claude, Cursor, Codex, and other compatible clients. It can also use a DealMachine API key in developer clients that support bearer-token configuration.
-
-The plugin package includes:
-
-- A hosted MCP connection for property, people, enrichment, comparable-sales, and account tools
-- A credit-aware skill that discovers filters and fields, counts first, and confirms large paid operations
-- A portable [Agent Plugins](https://agent-plugins.org/) package for compatible clients
-- Manifests for OpenAI, Claude, Cursor, GitHub Copilot, and Gemini
-- Official MCP Registry metadata in `server.json`
-
-The portable package follows Agent Plugins 1.0.0:
-
-```text
-dealmachine-cli/
-├── plugin.json
-├── mcp.json
-└── skills/
-    └── dealmachine/
-        ├── SKILL.md
-        ├── REFERENCE.md
-        └── SETUP.md
-```
-
-Compatible clients discover the DealMachine skill from `skills/dealmachine/` and connect to the
-hosted Streamable HTTP MCP server declared in `mcp.json`. Client-specific manifests remain in the
-repository for compatibility, marketplace metadata, and richer presentation.
-
-Example requests:
-
-- "Find high-equity absentee-owned properties in Austin and estimate the credit cost first."
-- "Look up the owner of this property and find available contact data."
-- "Find comparable sales for this property."
-- "Research people who match these criteria for a targeted prospecting list."
-
-Direct skill installation:
-
-```bash
-npx skills add DealMachine/dealmachine-cli
-```
-
----
-
 ## Table of Contents
 
-- [AI agent integrations](#ai-agent-integrations)
 - [Installation](#installation)
 - [Authentication](#authentication)
 - [Configuration](#configuration)
 - [Commands](#commands)
-  - [Agents](#agents-commands) -- `agents`, `agents guide`, `agents playbook`, `agents install`, `agents permissions`
+  - [Agents](#agents-commands) -- `agents`, `agents guide`, `agents playbook`
   - [Auth](#auth-commands) -- `login`, `logout`, `whoami`
   - [Config](#config-commands) -- `config get`, `config set`, `config path`
   - [Account](#account-commands) -- `account`
@@ -80,6 +24,7 @@ npx skills add DealMachine/dealmachine-cli
   - [Enrich](#enrich-commands) -- `address`, `latlng`, `apn`, `email`, `phone`, `name`
   - [Comps](#comps-commands) -- comparable property analysis
   - [Lists](#lists-commands) -- `search`, `create`, `get`, `update`, `delete`, `build`, `import`, `items`, `add`, `remove`, `export`
+  - [Driving](#driving-commands) -- `list`, `get`
   - [Filters](#filters-commands) -- list available search filters
   - [Fields](#fields-commands) -- list available data fields
   - [Activity](#activity-commands) -- `search`, `get`
@@ -258,7 +203,7 @@ dm agents playbook --json
 dm agents skill        # alias
 ```
 
-The public CLI source keeps its bundled Playbook at `playbook/PLAYBOOK.md`. The build writes the selected source to `dist/agents/dealmachine-playbook.md`, so the command works from a published CLI package as well as a local source checkout.
+The Playbook is copied from `packages/playbooks/playbook/SKILL.md` into `dist/agents/dealmachine-playbook.md` during `npm run build`, so the command works from a published CLI package as well as a local source checkout.
 
 #### `dm agents install claude-code`
 
@@ -457,11 +402,7 @@ dm properties search -f search.json
 cat search.json | dm properties search
 
 # Machine-readable output
-dm properties search -f search.json --json              # Free estimate for scripts and agents
-dm properties search -f search.json --json --yes        # Run after approval
-
-# Explicit free estimate
-dm properties search -f search.json --estimate-cost
+dm properties search -f search.json --json
 
 # Query Builder protocol filters
 dm properties search --include-lists 123,456 --exclude-previously-exported --body '{"locations":[]}'
@@ -475,8 +416,6 @@ dm properties search --include-lists 123,456 --exclude-previously-exported --bod
 | `--exclude-lists <ids>`           | Comma-separated list IDs to exclude                                           |
 | `--exclude-previously-exported`   | Exclude records already exported by your organization                         |
 | `--bigquery-data-environment <n>` | Query Builder data environment (`1` production, `2` staging, `3` development) |
-| `--estimate-cost`                  | Preview counts and credit cost without consuming credits                     |
-| `--yes`                            | Confirm approved credit spend for non-interactive execution                  |
 | `--json`                          | Output as JSON                                                                |
 
 #### `dm properties count`
@@ -496,15 +435,15 @@ Get a single property by its DealMachine ID.
 dm properties get prop_12345
 dm properties get prop_12345 --contact-audience owners_and_family
 dm properties get prop_12345 --contact-audience none
-dm properties get prop_12345 --fields estimated_value,equity
+dm properties get prop_12345 --fields estimated_value,year_built
 dm properties get prop_12345 --json
 ```
 
-| Option                          | Description                                                  |
-| ------------------------------- | ------------------------------------------------------------ |
+| Option                          | Description                                                          |
+| ------------------------------- | -------------------------------------------------------------------- |
 | `--contact-audience <audience>` | `owners`, `owners_and_family`, `renters`, `residents`, `all`, `none` |
-| `--fields <csv>`                | Comma-separated property field IDs from `dm fields`          |
-| `--json`                        | Output as JSON                                               |
+| `--fields <csv>`                | Comma-separated property field IDs from `dm fields`                  |
+| `--json`                        | Output as JSON                                                       |
 
 Property lookup defaults to `owners`. If you only need property data, use `--contact-audience none`. This omits contacts and avoids people credits.
 
@@ -524,12 +463,12 @@ dm properties ids -f ids.json --contact-audience owners
 dm properties ids -f ids.json --contact-audience none
 ```
 
-| Option                          | Description                                                                    |
-| ------------------------------- | ------------------------------------------------------------------------------ |
-| `--body <json>`                 | Request body as JSON string                                                    |
-| `-f, --file <path>`             | Read request body from a JSON file                                             |
+| Option                          | Description                                                                            |
+| ------------------------------- | -------------------------------------------------------------------------------------- |
+| `--body <json>`                 | Request body as JSON string                                                            |
+| `-f, --file <path>`             | Read request body from a JSON file                                                     |
 | `--contact-audience <audience>` | Include contacts: `owners`, `owners_and_family`, `renters`, `residents`, `all`, `none` |
-| `--json`                        | Output as JSON                                                                 |
+| `--json`                        | Output as JSON                                                                         |
 
 #### `dm properties export`
 
@@ -566,13 +505,8 @@ dm people search --body '{
   "filters": [{"filter_id": "age", "operator": "between", "value": [30, 50]}]
 }'
 dm people search -f people-search.json --json
-dm people search -f people-search.json --estimate-cost
-dm people search -f people-search.json --json --yes
 dm people search --include-lists 123 --exclude-lists 456 --exclude-previously-exported --body '{"locations":[]}'
 ```
-
-Non-interactive People Search returns a free estimate unless `--yes` is supplied. A specific person
-by name uses `dm enrich name`, not People Search.
 
 #### `dm people count`
 
@@ -593,12 +527,12 @@ dm people get per_12345 --fields estimated_household_income,estimated_value
 dm people get per_12345 --json
 ```
 
-| Option                 | Description                                                |
-| ---------------------- | ---------------------------------------------------------- |
-| `--include-properties` | Include associated properties                              |
-| `--property-limit <n>` | Maximum associated properties to return, from 1 through 100 |
-| `--fields <csv>`       | Comma-separated field IDs from `dm fields`                 |
-| `--json`               | Output as JSON                                             |
+| Option                 | Description                                        |
+| ---------------------- | -------------------------------------------------- |
+| `--include-properties` | Include associated properties                      |
+| `--property-limit <n>` | Maximum associated properties, default 20, max 100 |
+| `--fields <csv>`       | Comma-separated people or property field IDs       |
+| `--json`               | Output as JSON                                     |
 
 #### `dm people ids [ids...]`
 
@@ -610,11 +544,8 @@ dm people ids --body '{"ids": ["per_111", "per_222"]}' --include-properties --pr
 dm people ids per_111 per_222 --fields estimated_household_income,estimated_value
 ```
 
-| Option                 | Description                                                    |
-| ---------------------- | -------------------------------------------------------------- |
-| `--include-properties` | Include associated properties                                  |
-| `--property-limit <n>` | Maximum associated properties to return per person, up to 100 |
-| `--fields <csv>`       | Comma-separated field IDs from `dm fields`                     |
+`dm people ids` supports the same `--include-properties`, `--property-limit`, and `--fields`
+options as `dm people get`.
 
 #### `dm people export`
 
@@ -631,7 +562,7 @@ Contact filter options are the same as `dm properties export`.
 
 ### Enrich Commands
 
-All enrichment commands support three input modes: a positional argument for single-item lookup, `--body`/`-f` for JSON payloads, and `-f` with a `.csv` file for batch enrichment from CSV. Batches larger than 250 items are automatically chunked. Every enrichment command accepts `--fields <csv>` and sends the selected field IDs to the API. Email, phone, and name matches also include a free `property_count`; use `--include-properties` when you need the property records themselves.
+All enrichment commands support three input modes: a positional argument for single-item lookup, `--body`/`-f` for JSON payloads, and `-f` with a `.csv` file for batch enrichment from CSV. Batches larger than 250 items are automatically chunked.
 
 #### `dm enrich address [address]`
 
@@ -641,7 +572,7 @@ Look up a property by street address.
 # Single address
 dm enrich address "123 Main St, Austin, TX 78704"
 dm enrich address "123 Main St, Austin, TX 78704" --contact-audience none
-dm enrich address "123 Main St, Austin, TX 78704" --fields estimated_value,equity
+dm enrich address "123 Main St, Austin, TX 78704" --fields estimated_value,year_built
 
 # Batch from JSON
 dm enrich address --body '{"data": [{"full_address": "123 Main St, Austin, TX"}]}'
@@ -652,13 +583,13 @@ dm enrich address -f addresses.csv --contact-audience owners
 # CSV columns: full_address (or street, city, state, zip)
 ```
 
-| Option                          | Description                                           |
-| ------------------------------- | ----------------------------------------------------- |
-| `--body <json>`                 | Request body as JSON string                           |
-| `-f, --file <path>`             | Read from JSON or CSV file                            |
+| Option                          | Description                                                   |
+| ------------------------------- | ------------------------------------------------------------- |
+| `--body <json>`                 | Request body as JSON string                                   |
+| `-f, --file <path>`             | Read from JSON or CSV file                                    |
 | `--contact-audience <audience>` | `owners`, `owners_and_family`, `renters`, `residents`, `none` |
-| `--fields <csv>`                | Comma-separated field IDs from `dm fields`            |
-| `--json`                        | Output as JSON                                        |
+| `--fields <csv>`                | Comma-separated property or people field IDs                  |
+| `--json`                        | Output as JSON                                                |
 
 Use `--contact-audience none` whenever you only need the property. The response omits contacts and consumes zero people credits.
 
@@ -668,7 +599,7 @@ Look up a property by latitude/longitude coordinates.
 
 ```bash
 dm enrich latlng 30.25,-97.75
-dm enrich latlng -f coordinates.csv --fields estimated_value,equity --contact-audience none
+dm enrich latlng -f coordinates.csv --contact-audience none --fields estimated_value
 # CSV columns: latitude, longitude (or lat, lng/lon/long)
 ```
 
@@ -678,16 +609,16 @@ Look up a property by Assessor's Parcel Number. Narrow results with `--state` or
 
 ```bash
 dm enrich apn "0123-456-789" --state TX
-dm enrich apn -f parcels.csv --zip 78704 --fields estimated_value,equity
+dm enrich apn -f parcels.csv --zip 78704 --fields estimated_value
 # CSV columns: apn (or parcel_id, parcel_number)
 ```
 
-| Option                          | Description                                           |
-| ------------------------------- | ----------------------------------------------------- |
-| `--state <code>`                | Narrow by state (e.g., TX)                            |
-| `--zip <code>`                  | Narrow by ZIP code                                    |
+| Option                          | Description                                                   |
+| ------------------------------- | ------------------------------------------------------------- |
+| `--state <code>`                | Narrow by state (e.g., TX)                                    |
+| `--zip <code>`                  | Narrow by ZIP code                                            |
 | `--contact-audience <audience>` | `owners`, `owners_and_family`, `renters`, `residents`, `none` |
-| `--fields <csv>`                | Comma-separated field IDs from `dm fields`            |
+| `--fields <csv>`                | Comma-separated property or people field IDs                  |
 
 #### `dm enrich email [email]`
 
@@ -696,14 +627,15 @@ Look up a person by email address.
 ```bash
 dm enrich email jane@example.com
 dm enrich email jane@example.com --include-properties
-dm enrich email -f emails.csv --fields estimated_household_income,estimated_value --json
+dm enrich email jane@example.com --fields full_name,phones,estimated_value
+dm enrich email -f emails.csv --json
 # CSV columns: email (or email_address)
 ```
 
-| Option                 | Description                                    |
-| ---------------------- | ---------------------------------------------- |
-| `--include-properties` | Include associated properties                  |
-| `--fields <csv>`       | Comma-separated field IDs from `dm fields`     |
+| Option                 | Description                                  |
+| ---------------------- | -------------------------------------------- |
+| `--include-properties` | Include associated properties                |
+| `--fields <csv>`       | Comma-separated people or property field IDs |
 
 #### `dm enrich phone [phone]`
 
@@ -711,37 +643,39 @@ Look up a person by phone number.
 
 ```bash
 dm enrich phone 5125551234
-dm enrich phone -f phones.csv --include-properties --fields estimated_value
+dm enrich phone -f phones.csv --include-properties --fields full_name,emails,estimated_value
 # CSV columns: phone (or phone_number)
 ```
-
-| Option                 | Description                                |
-| ---------------------- | ------------------------------------------ |
-| `--include-properties` | Include associated properties              |
-| `--fields <csv>`       | Comma-separated field IDs from `dm fields` |
 
 #### `dm enrich name [name]`
 
 Look up people by name. Supports "First Last" or just "Last" format.
 
 ```bash
+dm enrich name "Jane Doe"
 dm enrich name "Jane Doe" --state TX --estimate-cost
-dm enrich name "Jane Doe" --state TX --json --yes
 dm enrich name "Doe" --state TX --page 2
-dm enrich name "Jane Doe" --zip 78704 --include-properties
-dm enrich name "Jane Doe" --fields estimated_household_income,estimated_value
+dm enrich name "Jane Doe" --zip 78704 --include-properties --fields full_name,phones,estimated_value
+dm locations search -q "Austin" --type city --state TX --json
+dm enrich name "Jane Doe" --city 7333 --estimate-cost
 ```
 
-| Option                 | Description                   |
-| ---------------------- | ----------------------------- |
-| `--state <code>`       | Narrow by state               |
-| `--zip <code>`         | Narrow by ZIP code            |
-| `--include-properties` | Include associated properties |
-| `--fields <csv>`       | Field IDs from `dm fields`     |
-| `--estimate-cost`      | Preview count and credits     |
-| `--yes`                | Confirm approved credit spend |
-| `--page <n>`           | Page number                   |
-| `--per-page <n>`       | Results per page              |
+| Option                 | Description                                    |
+| ---------------------- | ---------------------------------------------- |
+| `--state <code>`       | Narrow by state                                |
+| `--zip <code>`         | Narrow by ZIP code                             |
+| `--county <fips>`      | Narrow by county FIPS                          |
+| `--city <place-id>`    | Narrow by city place ID                        |
+| `--include-properties` | Include associated properties                  |
+| `--fields <csv>`       | Comma-separated people or property field IDs   |
+| `--estimate-cost`      | Preview people and property counts and credits |
+| `--page <n>`           | Page number                                    |
+| `--per-page <n>`       | Results per page                               |
+
+Email, phone, and name enrichment return a free `property_count` for every matched person. Phone
+types in JSON output are normalized to `wireless`, `landline`, `voip`, or `unknown`.
+For name enrichment, combine `--estimate-cost` with `--include-properties` to include associated
+property totals and page-aware property credits in the free estimate.
 
 ---
 
@@ -913,6 +847,19 @@ dm lists export list_abc123 --fields "full_address,estimated_value,owner_name" -
 
 ---
 
+### Driving Commands
+
+Read recorded drives and the Prospects added during them.
+
+```bash
+dm driving list
+dm driving list --mode free_drive --started-after 2026-08-01 --json
+dm driving get drive_session_501
+dm prospects list --source driving
+```
+
+Drive history is read-only. Use `dm prospects` for lifecycle, notes, and tags on linked Prospects.
+
 ### Filters Commands
 
 #### `dm filters`
@@ -1006,23 +953,23 @@ dm activity get act_abc123 --json
 
 #### `dm addresses autocomplete <query>`
 
-Return free, bounded address and normalized location suggestions.
+Return free, bounded DealMachine property-address suggestions with property IDs.
 
 ```bash
 dm addresses autocomplete "1200 Barton Springs" --state TX
-dm addresses autocomplete "saint louis 63101" --scope location --limit 5 --json
+dm addresses autocomplete "46 Joyce St" --limit 5 --json
 ```
 
-| Option                 | Description                                      |
-| ---------------------- | ------------------------------------------------ |
-| `--scope <scope>`      | `all`, `address`, or `location`, default `all`   |
-| `--state <code>`       | Prefer a two-letter state abbreviation           |
-| `--limit <n>`          | Maximum suggestions, default 5 and max 10        |
-| `--latitude <number>`  | Latitude for nearby ranking, requires longitude  |
-| `--longitude <number>` | Longitude for nearby ranking, requires latitude  |
-| `--json`               | Output raw JSON response                          |
+| Option                 | Description                                     |
+| ---------------------- | ----------------------------------------------- |
+| `--state <code>`       | Narrow to a two-letter state abbreviation       |
+| `--limit <n>`          | Maximum suggestions, default 5 and max 10       |
+| `--latitude <number>`  | Latitude for nearby ranking, requires longitude |
+| `--longitude <number>` | Longitude for nearby ranking, requires latitude |
+| `--json`               | Output raw JSON response                        |
 
-Autocomplete does not request fields, perform enrichment, or consume data credits.
+Each suggestion includes a DealMachine `property_id`. Autocomplete does not request fields, perform
+enrichment, or consume data credits.
 
 #### `dm addresses validate [address]`
 
@@ -1175,7 +1122,7 @@ dealmachine-cli/
 | Module          | Responsibility                                                                                                                                                                                                                                          |
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `lib/config.ts` | Manages `~/.dealmachine/config.json`. Enforces `0600` file permissions and `0700` directory permissions. Provides typed read/write/delete helpers.                                                                                                      |
-| `lib/client.ts` | Central HTTP client. Resolves the API base URL from env vars, config, or defaults. Attaches the `Authorization: Bearer` header and versioned `User-Agent`. Exits with a non-zero code on HTTP errors.                                                        |
+| `lib/client.ts` | Central HTTP client. Resolves the API base URL from env vars, config, or defaults. Attaches the `Authorization: Bearer` header and versioned `User-Agent`. Exits with a non-zero code on HTTP errors.                                                   |
 | `lib/api.ts`    | Device authorization flow implementation. Handles `POST /v1/auth/device/code` and `POST /v1/auth/device/token` with RFC 8628-compliant polling and error mapping. Also provides `verifyCredentials` for key validation.                                 |
 | `lib/output.ts` | All output formatting: `printTable` (auto-width columns), `printJson`, `printKeyValue`, `printPagination`, `printCredits`, `printTotals`, `printWarning`, `printHeader`. Also exports `parseRequestBody` which handles `--body`, `-f`, and stdin input. |
 

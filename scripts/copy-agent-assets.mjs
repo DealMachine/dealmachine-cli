@@ -6,7 +6,6 @@ const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const packageDir = path.resolve(scriptDir, '..');
 const playbookCandidates = [
   path.resolve(packageDir, 'playbook/PLAYBOOK.md'),
-  path.resolve(packageDir, '../playbooks/playbook/SKILL.md'),
 ];
 const outputDir = path.resolve(packageDir, 'dist/agents');
 const outputPath = path.join(outputDir, 'dealmachine-playbook.md');

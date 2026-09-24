@@ -22,6 +22,7 @@ interface FilterItem {
   filter_id: string;
   name: string;
   description: string | null;
+  usage_guidance?: string | null;
   type: string;
   source_type: string | null;
   group_id: string | null;
@@ -64,7 +65,9 @@ export async function filters(options: {
   const shouldSuggestNameLookup =
     data.data.length === 0 &&
     (!options.sourceType || options.sourceType === 'people') &&
-    /(^|[\s_-])(first[\s_-]?name|last[\s_-]?name|full[\s_-]?name|name)($|[\s_-])/i.test(options.search || '');
+    /(^|[\s_-])(first[\s_-]?name|last[\s_-]?name|full[\s_-]?name|name)($|[\s_-])/i.test(
+      options.search || ''
+    );
 
   if (options.json) {
     printJson(shouldSuggestNameLookup ? { ...data, suggestion: NAME_LOOKUP_SUGGESTION } : data);
