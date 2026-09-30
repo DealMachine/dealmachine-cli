@@ -1,0 +1,35 @@
+name: Track staging work in Factory
+
+on:
+  schedule:
+    - cron: '7,17,27,37,47,57 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+  id-token: write
+
+concurrency:
+  group: factory-staging-intake
+  cancel-in-progress: false
+
+jobs:
+  intake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Reconcile staging PRs and deployment receipts
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          FACTORY_INTAKE_MODE: observe
+          FACTORY_DEPLOYMENT_WORKFLOW: ''
+        run: node .github/scripts/factory-release-intake.mjs

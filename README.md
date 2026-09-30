@@ -1333,3 +1333,9 @@ node dist/index.js mycommand --json
 ### Used By
 
 The **Playbook** at `packages/playbooks/playbook/` uses `dm` commands to execute property intelligence workflows. The CLI is the primary interface through which the Playbook interacts with DealMachine data. Agents can load the bundled Playbook directly with `dm agents playbook`.
+
+## Factory staging work tracking
+
+The `factory-release-intake.yml` workflow is maintained on master and reads merged PRs from staging. It reports source and, where registered, the exact staging deployment to Factory Releases, reusing Linear links or creating one configurable pilot tracking issue. Scheduled reconciliation retries missed events without duplicate issues. It does not deploy this repository, run QA or approve production.
+
+The collector is generated from Factory. See [automatic staging intake](https://github.com/DealMachine/dealmachine-factory/blob/master/guides/staging-intake.md) for configuration, source ownership, regeneration and recovery. Staging remains the branch being checked even though the reporting workflow lives on master.
