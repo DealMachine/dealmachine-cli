@@ -18,3 +18,5 @@ For local API work, start the API in its owning checkout, then use `DM_API_URL=h
 The public agent plugin manifests and `skills/dealmachine` are retained in this repository. The hosted MCP server is a separate service. This extraction does not make MCP implementation or docs-site deployment part of CLI publication.
 
 From Factory, use `npm run setup:cli`, `npm run dev:cli`, `npm run cli:check` and `npm run cli:test:package`. Factory's `where cli` locates this checkout and `scripts cli` discovers its npm scripts. Read [releases](releases.md) before publishing.
+
+Every `master` push runs the production npm workflow. `npm run release:auto:dry-run` reads the public registry, chooses the version, validates both package archives and simulates publication without changing the registry. It restores the local version files after the run. Published packages record their exact source SHA; the automatic version does not create a source commit or tag.

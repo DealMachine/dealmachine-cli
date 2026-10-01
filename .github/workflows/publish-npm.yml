@@ -1,17 +1,8 @@
 name: Publish CLI to npm
 on:
+  push:
+    branches: [master]
   workflow_dispatch:
-    inputs:
-      version:
-        description: Exact version already committed on master
-        required: true
-        type: string
-      channel:
-        description: npm distribution tag
-        required: true
-        default: next
-        type: choice
-        options: [next, latest]
 permissions:
   contents: read
 concurrency:
@@ -19,24 +10,35 @@ concurrency:
   cancel-in-progress: false
 jobs:
   publish:
+    name: Publish production CLI packages
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
-    environment: npm
+    timeout-minutes: 30
+    environment:
+      name: npm
+      url: https://www.npmjs.com/package/dealmachine
     permissions:
       contents: read
       id-token: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
           registry-url: https://registry.npmjs.org
-      - name: Verify requested release
-        env:
-          RELEASE_VERSION: ${{ inputs.version }}
-        run: node --input-type=module -e "import fs from 'node:fs'; import assert from 'node:assert/strict'; assert.equal(JSON.parse(fs.readFileSync('package.json')).version, process.env.RELEASE_VERSION);"
+      - name: Verify trusted publishing tooling
+        run: node --input-type=module -e "import { execFileSync } from 'node:child_process'; import assert from 'node:assert/strict'; const v = execFileSync('npm', ['--version'], { encoding:'utf8' }).trim().split('.').map(Number); assert(v[0] > 11 || (v[0] === 11 && (v[1] > 5 || (v[1] === 5 && v[2] >= 1))), 'npm 11.5.1 or later is required for trusted publishing');"
       - run: npm ci
-      - name: Publish implementation and alias
-        env:
-          RELEASE_CHANNEL: ${{ inputs.channel }}
-        run: npm run release:publish -- --tag "$RELEASE_CHANNEL"
+      - name: Build, publish and verify implementation and alias
+        id: release
+        run: npm run release:auto:publish
+      - name: Retain release evidence and exact package archives
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cli-release-${{ github.sha }}-${{ github.run_attempt }}
+          path: artifacts/
+          if-no-files-found: ignore
+          retention-days: 90
