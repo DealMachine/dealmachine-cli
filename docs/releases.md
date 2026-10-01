@@ -4,7 +4,7 @@
 
 ## Automatic production publication
 
-Every push to this public repository's `master` runs `publish-npm.yml`, named **Publish CLI to npm**. The **Publish production CLI packages** job builds, checks, installs and publishes both packages to `latest`, then verifies their source SHA, integrity and distribution tags through the public registry. Factory observes that job for production build and release tracking. A failed or incomplete pair is not a successful deployment. Source merges, publication and any subsequent production regression are separate evidence.
+Every push to this public repository's `master` runs `publish-npm.yml`, named **Publish CLI to npm**. Its **Publish production CLI packages** job requires the GitHub Actions variable `PRODUCTION_DEPLOY_ENABLED` to equal `true`; an unset or false gate skips publication for both master pushes and manual dispatches. After authorized commissioning, the job builds, checks, installs and publishes both packages to `latest`, then verifies their source SHA, integrity and distribution tags through the public registry. Factory observes that job for production build and release tracking. A skipped job or failed or incomplete pair is not a successful deployment. Source merges, publication and any subsequent production regression are separate evidence.
 
 The committed stable version, initially `0.4.0`, sets the minimum release version. When that version or a later stable version already exists in either package, the workflow selects the next patch after the highest stable version. For example, a committed `0.4.0` with published `0.4.10` produces `0.4.11`. Set and commit a higher minor or major version with `release:version` when the change warrants it. Automatic publishing refuses a prerelease baseline.
 
@@ -28,9 +28,11 @@ For **both** npm package settings, configure a GitHub trusted publisher with the
 
 Create the GitHub `npm` environment and restrict deployment branches to `master`. For unattended publication on a reviewed master merge, this environment must not require a second manual review. Repository branch review and checks remain the source approval gate. Do not weaken an existing environment rule without the release owner's approval.
 
+Keep `PRODUCTION_DEPLOY_ENABLED` unset or false while landing source changes. After both trusted publishers and the environment are verified, the release owner must explicitly authorize setting this repository variable to `true`. That commissioning action enables future master pushes and manual recovery dispatches to publish. Neither merging this workflow nor setting up source delivery authorizes enabling the gate. Existing owner release commands retain their explicit release-authorization requirements.
+
 The job uses GitHub-hosted Ubuntu, Node 24, npm 11.5.1 or later, and `id-token: write`. No npm token belongs in GitHub secrets or chat. Trusted publication from this public repository supplies npm provenance. npm package-owner access is needed for the publisher setup, which cannot be verified from public package metadata. See [npm trusted publishing](https://docs.npmjs.com/trusted-publishers/).
 
-After setup and merge, recover the current `master` release with:
+After authorized setup, gate activation and merge, recover the current `master` release with:
 
 ```sh
 gh workflow run publish-npm.yml --repo DealMachine/dealmachine-cli --ref master
