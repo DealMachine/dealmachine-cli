@@ -1,6 +1,6 @@
 {
   "name": "@dealmachine/cli",
-  "version": "0.4.0-rc.4",
+  "version": "0.4.0",
   "description": "DealMachine CLI for property intelligence, people lookup, and enrichment through the public API",
   "author": "DealMachine",
   "license": "MIT",
@@ -38,6 +38,8 @@
     "release:pack": "node scripts/release.mjs pack",
     "release:dry-run": "node scripts/release.mjs dry-run",
     "release:publish": "node scripts/release.mjs publish",
+    "release:auto:dry-run": "node scripts/release-auto.mjs dry-run",
+    "release:auto:publish": "node scripts/release-auto.mjs publish",
     "prepack": "npm run build && npm run check:artifact"
   },
   "dependencies": {
