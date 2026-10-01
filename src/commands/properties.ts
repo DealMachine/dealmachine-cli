@@ -329,6 +329,7 @@ export async function propertiesExport(
     mobileOnly?: boolean;
     landlineOnly?: boolean;
     scrubDnc?: boolean;
+    activePhonesOnly?: boolean;
     contactAudience?: string;
     anchor?: string;
   } & SearchProtocolCliOptions
@@ -349,6 +350,7 @@ export async function propertiesExport(
   if (options.mobileOnly) requestBody.mobile_only = true;
   if (options.landlineOnly) requestBody.landline_only = true;
   if (options.scrubDnc) requestBody.scrub_dnc = true;
+  if (options.activePhonesOnly) requestBody.active_phones_only = true;
 
   const spinner = createSpinner('Exporting properties (this may take 30-60 seconds)...').start();
   const data = await apiRequest<ExportResponse>('/properties/export', {

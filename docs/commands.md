@@ -489,6 +489,7 @@ dm properties export --body '{"locations": [...]}' --mobile-only --json
 | `--mobile-only`     | Only include wireless phone numbers                         |
 | `--landline-only`   | Only include landline phone numbers                         |
 | `--scrub-dnc`       | Exclude contacts on the Do Not Call registry                |
+| `--active-phones-only` | Exclude phone numbers with inactive or unknown reported activity |
 | `--json`            | Output as JSON                                              |
 
 ---
@@ -1280,3 +1281,5 @@ node dist/index.js mycommand --json
 ### Used By
 
 The **Playbook** at `packages/playbooks/playbook/` uses `dm` commands to execute property intelligence workflows. The CLI is the primary interface through which the Playbook interacts with DealMachine data. Agents can load the bundled Playbook directly with `dm agents playbook`.
+
+Both `dm properties export` and `dm people export` accept `--active-phones-only`. It combines with existing phone-type and Do Not Call controls.

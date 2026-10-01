@@ -774,6 +774,10 @@ propertiesCmd
   .option('--mobile-only', 'Only include wireless phone numbers')
   .option('--landline-only', 'Only include landline phone numbers')
   .option('--scrub-dnc', 'Exclude contacts on the Do Not Call registry')
+  .option(
+    '--active-phones-only',
+    'Only include phone numbers with active reported phone activity (inactive/unknown excluded)'
+  )
   .option('--json', 'Output as JSON')
   .addHelpText(
     'after',
@@ -1164,6 +1168,10 @@ peopleCmd
   .option('--mobile-only', 'Only include wireless phone numbers')
   .option('--landline-only', 'Only include landline phone numbers')
   .option('--scrub-dnc', 'Exclude contacts on the Do Not Call registry')
+  .option(
+    '--active-phones-only',
+    'Only include phone numbers with active reported phone activity (inactive/unknown excluded)'
+  )
   .option('--json', 'Output as JSON')
   .addHelpText(
     'after',
