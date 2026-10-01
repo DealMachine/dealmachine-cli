@@ -13,7 +13,7 @@ npm run dev
 
 The [Command reference](commands.md) describes CLI usage and JSON output. Tests under `tests/` exercise request behavior and output. `test:package` installs both npm archives into an empty temporary project and checks the executable, module import and project-local Claude Code Playbook installation. It does not write to your personal agent setup or call the API.
 
-For local API work, start the API in its owning checkout, then use `DM_API_URL=http://localhost:3001/v1 npm start -- account`. Supply your development API key through the approved local environment or `dm login`; never commit it. Normal local build and tests need no credentials. Production Commands can read or mutate live data and consume credits, so choose an environment deliberately.
+For local API work, start the API in its owning checkout, then use `DM_API_URL=http://localhost:3001/v1 npm start -- account`. Supply your development API key through the approved local environment or `dm login`; never commit it. Normal local build and tests need no credentials. `npm run smoke:live` runs the built binary against a real API with `DM_API_URL` and `DM_API_KEY`, using only read-only, credit-free Commands and a temporary home directory; see the README's Testing section. Production Commands can read or mutate live data and consume credits, so choose an environment deliberately.
 
 The public agent plugin manifests and `skills/dealmachine` are retained in this repository. The hosted MCP server is a separate service. This extraction does not make MCP implementation or docs-site deployment part of CLI publication.
 
