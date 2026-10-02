@@ -20,3 +20,11 @@ The public agent plugin manifests and `skills/dealmachine` are retained in this 
 From Factory, use `npm run setup:cli`, `npm run dev:cli`, `npm run cli:check` and `npm run cli:test:package`. Factory's `where cli` locates this checkout and `scripts cli` discovers its npm scripts. Read [releases](releases.md) before publishing.
 
 Every `master` push runs the production npm workflow; its publishing job stays skipped until `PRODUCTION_DEPLOY_ENABLED` is explicitly set to `true` during authorized commissioning. `npm run release:auto:dry-run` reads the public registry, chooses the version, validates both package archives and simulates publication without changing the registry. It restores the local version files after the run. Published packages record their exact source SHA; the automatic version does not create a source commit or tag.
+
+## Service regression checks
+
+`test:package` is the candidate smoke suite. It tests both installed npm names, command discovery, module import, Playbook installation, list request behavior and the live-smoke protocol against a local HTTP fixture, including credit-free estimates and authentication rejection. It runs in PR CI and needs no API key.
+
+`npm run smoke:live` requires explicit `DM_API_URL` ending in `/v1` and `DM_API_KEY` for an approved QA workspace. It builds this candidate and runs real Commands for account identity, field discovery and a credit-free property estimate. It isolates configuration and the credential store, removes its temporary files and does not read your saved login. Missing configuration exits 2; a failed request or response assertion exits 1. It does not prove writes, paid data, OAuth consent, every Command or the published npm version.
+
+Factory registers these as `cli:test:package` and `cli:smoke:live`. Keep executable checks here and the shared regression case, reviewed source version, runner delivery and private credentials in Factory. When adding or changing a Command, assess both suites and update the relevant public behavior check alongside its acceptance criteria. A local fixture pass never substitutes for an authenticated live result.
