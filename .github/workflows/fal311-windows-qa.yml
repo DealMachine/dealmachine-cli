@@ -1,0 +1,66 @@
+name: FAL-311 exact-candidate Windows QA
+on:
+  push:
+    branches: [codex/fal311-windows-validation]
+permissions:
+  contents: read
+jobs:
+  windows-live:
+    if: github.repository == 'DealMachine/dealmachine-cli' && github.ref == 'refs/heads/codex/fal311-windows-validation'
+    runs-on: windows-latest
+    timeout-minutes: 12
+    environment: fal311-windows-qa
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 4cf9dac1325c23c6001fbfae9cb84ab1dfadfa01
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run check
+      - run: npm run test:package
+      - name: Run the approved live staging smoke with isolated caller settings
+        shell: pwsh
+        env:
+          DM_API_KEY: ${{ secrets.DM_API_KEY }}
+          DM_API_URL: https://api-staging.v2.dealmachine.com/v1
+        run: |
+          @'
+          const assert = require('node:assert/strict');
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const {spawnSync} = require('node:child_process');
+          (async () => {
+            const source = '4cf9dac1325c23c6001fbfae9cb84ab1dfadfa01';
+            assert.equal(spawnSync('git', ['rev-parse', 'HEAD'], {encoding:'utf8'}).stdout.trim(), source);
+            assert.ok(process.env.DM_API_KEY);
+            const health = async () => {
+              const r = await fetch('https://api-staging.v2.dealmachine.com/health', {redirect:'error', signal:AbortSignal.timeout(15000)});
+              assert.equal(r.status, 200); const b = await r.json();
+              assert.equal(b.status, 'ok'); assert.equal(b.sourceCommit, '512f1e55b8b4904068012dd46b5d9fd1fa5f1f6c');
+            };
+            await health();
+            const r = await fetch(process.env.DM_API_URL + '/account', {headers:{Authorization:'Bearer '+process.env.DM_API_KEY},redirect:'error',signal:AbortSignal.timeout(15000)});
+            assert.equal(r.status,200); const b=await r.json();
+            assert.equal(b.data.organization.id,403); assert.equal(b.data.user.authType,'api_key');
+            const caller=fs.mkdtempSync(path.join(process.env.RUNNER_TEMP,'fal311-caller-'));
+            const temporary=fs.mkdtempSync(path.join(process.env.RUNNER_TEMP,'fal311-tmp #'));
+            fs.mkdirSync(path.join(caller,'.dealmachine'));
+            const sentinel=path.join(caller,'.dealmachine','config.json'); fs.writeFileSync(sentinel,'preserve caller settings');
+            try {
+              const result=spawnSync(process.execPath,['scripts/smoke-live-coverage.mjs'],{encoding:'utf8',timeout:320000,
+                env:{PATH:process.env.PATH,SystemRoot:process.env.SystemRoot,HOME:caller,USERPROFILE:caller,TEMP:temporary,TMP:temporary,TMPDIR:temporary,DM_API_URL:process.env.DM_API_URL,DM_API_KEY:process.env.DM_API_KEY}});
+              const output=(result.stdout||'')+(result.stderr||'');
+              assert.ok(!output.includes(process.env.DM_API_KEY),'Credential appeared in output');
+              assert.equal(result.status,0,output); assert.match(output,/5 of 5 Commands/);
+              assert.equal(fs.readFileSync(sentinel,'utf8'),'preserve caller settings');
+              assert.deepEqual(fs.readdirSync(path.join(caller,'.dealmachine')),['config.json']);
+              assert.deepEqual(fs.readdirSync(temporary),[]);
+              await health();
+              console.log(output);
+              console.log(JSON.stringify({source,platform:process.platform,node:process.version,account:403,apiSource:'512f1e55b8b4904068012dd46b5d9fd1fa5f1f6c',callerSettingsUnchanged:true,temporaryCredentialsRemoved:true,status:'pass'}));
+            } finally { fs.rmSync(caller,{recursive:true,force:true}); fs.rmSync(temporary,{recursive:true,force:true}); }
+          })().catch(e=>{console.error(e.message);process.exitCode=1;});
+          '@ | node
