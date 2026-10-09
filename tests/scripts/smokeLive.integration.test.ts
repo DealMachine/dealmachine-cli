@@ -1,6 +1,6 @@
 import { execFile } from 'node:child_process';
 import { createServer } from 'node:http';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
@@ -28,24 +28,30 @@ const server = createServer(async (request, response) => {
 let target: string;
 let callerHome: string;
 let callerSentinel: string;
+let smokeTemporary: string;
 
 beforeAll(async () => {
   await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
   const address = server.address() as { port: number };
   target = `http://127.0.0.1:${address.port}/v1`;
   callerHome = await mkdtemp(join(tmpdir(), 'dm-smoke-caller-'));
-  callerSentinel = join(callerHome, 'settings-sentinel');
+  await mkdir(join(callerHome, '.dealmachine'));
+  callerSentinel = join(callerHome, '.dealmachine', 'config.json');
   await writeFile(callerSentinel, 'leave caller settings unchanged');
+  // Exercise URL-significant characters as well as spaces in the import path.
+  smokeTemporary = await mkdtemp(join(tmpdir(), 'dm-smoke-tmp #'));
 });
 afterAll(async () => {
   await new Promise<void>(resolve => server.close(() => resolve()));
   await rm(callerHome, { recursive: true, force: true });
+  await rm(smokeTemporary, { recursive: true, force: true });
 });
 
 async function smoke(apiUrl?: string, apiKey?: string) {
   try {
     const result = await execute(process.execPath, ['scripts/smoke-live-coverage.mjs'], {
       env: { PATH: process.env.PATH, HOME: callerHome, USERPROFILE: callerHome, ...(process.env.SystemRoot && { SystemRoot: process.env.SystemRoot }),
+        TMPDIR: smokeTemporary, TEMP: smokeTemporary, TMP: smokeTemporary,
         ...(apiUrl !== undefined && { DM_API_URL: apiUrl }), ...(apiKey !== undefined && { DM_API_KEY: apiKey }) },
       timeout: 15_000,
     });
@@ -72,6 +78,8 @@ describe('built CLI live smoke', () => {
     }
     expect(requests.at(-1)?.body).toMatchObject({ estimate_cost: true });
     expect(await readFile(callerSentinel, 'utf8')).toBe('leave caller settings unchanged');
+    expect(await readdir(join(callerHome, '.dealmachine'))).toEqual(['config.json']);
+    expect(await readdir(smokeTemporary)).toEqual([]);
   });
 
   it.each([['DM_API_URL', undefined, syntheticKey], ['DM_API_KEY', 'http://127.0.0.1/v1', undefined]])(

@@ -19,3 +19,18 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm run test:package
+  smoke-platforms:
+    name: Live smoke isolation (${{ matrix.os }}, Node ${{ matrix.node }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest]
+        node: [22, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - run: npm ci
+      - run: npm run build
+      - run: npx vitest run tests/scripts/smokeLive.test.ts tests/scripts/smokeLive.integration.test.ts

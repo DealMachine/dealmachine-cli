@@ -16,7 +16,7 @@ import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import {
   assertAccountShape,
   assertEstimateShape,
@@ -174,7 +174,7 @@ const childEnv = {
 
 function runCli(args) {
   return new Promise((resolve) => {
-    const child = spawn(process.execPath, ['--import', isolation, entrypoint, ...args], {
+    const child = spawn(process.execPath, ['--import', pathToFileURL(isolation).href, entrypoint, ...args], {
       cwd: tempHome,
       env: childEnv,
       stdio: ['ignore', 'pipe', 'pipe'],
