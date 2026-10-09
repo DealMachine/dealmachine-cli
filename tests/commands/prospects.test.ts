@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { prospectsArchive, prospectsReactivate } from '../../src/commands/prospects';
+import { prospectsArchive, prospectsReactivate } from '../../src/commands/prospects.js';
+
+vi.mock('../../src/lib/config.js', () => ({
+  readConfig: () => ({ apiKey: 'fixture-only', apiEnvironment: 'staging' }),
+}));
 
 class ExitSignal extends Error {
   constructor(public code: number) {
@@ -13,9 +17,7 @@ let log: ReturnType<typeof vi.spyOn>;
 let error: ReturnType<typeof vi.spyOn>;
 
 beforeEach(() => {
-  // The client reads its key and base URL from the environment before any
-  // config file, so no login or stored config is needed here.
-  vi.stubEnv('DM_API_KEY', 'dm_sk_live_test');
+  // Config and transport are isolated from local credentials and live services.
   vi.stubEnv('DM_API_URL', 'https://api.test/v1');
   fetchMock = vi.fn();
   vi.stubGlobal('fetch', fetchMock);
