@@ -4,6 +4,7 @@ import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promis
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
+import { pathToFileURL } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 const execute = promisify(execFile);
@@ -31,6 +32,7 @@ let callerSentinel: string;
 let smokeTemporary: string;
 
 beforeAll(async () => {
+  await execute(process.execPath, ['scripts/build.mjs'], { timeout: 60_000 });
   await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
   const address = server.address() as { port: number };
   target = `http://127.0.0.1:${address.port}/v1`;
@@ -40,16 +42,16 @@ beforeAll(async () => {
   await writeFile(callerSentinel, 'leave caller settings unchanged');
   // Exercise URL-significant characters as well as spaces in the import path.
   smokeTemporary = await mkdtemp(join(tmpdir(), 'dm-smoke-tmp #'));
-});
+}, 60_000);
 afterAll(async () => {
   await new Promise<void>(resolve => server.close(() => resolve()));
   await rm(callerHome, { recursive: true, force: true });
   await rm(smokeTemporary, { recursive: true, force: true });
 });
 
-async function smoke(apiUrl?: string, apiKey?: string) {
+async function smoke(apiUrl?: string, apiKey?: string, preload?: string) {
   try {
-    const result = await execute(process.execPath, ['scripts/smoke-live-coverage.mjs'], {
+    const result = await execute(process.execPath, [...(preload ? ['--import', pathToFileURL(preload).href] : []), 'scripts/smoke-live-coverage.mjs'], {
       env: { PATH: process.env.PATH, HOME: callerHome, USERPROFILE: callerHome, ...(process.env.SystemRoot && { SystemRoot: process.env.SystemRoot }),
         TMPDIR: smokeTemporary, TEMP: smokeTemporary, TMP: smokeTemporary,
         ...(apiUrl !== undefined && { DM_API_URL: apiUrl }), ...(apiKey !== undefined && { DM_API_KEY: apiKey }) },
@@ -62,6 +64,31 @@ async function smoke(apiUrl?: string, apiKey?: string) {
 }
 
 describe('built CLI live smoke', () => {
+  it('removes temporary credentials and closes the relay when config setup fails', async () => {
+    const preload = join(callerHome, 'fail-config-write.mjs');
+    await writeFile(preload, `
+      import fs from 'node:fs';
+      import { basename, dirname, join } from 'node:path';
+      import { syncBuiltinESMExports } from 'node:module';
+      const write = fs.writeFileSync;
+      fs.writeFileSync = (file, ...args) => {
+        if (basename(String(file)) === 'config.json' && fs.existsSync(join(dirname(String(file)), 'api-key.enc'))) {
+          throw new Error('injected config setup failure ${syntheticKey}');
+        }
+        return write(file, ...args);
+      };
+      syncBuiltinESMExports();
+    `);
+    requests.length = 0;
+    const result = await smoke(target, syntheticKey, preload);
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('injected config setup failure');
+    expect(await readdir(smokeTemporary)).toEqual([]);
+    expect(result.stdout + result.stderr).not.toContain(syntheticKey);
+    expect(await readFile(callerSentinel, 'utf8')).toBe('leave caller settings unchanged');
+    expect(requests).toHaveLength(0);
+  });
+
   it('exercises all read-only Commands through the relay and leaves caller settings unchanged', async () => {
     requests.length = 0;
     const result = await smoke(target, syntheticKey);

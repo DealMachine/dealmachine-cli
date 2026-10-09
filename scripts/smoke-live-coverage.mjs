@@ -136,139 +136,143 @@ const relay = http.createServer(async (req, res) => {
   }
 });
 
-await new Promise((resolve) => relay.listen(0, '127.0.0.1', resolve));
-const relayUrl = `http://127.0.0.1:${relay.address().port}`;
-
-// ---------------------------------------------------------------------------
-// Isolated CLI environment
-// ---------------------------------------------------------------------------
-
-const tempHome = fs.mkdtempSync(path.join(os.tmpdir(), 'dm-live-smoke-'));
-seedIsolatedConfig(tempHome, apiKey);
-// Preserve the existing smoke's explicit OS credential-store isolation. HOME
-// alone does not determine os.homedir on every supported platform.
-const isolation = path.join(tempHome, 'isolation.mjs');
-fs.writeFileSync(isolation, [
-  "import os from 'node:os';",
-  "import childProcess from 'node:child_process';",
-  "import { syncBuiltinESMExports } from 'node:module';",
-  `os.homedir = () => ${JSON.stringify(tempHome)};`,
-  "childProcess.execFileSync = () => { throw new Error('Personal credential store disabled during smoke'); };",
-  'syncBuiltinESMExports();',
-].join('\n'), { mode: 0o600 });
-
-const childEnv = {
-  PATH: process.env.PATH ?? '',
-  HOME: tempHome,
-  USERPROFILE: tempHome,
-  TMPDIR: process.env.TMPDIR ?? os.tmpdir(),
-  ...(process.env.SystemRoot && { SystemRoot: process.env.SystemRoot }),
-  ...(process.env.TEMP && { TEMP: process.env.TEMP }),
-  ...(process.env.TMP && { TMP: process.env.TMP }),
-  DM_API_URL: relayUrl,
-  DM_QUIET: '1',
-  CI: 'true',
-  NO_COLOR: '1',
-  FORCE_COLOR: '0',
-};
-
-function runCli(args) {
-  return new Promise((resolve) => {
-    const child = spawn(process.execPath, ['--import', pathToFileURL(isolation).href, entrypoint, ...args], {
-      cwd: tempHome,
-      env: childEnv,
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
-    let stdout = '';
-    let stderr = '';
-    let timedOut = false;
-    child.stdout.on('data', (chunk) => (stdout += chunk));
-    child.stderr.on('data', (chunk) => (stderr += chunk));
-    const timer = setTimeout(() => {
-      timedOut = true;
-      child.kill('SIGKILL');
-    }, COMMAND_TIMEOUT_MS);
-    child.on('close', (code) => {
-      clearTimeout(timer);
-      resolve({ code, stdout, stderr, timedOut });
-    });
-  });
-}
-
-// ---------------------------------------------------------------------------
-// Commands
-// ---------------------------------------------------------------------------
-
-const estimateBody = JSON.stringify({
-  locations: [{ type: 'zip_code', code: '78704' }],
-  pagination: { page: 1, per_page: 1 },
-});
-
-const steps = [
-  {
-    name: 'dm --version',
-    args: ['--version'],
-    expectRequests: [],
-    check: ({ stdout }) => {
-      const version = stdout.trim();
-      if (version !== packageVersion) throw new Error(`printed "${version}", expected ${packageVersion}`);
-      return `version ${version}, no network request`;
-    },
-  },
-  {
-    name: 'dm account --json',
-    args: ['account', '--json'],
-    expectRequests: [['GET', '/account']],
-    check: ({ stdout }) => assertAccountShape(parseJsonOutput(stdout)),
-  },
-  {
-    name: 'dm filters --source-type properties --per-page 5 --json',
-    args: ['filters', '--source-type', 'properties', '--per-page', '5', '--json'],
-    expectRequests: [['GET', '/filters']],
-    check: ({ stdout }) => assertFiltersShape(parseJsonOutput(stdout)),
-  },
-  {
-    name: 'dm fields --source-type properties --per-page 5 --json',
-    args: ['fields', '--source-type', 'properties', '--per-page', '5', '--json'],
-    expectRequests: [['GET', '/fields']],
-    check: ({ stdout }) => assertFieldsShape(parseJsonOutput(stdout)),
-  },
-  {
-    name: 'dm properties search --estimate-cost --json (ZIP 78704)',
-    args: ['properties', 'search', '--body', estimateBody, '--estimate-cost', '--json'],
-    expectRequests: [['POST', '/properties/search']],
-    check: ({ stdout }) => assertEstimateShape(parseJsonOutput(stdout)),
-  },
-];
-
-function checkRequests(seen, expected) {
-  const refused = seen.find((request) => request.refused);
-  if (refused) throw new Error(`relay ${refused.status}: ${refused.refused}`);
-  const summary = seen.map((r) => `${r.method} ${new URL(r.path, relayUrl).pathname}`);
-  const wanted = expected.map(([method, pathname]) => `${method} ${pathname}`);
-  if (summary.join(',') !== wanted.join(',')) {
-    throw new Error(`requests were [${summary.join(', ')}], expected [${wanted.join(', ')}]`);
-  }
-  for (const request of seen) {
-    if (request.source !== 'cli') {
-      throw new Error(`x-dealmachine-source was ${JSON.stringify(request.source ?? null)}, expected "cli"`);
-    }
-    if (!String(request.userAgent ?? '').startsWith(`dm-cli/${packageVersion}`)) {
-      throw new Error(`user-agent was ${JSON.stringify(request.userAgent ?? null)}`);
-    }
-    if (!request.hasAuthorization) throw new Error('request had no Authorization header');
-    if (request.status !== 200) throw new Error(`API returned ${request.status}`);
-  }
-}
-
-function firstLine(text) {
-  return String(text).trim().split('\n').find(Boolean)?.slice(0, 200) ?? '';
-}
-
-say(`Live CLI smoke: dm ${packageVersion} against ${targetBase}`);
-let failures = 0;
-
+let tempHome;
 try {
+  await new Promise((resolve, reject) => {
+    relay.once('error', reject);
+    relay.listen(0, '127.0.0.1', resolve);
+  });
+  const relayUrl = `http://127.0.0.1:${relay.address().port}`;
+
+  // ---------------------------------------------------------------------------
+  // Isolated CLI environment
+  // ---------------------------------------------------------------------------
+
+  tempHome = fs.mkdtempSync(path.join(os.tmpdir(), 'dm-live-smoke-'));
+  seedIsolatedConfig(tempHome, apiKey);
+  // Preserve the existing smoke's explicit OS credential-store isolation. HOME
+  // alone does not determine os.homedir on every supported platform.
+  const isolation = path.join(tempHome, 'isolation.mjs');
+  fs.writeFileSync(isolation, [
+    "import os from 'node:os';",
+    "import childProcess from 'node:child_process';",
+    "import { syncBuiltinESMExports } from 'node:module';",
+    `os.homedir = () => ${JSON.stringify(tempHome)};`,
+    "childProcess.execFileSync = () => { throw new Error('Personal credential store disabled during smoke'); };",
+    'syncBuiltinESMExports();',
+  ].join('\n'), { mode: 0o600 });
+
+  const childEnv = {
+    PATH: process.env.PATH ?? '',
+    HOME: tempHome,
+    USERPROFILE: tempHome,
+    TMPDIR: process.env.TMPDIR ?? os.tmpdir(),
+    ...(process.env.SystemRoot && { SystemRoot: process.env.SystemRoot }),
+    ...(process.env.TEMP && { TEMP: process.env.TEMP }),
+    ...(process.env.TMP && { TMP: process.env.TMP }),
+    DM_API_URL: relayUrl,
+    DM_QUIET: '1',
+    CI: 'true',
+    NO_COLOR: '1',
+    FORCE_COLOR: '0',
+  };
+
+  function runCli(args) {
+    return new Promise((resolve) => {
+      const child = spawn(process.execPath, ['--import', pathToFileURL(isolation).href, entrypoint, ...args], {
+        cwd: tempHome,
+        env: childEnv,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+      let stdout = '';
+      let stderr = '';
+      let timedOut = false;
+      child.stdout.on('data', (chunk) => (stdout += chunk));
+      child.stderr.on('data', (chunk) => (stderr += chunk));
+      const timer = setTimeout(() => {
+        timedOut = true;
+        child.kill('SIGKILL');
+      }, COMMAND_TIMEOUT_MS);
+      child.on('close', (code) => {
+        clearTimeout(timer);
+        resolve({ code, stdout, stderr, timedOut });
+      });
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Commands
+  // ---------------------------------------------------------------------------
+
+  const estimateBody = JSON.stringify({
+    locations: [{ type: 'zip_code', code: '78704' }],
+    pagination: { page: 1, per_page: 1 },
+  });
+
+  const steps = [
+    {
+      name: 'dm --version',
+      args: ['--version'],
+      expectRequests: [],
+      check: ({ stdout }) => {
+        const version = stdout.trim();
+        if (version !== packageVersion) throw new Error(`printed "${version}", expected ${packageVersion}`);
+        return `version ${version}, no network request`;
+      },
+    },
+    {
+      name: 'dm account --json',
+      args: ['account', '--json'],
+      expectRequests: [['GET', '/account']],
+      check: ({ stdout }) => assertAccountShape(parseJsonOutput(stdout)),
+    },
+    {
+      name: 'dm filters --source-type properties --per-page 5 --json',
+      args: ['filters', '--source-type', 'properties', '--per-page', '5', '--json'],
+      expectRequests: [['GET', '/filters']],
+      check: ({ stdout }) => assertFiltersShape(parseJsonOutput(stdout)),
+    },
+    {
+      name: 'dm fields --source-type properties --per-page 5 --json',
+      args: ['fields', '--source-type', 'properties', '--per-page', '5', '--json'],
+      expectRequests: [['GET', '/fields']],
+      check: ({ stdout }) => assertFieldsShape(parseJsonOutput(stdout)),
+    },
+    {
+      name: 'dm properties search --estimate-cost --json (ZIP 78704)',
+      args: ['properties', 'search', '--body', estimateBody, '--estimate-cost', '--json'],
+      expectRequests: [['POST', '/properties/search']],
+      check: ({ stdout }) => assertEstimateShape(parseJsonOutput(stdout)),
+    },
+  ];
+
+  function checkRequests(seen, expected) {
+    const refused = seen.find((request) => request.refused);
+    if (refused) throw new Error(`relay ${refused.status}: ${refused.refused}`);
+    const summary = seen.map((r) => `${r.method} ${new URL(r.path, relayUrl).pathname}`);
+    const wanted = expected.map(([method, pathname]) => `${method} ${pathname}`);
+    if (summary.join(',') !== wanted.join(',')) {
+      throw new Error(`requests were [${summary.join(', ')}], expected [${wanted.join(', ')}]`);
+    }
+    for (const request of seen) {
+      if (request.source !== 'cli') {
+        throw new Error(`x-dealmachine-source was ${JSON.stringify(request.source ?? null)}, expected "cli"`);
+      }
+      if (!String(request.userAgent ?? '').startsWith(`dm-cli/${packageVersion}`)) {
+        throw new Error(`user-agent was ${JSON.stringify(request.userAgent ?? null)}`);
+      }
+      if (!request.hasAuthorization) throw new Error('request had no Authorization header');
+      if (request.status !== 200) throw new Error(`API returned ${request.status}`);
+    }
+  }
+
+  function firstLine(text) {
+    return String(text).trim().split('\n').find(Boolean)?.slice(0, 200) ?? '';
+  }
+
+  say(`Live CLI smoke: dm ${packageVersion} against ${targetBase}`);
+  let failures = 0;
+
   for (const step of steps) {
     const before = requests.length;
     const result = await runCli(step.args);
@@ -289,17 +293,21 @@ try {
     if (!passed) failures += 1;
     say(`${passed ? 'PASS' : 'FAIL'} ${step.name}: ${reason}`);
   }
-} finally {
-  relay.close();
-  fs.rmSync(tempHome, { recursive: true, force: true });
-}
 
-const headerNote = requests.length > 0 && requests.every((r) => r.source === 'cli')
-  ? `; all ${requests.length} API requests carried x-dealmachine-source: cli`
-  : '';
-say(
-  failures === 0
-    ? `Live smoke passed: ${steps.length} of ${steps.length} Commands${headerNote}.`
-    : `Live smoke failed: ${failures} of ${steps.length} Commands failed.`
-);
-process.exit(failures === 0 ? 0 : 1);
+  const headerNote = requests.length > 0 && requests.every((r) => r.source === 'cli')
+    ? `; all ${requests.length} API requests carried x-dealmachine-source: cli`
+    : '';
+  say(
+    failures === 0
+      ? `Live smoke passed: ${steps.length} of ${steps.length} Commands${headerNote}.`
+      : `Live smoke failed: ${failures} of ${steps.length} Commands failed.`
+  );
+  process.exitCode = failures === 0 ? 0 : 1;
+} catch (error) {
+  console.error(redact(`Live smoke failed: ${error instanceof Error ? error.message : String(error)}`, secrets));
+  process.exitCode = 1;
+} finally {
+  relay.closeAllConnections();
+  await new Promise((resolve) => relay.close(resolve));
+  if (tempHome) fs.rmSync(tempHome, { recursive: true, force: true });
+}

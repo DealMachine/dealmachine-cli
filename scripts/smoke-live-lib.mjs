@@ -127,6 +127,8 @@ export function assertAccountShape(json) {
   if (!isObject(data.user) || !['api_key', 'oauth'].includes(data.user.authType)) {
     fail('missing data.user.authType');
   }
+  // The API account contract includes plan even though the CLI's display type only lists the fields it renders.
+  // https://api.docs.dealmachine.com/api-reference/account/get-account
   if (!isObject(data.plan)) fail('missing data.plan');
   return `organization ${data.organization.id}, auth ${data.user.authType}`;
 }
