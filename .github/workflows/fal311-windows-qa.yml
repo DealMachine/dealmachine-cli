@@ -15,7 +15,7 @@ jobs:
         run: git config --global core.autocrlf false
       - uses: actions/checkout@v4
         with:
-          ref: 4cf9dac1325c23c6001fbfae9cb84ab1dfadfa01
+          ref: 32365d9dfad95d6dee467c6103217a6b6465e3d8
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
@@ -35,7 +35,7 @@ jobs:
           const path = require('node:path');
           const {spawnSync} = require('node:child_process');
           (async () => {
-            const source = '4cf9dac1325c23c6001fbfae9cb84ab1dfadfa01';
+            const source = '32365d9dfad95d6dee467c6103217a6b6465e3d8';
             assert.equal(spawnSync('git', ['rev-parse', 'HEAD'], {encoding:'utf8'}).stdout.trim(), source);
             assert.ok(process.env.DM_API_KEY);
             const health = async () => {
