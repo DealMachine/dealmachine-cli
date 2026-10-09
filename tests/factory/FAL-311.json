@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "issue": "FAL-311",
+  "criteria": [
+    {
+      "id": "AC-1",
+      "text": "** Scenario 1: Missing credentials\nGIVEN either DM_API_URL or DM_API_KEY is missing,\nWHEN I run the live smoke command,\nTHEN it exits with code 1 and names the missing variable,\nAND it does not print the API key."
+    },
+    {
+      "id": "AC-2",
+      "text": "** Scenario 2: Read-only live commands\nGIVEN DM_API_URL and DM_API_KEY are set,\nWHEN I run the live smoke command,\nTHEN it runs the built CLI version, account, filters, fields and estimated-cost property search checks,\nAND the local relay blocks requests outside the approved read-only list and checks the source header, User-Agent and authentication."
+    },
+    {
+      "id": "AC-3",
+      "text": "** Scenario 3: Isolated credentials\nGIVEN I run the live smoke command,\nWHEN it prepares CLI configuration,\nTHEN it uses a temporary home and does not access the operator's Keychain or saved CLI settings.\n---\nFiled by Alma because this work had no Linear ticket. Source: [dealmachine-cli #25](<https://github.com/DealMachine/dealmachine-cli/pull/25>)"
+    }
+  ],
+  "checks": [
+    {
+      "title": "CLI missing credentials and isolation regression",
+      "surface": "cli",
+      "repository": "cli",
+      "preconditions": [
+        "Run the reviewed CLI candidate with the approved Factory executor."
+      ],
+      "steps": [
+        "Run the CLI check suite, including the built-CLI smoke regressions."
+      ],
+      "expected": "Missing environment variables exit 1 without printing secrets or making requests; temporary credential setup, failure cleanup and caller settings isolation pass.",
+      "criterionId": "AC-1",
+      "execution": "automated",
+      "automation": {
+        "taskId": "cli:check"
+      }
+    },
+    {
+      "title": "Built CLI against read-only staging API",
+      "surface": "cli",
+      "repository": "cli",
+      "preconditions": [
+        "Run the reviewed CLI candidate with the approved Factory executor."
+      ],
+      "steps": [
+        "Run the expanded live smoke on the dedicated staging fixture."
+      ],
+      "expected": "Five built Commands pass, four allowlisted API requests pass header and authentication checks, cost estimation charges no credits, and temporary credentials are removed.",
+      "criterionId": "AC-2",
+      "execution": "automated",
+      "automation": {
+        "taskId": "cli:smoke:live:coverage"
+      }
+    },
+    {
+      "title": "CLI missing credentials and isolation regression",
+      "surface": "cli",
+      "repository": "cli",
+      "preconditions": [
+        "Run the reviewed CLI candidate with the approved Factory executor."
+      ],
+      "steps": [
+        "Run the CLI check suite, including the built-CLI smoke regressions."
+      ],
+      "expected": "Missing environment variables exit 1 without printing secrets or making requests; temporary credential setup, failure cleanup and caller settings isolation pass.",
+      "criterionId": "AC-3",
+      "execution": "automated",
+      "automation": {
+        "taskId": "cli:check"
+      }
+    }
+  ]
+}

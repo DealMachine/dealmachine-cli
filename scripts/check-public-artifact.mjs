@@ -1,3 +1,4 @@
+import { runNpm } from './run-npm.mjs';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
@@ -6,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 
 const cli = fileURLToPath(new URL('..', import.meta.url));
 const run = (command, args, cwd = cli) => execFileSync(command, args, { cwd, encoding: 'utf8' });
-const [artifact] = JSON.parse(run('npm', ['pack', '--dry-run', '--ignore-scripts', '--json'], cli));
+const [artifact] = JSON.parse(runNpm(['pack', '--dry-run', '--ignore-scripts', '--json'], { cwd: cli, encoding: 'utf8' }));
 for (const file of artifact.files) {
   assert.doesNotMatch(
     file.path,

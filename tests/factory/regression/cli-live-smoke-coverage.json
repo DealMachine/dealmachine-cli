@@ -1,0 +1,26 @@
+[
+  {
+    "id": "cli-live-smoke-coverage",
+    "revision": 1,
+    "spec": {
+      "title": "CLI expanded live smoke and Windows credential isolation",
+      "surface": "cli",
+      "repository": "cli",
+      "preconditions": [
+        "Use the exact reviewed FAL-311 PR candidate with npm ci and a supported Node version.",
+        "The QA operator has an approved staging API URL ending in /v1 and a dedicated QA API key through the approved private runtime; never paste it into evidence.",
+        "Run on macOS and Windows; preserve the caller's existing CLI settings and OS credential store. No production target, account write or paid lookup is permitted."
+      ],
+      "steps": [
+        "Run npm run check and npm run test:package. Verify the built-CLI integration tests and the unchanged package baseline pass.",
+        "Without DM_API_URL, then without DM_API_KEY, run npm run smoke:live:coverage. Each attempt exits 1, names the missing variable, makes no API request and prints no key.",
+        "On the approved staging target, run npm run smoke:live:coverage on macOS and Windows. Verify all five Commands pass: version, account, filters, fields and property-search cost estimate; request source and User-Agent checks pass and no records or charged credits are returned.",
+        "Confirm the caller's saved CLI configuration and OS credential-store entries are unchanged and the smoke's temporary directory is removed. Record the operating system, Node version, source commit, target environment and redacted command results."
+      ],
+      "expected": "Every command, isolation and cleanup assertion passes on the exact candidate on both operating systems. Missing configuration refuses before network use. Only four read-only API requests occur; property search uses estimate_cost. Live proof stays separate from the synthetic integration test and original three-Command Factory baseline. Any missing platform, credential or failed step remains unverified.",
+      "criterionId": "FAL-311-AC-1-3",
+      "execution": "human-required",
+      "executionReason": "Factory runs the registered staging smoke with the approved dedicated credential. Full macOS and Windows isolation proof comes from the authorized local coding session or an approved platform runner; Factory's Linux result alone does not verify both platforms."
+    }
+  }
+]
