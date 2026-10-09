@@ -11,6 +11,8 @@ jobs:
     timeout-minutes: 12
     environment: fal311-windows-qa
     steps:
+      - name: Preserve repository line endings for artifact validation
+        run: git config --global core.autocrlf false
       - uses: actions/checkout@v4
         with:
           ref: 4cf9dac1325c23c6001fbfae9cb84ab1dfadfa01
