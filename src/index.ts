@@ -1699,12 +1699,29 @@ Examples:
   });
 
 prospectsCmd
-  .command('archive <id>')
-  .description('Archive a prospect (ends its mail and keeps its lists and opportunities)')
+  .command('archive [id]')
+  .description(
+    'Archive a prospect, or the prospects for up to 1,000 records with --ids (ends their mail and keeps their lists)'
+  )
+  .option('--ids <csv>', 'Comma-separated record IDs to archive in bulk, e.g. prop_123,prop_456')
+  .option('--record-type <type>', 'With --ids: property (default), person, or company')
   .option('--no-cascade', 'Skip optional archive cleanup; mail always ends and deals stay open')
   .option('--json', 'Output as JSON')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  dm prospects archive prospect_8812
+  dm prospects archive --ids prop_12345,prop_67890
+  dm prospects archive --ids person_777,person_778 --record-type person`
+  )
   .action(async (id, options) => {
-    await prospectsArchive(id, { json: options.json, noCascade: options.cascade === false });
+    await prospectsArchive(id, {
+      json: options.json,
+      noCascade: options.cascade === false,
+      ids: options.ids,
+      recordType: options.recordType,
+    });
   });
 
 prospectsCmd
@@ -1718,11 +1735,17 @@ prospectsCmd
   });
 
 prospectsCmd
-  .command('reactivate <id>')
-  .description('Return an archived prospect to active')
+  .command('reactivate [id]')
+  .description('Return an archived prospect to active, or many by record ID with --ids')
+  .option('--ids <csv>', 'Comma-separated record IDs to restore in bulk, e.g. prop_123,prop_456')
+  .option('--record-type <type>', 'With --ids: property (default), person, or company')
   .option('--json', 'Output as JSON')
   .action(async (id, options) => {
-    await prospectsReactivate(id, options);
+    await prospectsReactivate(id, {
+      json: options.json,
+      ids: options.ids,
+      recordType: options.recordType,
+    });
   });
 
 prospectsCmd

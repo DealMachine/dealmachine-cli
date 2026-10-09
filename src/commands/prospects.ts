@@ -238,10 +238,74 @@ async function setLifecycle(
   console.log();
 }
 
-export async function prospectsArchive(
-  id: string,
-  options: { json?: boolean; noCascade?: boolean }
+type BulkMoveOptions = {
+  /** Comma-separated record IDs (prop_123, person_456, or bare numbers), up to 1,000. */
+  ids?: string;
+  recordType?: string;
+  json?: boolean;
+  noCascade?: boolean;
+};
+
+/**
+ * The bulk form of a lifecycle move: `PATCH /prospects` over record IDs, the
+ * same call the web selection action bar makes. Records that are not
+ * prospects, and prospects already in the lifecycle, are skipped and counted.
+ */
+async function moveProspectsBulk(
+  lifecycle: 'active' | 'archived',
+  options: BulkMoveOptions & { ids: string }
 ) {
+  const recordIds = splitIds(options.ids);
+  if (recordIds.length === 0) {
+    console.error(chalk.red('Error: --ids needs at least one record ID'));
+    process.exit(1);
+  }
+  const spinner = createSpinner(
+    lifecycle === 'archived' ? 'Archiving prospects...' : 'Restoring prospects...'
+  ).start();
+  const data = await apiRequest<{
+    data: {
+      lifecycle: string;
+      changed: number;
+      already_in_lifecycle: number;
+      not_prospects: number;
+      changed_record_ids: string[];
+    };
+  }>('/prospects', {
+    method: 'PATCH',
+    body: {
+      record_ids: recordIds,
+      lifecycle,
+      ...(options.recordType && { record_type: options.recordType }),
+      ...(options.noCascade ? { cascade: false } : {}),
+    },
+  });
+  spinner.stop();
+  if (options.json) {
+    printJson(data);
+    return;
+  }
+  const d = data.data;
+  printHeader(lifecycle === 'archived' ? 'Prospects Archived' : 'Prospects Restored');
+  printKeyValue({
+    [lifecycle === 'archived' ? 'Archived' : 'Restored']: String(d.changed),
+    [lifecycle === 'archived' ? 'Already archived' : 'Already active']: String(
+      d.already_in_lifecycle
+    ),
+    'Not prospects': String(d.not_prospects),
+  });
+  console.log();
+}
+
+export async function prospectsArchive(id: string | undefined, options: BulkMoveOptions) {
+  if (options.ids) {
+    await moveProspectsBulk('archived', { ...options, ids: options.ids });
+    return;
+  }
+  if (!id) {
+    console.error(chalk.red('Error: pass a prospect ID, or --ids with record IDs to archive in bulk'));
+    process.exit(1);
+  }
   await setLifecycle(id, 'archived', options);
 }
 
@@ -263,7 +327,15 @@ export async function prospectsRemove(
   console.log();
 }
 
-export async function prospectsReactivate(id: string, options: { json?: boolean }) {
+export async function prospectsReactivate(id: string | undefined, options: BulkMoveOptions) {
+  if (options.ids) {
+    await moveProspectsBulk('active', { ...options, ids: options.ids });
+    return;
+  }
+  if (!id) {
+    console.error(chalk.red('Error: pass a prospect ID, or --ids with record IDs to restore in bulk'));
+    process.exit(1);
+  }
   await setLifecycle(id, 'active', options);
 }
 
