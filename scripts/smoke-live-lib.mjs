@@ -1,5 +1,5 @@
 /**
- * Helpers for the live CLI smoke (scripts/smoke-live.mjs).
+ * Helpers for the live CLI smoke (scripts/smoke-live-coverage.mjs).
  *
  * Kept separate so the credential seeding, request allowlist, redaction and
  * response shape checks can be unit tested without contacting an API.
@@ -122,9 +122,9 @@ export function assertAccountShape(json) {
   const data = isObject(json) ? json.data : undefined;
   if (!isObject(data)) fail('missing data object');
   if (!isObject(data.organization)) fail('missing data.organization');
-  if (typeof data.organization.id !== 'number') fail('data.organization.id is not a number');
+  if (!Number.isFinite(data.organization.id) || data.organization.id <= 0) fail('data.organization.id is not a positive number');
   if (typeof data.organization.name !== 'string') fail('data.organization.name is not a string');
-  if (!isObject(data.user) || typeof data.user.authType !== 'string') {
+  if (!isObject(data.user) || !['api_key', 'oauth'].includes(data.user.authType)) {
     fail('missing data.user.authType');
   }
   if (!isObject(data.plan)) fail('missing data.plan');
@@ -160,11 +160,11 @@ export function assertEstimateShape(json) {
   if ('data' in json || 'credits' in json) fail('response contains records or charged credits');
   const estimate = json.estimated_credits;
   if (!isObject(estimate)) fail('missing estimated_credits');
-  if (typeof estimate.this_page !== 'number') fail('estimated_credits.this_page is not a number');
-  if (typeof estimate.total_all_pages !== 'number') {
-    fail('estimated_credits.total_all_pages is not a number');
+  if (!Number.isFinite(estimate.this_page) || estimate.this_page < 0) fail('estimated_credits.this_page is not a nonnegative number');
+  if (!Number.isFinite(estimate.total_all_pages) || estimate.total_all_pages < 0) {
+    fail('estimated_credits.total_all_pages is not a nonnegative number');
   }
-  if (!isObject(json.totals) || typeof json.totals.properties !== 'number') {
+  if (!isObject(json.totals) || !Number.isFinite(json.totals.properties) || json.totals.properties < 0) {
     fail('missing totals.properties');
   }
   checkPagination(json.pagination);

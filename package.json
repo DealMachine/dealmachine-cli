@@ -41,7 +41,8 @@
     "release:publish": "node scripts/release.mjs publish",
     "release:auto:dry-run": "node scripts/release-auto.mjs dry-run",
     "release:auto:publish": "node scripts/release-auto.mjs publish",
-    "prepack": "npm run build && npm run check:artifact"
+    "prepack": "npm run build && npm run check:artifact",
+    "smoke:live:coverage": "npm run build && node scripts/smoke-live-coverage.mjs"
   },
   "dependencies": {
     "chalk": "^5.3.0",

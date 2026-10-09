@@ -1200,10 +1200,10 @@ published or the documentation deployment reaches production. The scenario catal
 ```bash
 npm test           # Unit and behavioral tests with a mocked API (no credentials)
 npm run check      # Typecheck, build, tests and the public artifact guard
-DM_API_URL=https://api-staging.v2.dealmachine.com/v1 DM_API_KEY=<key> npm run smoke:live
+DM_API_URL=https://api-staging.v2.dealmachine.com/v1 DM_API_KEY=<key> npm run smoke:live:coverage
 ```
 
-`npm test` never calls an API. `smoke:live` builds the CLI and runs the real `dm` binary against
+`npm test` never calls an API. `smoke:live:coverage` builds the CLI and runs the real `dm` binary against
 the API named by `DM_API_URL`, authenticated with `DM_API_KEY`. Both are required; the key is never
 printed. Each Command runs with a temporary home directory, so the smoke never reads or changes
 your own `dm login` credentials. It runs only read-only, credit-free Commands:
@@ -1220,6 +1220,8 @@ Requests pass through a local relay that refuses anything outside those read-onl
 (property search must carry `estimate_cost: true`) and confirms each request sends
 `X-DealMachine-Source: cli` and the CLI `User-Agent`. The smoke prints one `PASS` or `FAIL` line per
 Command and exits 0 only when every Command passes.
+
+`npm run smoke:live` retains the existing three-Command Factory baseline for account identity, field discovery and a credit-free estimate. The expanded coverage command is separate so that the registered baseline and its packed-install checks keep their existing behavior.
 
 ### Standalone Binary
 

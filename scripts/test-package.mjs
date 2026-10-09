@@ -59,9 +59,14 @@ try {
   const server = createServer(async (request, response) => {
     const chunks = [];
     for await (const chunk of request) chunks.push(chunk);
-    requests.push({ method: request.method, path: request.url, body: JSON.parse(Buffer.concat(chunks).toString()), headers: request.headers });
-    response.writeHead(200, { 'Content-Type': 'application/json' });
-    response.end(JSON.stringify({ data: {} }));
+    const body = Buffer.concat(chunks).toString();
+    requests.push({ method: request.method, path: request.url, body: body ? JSON.parse(body) : null, headers: request.headers });
+    const estimate = { totals: { properties: 12, people: 0 }, estimated_credits: { this_page: 1, total_all_pages: 12 } };
+    const account = { data: { organization: { id: 123, name: 'Package fixture' }, user: { id: null, authType: 'api_key' } } };
+    const fields = { data: [{ field_id: 'property_address', name: 'Address' }] };
+    const result = request.url === '/v1/account' ? account : request.url.startsWith('/v1/fields') ? fields : request.url === '/v1/properties/search' ? estimate : { data: {} };
+    response.writeHead(request.headers.authorization === 'Bearer rejected-fixture' ? 401 : 200, { 'Content-Type': 'application/json' });
+    response.end(JSON.stringify(result));
   });
   server.listen(0, '127.0.0.1');
   await once(server, 'listening');
@@ -88,6 +93,22 @@ try {
         assert.equal(request.headers['x-dealmachine-source'], 'cli');
       }
     }
+    // Exercise the same live-smoke entry point with the packed consumer's
+    // protocol fixture. This proves command wiring, not deployed API behavior.
+    const liveEnvironment = { ...process.env, DM_API_URL: `http://127.0.0.1:${server.address().port}/v1`, DM_API_KEY: 'dm-package-test' };
+    const smoke = await execute(process.execPath, [join(root, 'scripts/smoke-live.mjs')], { cwd: temporary, env: liveEnvironment, timeout: 60000 });
+    assert.match(smoke.stdout, /PASS: CLI account/);
+    assert.deepEqual(requests.map(request => [request.method, request.path]), [
+      ['GET', '/v1/account'], ['GET', '/v1/fields?source_type=properties&per_page=1'], ['POST', '/v1/properties/search'],
+    ]);
+    assert.equal(requests.at(-1).body.estimate_cost, true, 'The live smoke must never purchase search results');
+    assert.equal(requests.at(-1).body.pagination.per_page, 1);
+    for (const request of requests) assert.equal(request.headers.authorization, 'Bearer dm-package-test');
+    requests.length = 0;
+    await assert.rejects(execute(process.execPath, [join(root, 'scripts/smoke-live.mjs')], {
+      cwd: temporary, env: { ...liveEnvironment, DM_API_KEY: 'rejected-fixture' }, timeout: 60000,
+    }), error => error.code === 1 && /account authentication/.test(error.stderr) && !error.stderr.includes('rejected-fixture'));
+    assert.equal(requests.length, 1, 'Authentication rejection must stop before further API requests');
   } finally {
     await new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
   }
