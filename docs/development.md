@@ -9,7 +9,7 @@ npm run test:package
 npm run dev
 ```
 
-`build` creates JavaScript, declarations and source maps in `dist`, cleaning old output first. It bundles `playbook/PLAYBOOK.md` for offline agent onboarding. `dev` watches TypeScript; run `build` once before the watcher and again after changing the Playbook. From a second terminal, run `npm start -- --help` or `npm start -- agents playbook`.
+`build` creates JavaScript, declarations and source maps in `dist`, cleaning old output first. It runs the installed TypeScript compiler through Node so it also works on Windows without relying on a shell shim. It bundles `playbook/PLAYBOOK.md` for offline agent onboarding. `dev` watches TypeScript; run `build` once before the watcher and again after changing the Playbook. From a second terminal, run `npm start -- --help` or `npm start -- agents playbook`.
 
 The [Command reference](commands.md) describes CLI usage and JSON output. Tests under `tests/` exercise request behavior and output. `test:package` installs both npm archives into an empty temporary project and checks the executable, module import and project-local Claude Code Playbook installation. It does not write to your personal agent setup or call the API.
 
