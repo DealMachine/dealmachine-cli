@@ -20,7 +20,7 @@
       "expected": "Every command, isolation and cleanup assertion passes on the exact candidate on both operating systems. Missing configuration refuses before network use. Only four read-only API requests occur; property search uses estimate_cost. Live proof stays separate from the synthetic integration test and original three-Command Factory baseline. Any missing platform, credential or failed step remains unverified.",
       "criterionId": "FAL-311-AC-1-3",
       "execution": "human-required",
-      "executionReason": "The expanded command is not a commissioned Factory automated task. Human QA must verify its dedicated staging credential and Windows OS-store isolation before adoption."
+      "executionReason": "Factory runs the registered staging smoke with the approved dedicated credential. Full macOS and Windows isolation proof comes from the authorized local coding session or an approved platform runner; Factory's Linux result alone does not verify both platforms."
     }
   }
 ]
