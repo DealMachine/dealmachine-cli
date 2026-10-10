@@ -17,3 +17,9 @@ Production npm publication is disabled until the release owner explicitly enable
 Call CLI capabilities Commands, API capabilities Endpoints, and distributable agent instructions Playbooks. Write concrete copy and do not add em dashes to docs or comments.
 
 For new or changed Commands, assess the candidate package smoke and read-only live smoke described in docs/development.md. Update useful coverage in the same PR and identify uncovered behavior explicitly. Keep the corresponding Factory regression case and runner source version coordinated; unit tests alone do not prove the deployed service contract.
+
+## Test design
+
+Follow [Factory's testing policy](https://github.com/DealMachine/dealmachine-factory/blob/master/guides/testing.md). Start with end-to-end behavior and reuse its existing test owner. For this repository, prefer executable request, route, protocol or integration tests that exercise real owned code. Visible app journeys use Factory's E2E workflow before implementation when possible. Add a unit test only when it is fast, deterministic and protects a distinct useful contract, such as API validation, money, permissions, parsing or serialization.
+
+Avoid duplicate scenarios, mock-only behavior, private call counts and source checks that merely freeze an implementation. Keep independent public, security, storage and release contracts. A fix needs one regression that fails without the repair. During separately authorized cleanup, record the removed test's actual proof and its surviving owner, run the baseline, and obtain an independent preservation review. Ordinary feature work preserves existing coverage; this policy grants no unattended deletion authority.
