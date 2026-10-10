@@ -29,6 +29,7 @@
     "eval:cold-start:published": "node scripts/eval-cold-start.mjs published",
     "eval:cold-start:deployed": "node scripts/eval-cold-start.mjs deployed",
     "eval:cold-start:all": "npm run build && node scripts/eval-cold-start.mjs all",
+    "smoke:live:coverage": "npm run build && node scripts/smoke-live-coverage.mjs",
     "prepublishOnly": "npm run check",
     "typecheck": "tsc --noEmit --composite false --incremental false",
     "check": "npm run typecheck && npm run build && npm test && npm run check:artifact",
