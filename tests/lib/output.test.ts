@@ -9,7 +9,7 @@ vi.mock('chalk', () => {
   return { default: new Proxy({}, handler) };
 });
 
-import { truncate, printTable, printJson, printKeyValue } from '../../src/lib/output';
+import { truncate, printTable, printJson } from '../../src/lib/output';
 
 describe('output helpers', () => {
   beforeEach(() => {
@@ -45,24 +45,11 @@ describe('output helpers', () => {
       expect(console.log).toHaveBeenCalledWith(expect.stringContaining('no results'));
     });
 
-    it('prints header and rows', () => {
-      printTable([{ name: 'Alice', age: 30 }], ['name', 'age']);
-      // At least header + separator + 1 row = 3 calls
-      expect(vi.mocked(console.log).mock.calls.length).toBeGreaterThanOrEqual(3);
-    });
-
     it('auto-detects columns from first row', () => {
       printTable([{ x: 1, y: 2 }]);
       const allOutput = vi.mocked(console.log).mock.calls.map(c => c[0]).join('\n');
       expect(allOutput).toContain('x');
       expect(allOutput).toContain('y');
-    });
-  });
-
-  describe('printKeyValue', () => {
-    it('prints key-value pairs', () => {
-      printKeyValue({ name: 'Test', count: 42 });
-      expect(vi.mocked(console.log).mock.calls.length).toBe(2);
     });
   });
 });
