@@ -1642,7 +1642,7 @@ prospectsCmd
   .option('--source <source>', 'Filter by source, e.g. driving, import, api, cli, or mcp')
   .option('--favorites', 'Only starred prospects')
   .option('--list <listId>', 'Only members of this list')
-  .option('--tag <tagId>', 'Only prospects with this tag, e.g. tag_5')
+  .option('--tag <tagId>', 'Only prospects with this tag, e.g. tag_31')
   .option('--search <term>', 'Address words for properties; name or city for people')
   .option('--sort <order>', 'newest (default) or oldest')
   .option('-p, --page <n>', 'Page number')
@@ -1654,7 +1654,7 @@ prospectsCmd
 Examples:
   dm prospects list
   dm prospects list --source driving
-  dm prospects list --lifecycle opportunity --tag tag_1
+  dm prospects list --lifecycle opportunity --tag tag_31
   dm prospects list --record-type person --search "austin" --json`
   )
   .action(async (options) => {

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { prospectsArchive, prospectsReactivate } from '../../src/commands/prospects.js';
+import { prospectsArchive, prospectsReactivate, prospectsGet } from '../../src/commands/prospects.js';
 
 vi.mock('../../src/lib/config.js', () => ({
   readConfig: () => ({ apiKey: 'fixture-only', apiEnvironment: 'staging' }),
@@ -132,5 +132,25 @@ describe('dm prospects reactivate', () => {
       record_type: 'person',
     });
     expect(log.mock.calls.flat().join('\n')).toContain('Prospects Restored');
+  });
+});
+
+// Public output remains usable with both the additive field and older API responses.
+describe('dm prospects status display', () => {
+  it.each([
+    ['do_not_contact', 'Do Not Contact'],
+    ['follow_up', 'Follow up'],
+    [null, 'None'],
+    [undefined, 'None'],
+  ])('shows status %s on the prospect detail', async (status, label) => {
+    fetchMock.mockResolvedValue(jsonResponse(200, { data: {
+      id: 'prospect_8812', record_type: 'property', record_id: 'prop_1',
+      lifecycle: 'active', favorite: false, status, source: 'api',
+      record: { address: '123 Main St' }, tags: [], created_at: '2026-10-13T00:00:00Z',
+    } }));
+    await prospectsGet('prospect_8812', {});
+    const printed = log.mock.calls.flat().join('\n');
+    expect(printed).toContain('Status');
+    expect(printed).toContain(label);
   });
 });

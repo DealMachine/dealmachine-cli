@@ -26,6 +26,8 @@ type Prospect = {
   record_id: string;
   lifecycle: string;
   favorite: boolean;
+  /** Read only: hot, warm, cold, follow_up, do_not_contact, or null. */
+  status?: string | null;
   source: string;
   record: {
     address?: string | null;
@@ -56,16 +58,29 @@ function recordLabel(prospect: Prospect): string {
   return place ? `${main} (${place})` : String(main);
 }
 
+const STATUS_LABELS: Record<string, string> = {
+  hot: 'Hot',
+  warm: 'Warm',
+  cold: 'Cold',
+  follow_up: 'Follow up',
+  do_not_contact: 'Do Not Contact',
+};
+
+function statusLabel(prospect: Prospect): string {
+  return prospect.status ? (STATUS_LABELS[prospect.status] ?? prospect.status) : 'None';
+}
+
 function printProspectRows(prospects: Prospect[]) {
   const rows = prospects.map((p) => ({
     id: p.id,
     record: truncate(recordLabel(p), 44),
     lifecycle: p.lifecycle,
     fav: p.favorite ? '★' : '',
+    status: statusLabel(p),
     tags: truncate(p.tags.map((tag) => tag.name).join(', ') || '—', 24),
     added: formatDate(p.created_at),
   }));
-  printTable(rows, ['id', 'record', 'lifecycle', 'fav', 'tags', 'added']);
+  printTable(rows, ['id', 'record', 'lifecycle', 'fav', 'status', 'tags', 'added']);
 }
 
 function printPagination(p: Pagination) {
@@ -138,6 +153,7 @@ export async function prospectsGet(id: string, options: { json?: boolean }): Pro
     Type: p.record_type,
     Lifecycle: p.lifecycle,
     Favorite: p.favorite ? 'Yes' : 'No',
+    Status: statusLabel(p),
     Source: p.source,
     Tags: p.tags.map((tag) => `${tag.name} (${tag.id})`).join(', ') || '—',
     Notes: String(p.note_count ?? 0),
@@ -173,6 +189,7 @@ export async function prospectsGetByRecord(options: {
     Type: p.record_type,
     Lifecycle: p.lifecycle,
     Favorite: p.favorite ? 'Yes' : 'No',
+    Status: statusLabel(p),
     Source: p.source,
     Tags: p.tags.map((tag) => `${tag.name} (${tag.id})`).join(', ') || '—',
     Added: formatDate(p.created_at),
