@@ -314,7 +314,7 @@ export async function listsBuild(
     'Progress': `${l.progress}%`,
   });
   console.log();
-  console.log(chalk.dim('  Poll with: dm lists get ' + listId));
+  console.log(chalk.dim('  Poll with: dm lists get ' + l.list_id));
   console.log();
 }
 
@@ -366,7 +366,7 @@ export async function listsImport(
     'Progress': `${l.progress}%`,
   });
   console.log();
-  console.log(chalk.dim('  Poll with: dm lists get ' + listId));
+  console.log(chalk.dim('  Poll with: dm lists get ' + l.list_id));
   console.log();
 }
 

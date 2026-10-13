@@ -31,8 +31,8 @@ vi.mock('../../src/lib/output.js', () => ({
 }));
 
 import { printJson, printTable } from '../../src/lib/output.js';
-import { peopleGet, peopleIds, peopleSearch } from '../../src/commands/people.js';
-import { propertiesGet, propertiesIds, propertiesSearch } from '../../src/commands/properties.js';
+import { peopleGet, peopleIds, peopleSearch, peopleExport } from '../../src/commands/people.js';
+import { propertiesGet, propertiesIds, propertiesSearch, propertiesExport } from '../../src/commands/properties.js';
 import {
   enrichAddress,
   enrichApn,
@@ -570,4 +570,23 @@ describe('CLI phone carrier (DEA-2144)', () => {
     expect(output).not.toContain('AT&T Mobility');
   });
 
+});
+
+
+describe.each([
+  ['people', peopleExport],
+  ['properties', propertiesExport],
+] as const)('%s active phone exports', (source, exportRecords) => {
+  it.each([true, undefined])('preserves active phone selection %s at the API boundary', async (activePhonesOnly) => {
+    mockParseRequestBody.mockResolvedValue({ fields: ['phone_1'] });
+    await exportRecords({ activePhonesOnly, json: true });
+    expect(mockApiRequest).toHaveBeenCalledWith(`/${source}/export`, {
+      method: 'POST',
+      body: {
+        fields: ['phone_1'],
+        ...(source === 'properties' ? { anchor: 'person', contact_audience: 'owners' } : {}),
+        ...(activePhonesOnly ? { active_phones_only: true } : {}),
+      },
+    });
+  });
 });

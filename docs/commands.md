@@ -489,6 +489,7 @@ dm properties export --body '{"locations": [...]}' --mobile-only --json
 | `--mobile-only`     | Only include wireless phone numbers                         |
 | `--landline-only`   | Only include landline phone numbers                         |
 | `--scrub-dnc`       | Exclude contacts on the Do Not Call registry                |
+| `--active-phones-only` | Exclude phone numbers with inactive or unknown reported activity |
 | `--json`            | Output as JSON                                              |
 
 ---
@@ -1280,3 +1281,21 @@ node dist/index.js mycommand --json
 ### Used By
 
 The **Playbook** at `packages/playbooks/playbook/` uses `dm` commands to execute property intelligence workflows. The CLI is the primary interface through which the Playbook interacts with DealMachine data. Agents can load the bundled Playbook directly with `dm agents playbook`.
+
+Both `dm properties export` and `dm people export` accept `--active-phones-only`. It combines with existing phone-type and Do Not Call controls.
+
+## Bulk prospect lifecycle
+
+Archive or restore prospects by their underlying record IDs:
+
+```bash
+dm prospects archive --ids prop_12345,prop_67890 --json
+dm prospects reactivate --ids prop_12345,prop_67890 --json
+dm prospects archive --ids person_777,person_778 --record-type person --no-cascade
+```
+
+Each call accepts up to 1,000 record IDs and uses `PATCH /v1/prospects`.
+The summary counts changed prospects, prospects already in that lifecycle, and
+records that are not prospects. Bulk archive ends mail and keeps list membership;
+it closes open opportunities unless `--no-cascade` is supplied. A positional
+`prospect_...` ID continues to use the single-prospect operation.

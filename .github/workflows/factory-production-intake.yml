@@ -1,0 +1,37 @@
+name: Track production builds in Factory
+on:
+  workflow_run:
+    workflows: ["Publish CLI to npm"]
+    types: [requested, in_progress, completed]
+    branches: [master]
+  schedule:
+    - cron: '3,13,23,33,43,53 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+  id-token: write
+concurrency:
+  group: factory-production-intake
+  cancel-in-progress: false
+jobs:
+  intake:
+    if: github.ref == 'refs/heads/master' && vars.FACTORY_PRODUCTION_INTAKE_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Record production build and deployment evidence
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          FACTORY_PRODUCTION_WORKFLOW: "publish-npm.yml"
+          FACTORY_PRODUCTION_JOB: "Publish production CLI packages"
+          FACTORY_RUN_ID: ${{ github.event.workflow_run.id || '' }}
+        run: node .github/scripts/factory-production-intake.mjs

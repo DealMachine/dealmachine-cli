@@ -12,4 +12,14 @@ Use the existing behavioral tests for changed Commands. Run `npm run check` and 
 
 Set versions with `npm run release:version -- <version>` so the canonical package, alias and lockfile agree. A release requires an explicit channel and approved release scope. Publishing the CLI does not deploy the API, MCP server, docs site or Next app.
 
+Production npm publication is disabled until the release owner explicitly enables the GitHub `PRODUCTION_DEPLOY_ENABLED` variable after configuring npm trusted publishing. While disabled, master pushes and manual dispatches skip the publishing job. After commissioning, merging into `master` automatically publishes both packages. The committed stable version is a release floor; the workflow selects the next available patch and records the source SHA in both packages. Treat a master merge as a release handoff once publication is enabled. Source delivery alone never authorizes changing the gate or npm publisher settings. See the release guide for retry, integrity and setup requirements.
+
 Call CLI capabilities Commands, API capabilities Endpoints, and distributable agent instructions Playbooks. Write concrete copy and do not add em dashes to docs or comments.
+
+For new or changed Commands, assess the candidate package smoke and read-only live smoke described in docs/development.md. Update useful coverage in the same PR and identify uncovered behavior explicitly. Keep the corresponding Factory regression case and runner source version coordinated; unit tests alone do not prove the deployed service contract.
+
+## Test design
+
+Follow [Factory's testing policy](https://github.com/DealMachine/dealmachine-factory/blob/master/guides/testing.md). Start with end-to-end behavior and reuse its existing test owner. For this repository, prefer executable request, route, protocol or integration tests that exercise real owned code. Visible app journeys use Factory's E2E workflow before implementation when possible. Add a unit test only when it is fast, deterministic and protects a distinct useful contract, such as API validation, money, permissions, parsing or serialization.
+
+Avoid duplicate scenarios, mock-only behavior, private call counts and source checks that merely freeze an implementation. Keep independent public, security, storage and release contracts. A fix needs one regression that fails without the repair. During separately authorized cleanup, record the removed test's actual proof and its surviving owner, run the baseline, and obtain an independent preservation review. Ordinary feature work preserves existing coverage; this policy grants no unattended deletion authority.

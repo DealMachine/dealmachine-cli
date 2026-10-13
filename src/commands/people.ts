@@ -353,6 +353,7 @@ export async function peopleExport(
     mobileOnly?: boolean;
     landlineOnly?: boolean;
     scrubDnc?: boolean;
+    activePhonesOnly?: boolean;
   } & SearchProtocolCliOptions
 ): Promise<void> {
   const requestBody = await parseRequestBody(options);
@@ -364,6 +365,7 @@ export async function peopleExport(
   if (options.mobileOnly) requestBody.mobile_only = true;
   if (options.landlineOnly) requestBody.landline_only = true;
   if (options.scrubDnc) requestBody.scrub_dnc = true;
+  if (options.activePhonesOnly) requestBody.active_phones_only = true;
 
   const spinner = createSpinner('Exporting people (this may take 30-60 seconds)...').start();
   const data = await apiRequest<ExportResponse>('/people/export', {

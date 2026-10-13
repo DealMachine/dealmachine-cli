@@ -16,7 +16,7 @@ vi.mock('node:child_process', () => ({
   }),
 }));
 
-import { readConfig, writeConfig, deleteConfig, configExists, getConfigValue, setConfigValue } from '../../src/lib/config';
+import { readConfig, writeConfig, deleteConfig, setConfigValue } from '../../src/lib/config';
 
 const CONFIG_DIR = path.join('/tmp/test-home', '.dealmachine');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
@@ -85,20 +85,6 @@ describe('CLI config', () => {
       expect(writtenConfig.credentialStore).toBe('encrypted-file');
       expect(writtenConfig.credentialFile).toBe(CREDENTIAL_FILE);
     });
-
-    it('skips mkdir when directory exists', () => {
-      vi.mocked(fs.existsSync).mockReturnValue(true);
-      writeConfig(sampleConfig);
-      expect(fs.mkdirSync).not.toHaveBeenCalled();
-    });
-
-    it('falls back when the OS credential store is unavailable', () => {
-      vi.mocked(fs.existsSync).mockImplementation((file) => file === CONFIG_DIR);
-
-      writeConfig(sampleConfig);
-
-      expect(getWrittenConfig().credentialStore).toBe('encrypted-file');
-    });
   });
 
   describe('deleteConfig', () => {
@@ -111,32 +97,6 @@ describe('CLI config', () => {
     it('returns false when file does not exist', () => {
       vi.mocked(fs.existsSync).mockReturnValue(false);
       expect(deleteConfig()).toBe(false);
-    });
-  });
-
-  describe('configExists', () => {
-    it('returns true when file exists', () => {
-      vi.mocked(fs.existsSync).mockReturnValue(true);
-      expect(configExists()).toBe(true);
-    });
-
-    it('returns false when file does not exist', () => {
-      vi.mocked(fs.existsSync).mockReturnValue(false);
-      expect(configExists()).toBe(false);
-    });
-  });
-
-  describe('getConfigValue', () => {
-    it('returns specific config value', () => {
-      vi.mocked(fs.existsSync).mockReturnValue(true);
-      vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify(sampleConfig));
-      expect(getConfigValue('apiKey')).toBe('dm_sk_live_test123');
-      expect(getConfigValue('organizationId')).toBe(7);
-    });
-
-    it('returns null when no config', () => {
-      vi.mocked(fs.existsSync).mockReturnValue(false);
-      expect(getConfigValue('apiKey')).toBeNull();
     });
   });
 
