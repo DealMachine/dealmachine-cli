@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "issue": "FW-1829",
+  "criteria": [
+    {
+      "id": "AC-1",
+      "text": "GIVEN a person uses the CLI with an API key, WHEN they sign in with that key or ask the CLI to verify who they are signed in as, THEN the request that checks the key tells the API it came from the CLI, so it is counted as CLI use and not as plain API use."
+    }
+  ],
+  "checks": [
+    {
+      "title": "CLI key check tells the API it came from the CLI",
+      "surface": "cli",
+      "repository": "cli",
+      "preconditions": [
+        "Run the reviewed CLI candidate with the approved Factory executor. No API credentials are needed."
+      ],
+      "steps": [
+        "Run the CLI check suite. The CLI API helpers test in tests/lib/api.test.ts checks a key and inspects the request that was sent."
+      ],
+      "expected": "The request that checks a key carries the CLI source marker alongside the key and the CLI version, so the API counts it as CLI use.",
+      "criterionId": "AC-1",
+      "execution": "automated",
+      "automation": {
+        "taskId": "cli:check"
+      }
+    }
+  ]
+}
