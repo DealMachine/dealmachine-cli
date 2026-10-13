@@ -141,6 +141,8 @@ export async function verifyCredentials(apiKey: string): Promise<{
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'User-Agent': CLI_USER_AGENT,
+        // Counts this check as CLI use in the API's request log.
+        'X-DealMachine-Source': 'cli',
       },
     });
 
