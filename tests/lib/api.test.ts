@@ -37,6 +37,7 @@ describe('CLI API helpers', () => {
       headers: {
         'Authorization': 'Bearer dm_sk_live_test',
         'User-Agent': `dm-cli/${manifest.version}`,
+        'X-DealMachine-Source': 'cli',
       },
     });
   });
