@@ -2216,8 +2216,10 @@ Examples:
   dm mail campaigns create --body '{"name":"Austin Owners","property_ids":[123],"address_to":"owner","steps":[{"design_prompt":"Professional postcard"}]}'
 
 Note: Set "launch": true in body to send immediately, or leave as draft.
+Set "accepts_properties": true to keep adding properties after the campaign starts.
 Leave out property_ids, contact_ids and list_ids to save a Ready campaign with no properties
-and no charge. Add properties later with: dm mail campaigns add-properties <id>`
+and no charge; it always accepts properties. Add properties later with:
+dm mail campaigns add-properties <id>`
   )
   .action(async (options) => {
     await mailCampaignsCreate(options);

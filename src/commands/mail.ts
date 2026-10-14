@@ -123,6 +123,8 @@ interface AddPropertiesEstimateResponse {
     auto_reload_enabled: boolean;
     can_afford: boolean;
     requires_auto_reload: boolean;
+    /** True for a paused campaign: nothing is charged today; pieces are charged as they go out after it resumes. */
+    charged_on_resume?: boolean;
     steps: unknown[];
   };
 }
@@ -664,9 +666,13 @@ function printAddEstimate(e: AddPropertiesEstimateResponse['data']): void {
     'Auto-reload': e.auto_reload_enabled ? 'on' : 'off',
     'Can Afford': e.can_afford ? 'yes' : 'no',
   });
+  if (e.charged_on_resume) {
+    console.log();
+    console.log(chalk.dim('  This campaign is paused. Nothing is charged today; each piece is charged as it goes out after you resume it.'));
+  }
   if (e.requires_auto_reload) {
     console.log();
-    console.log(chalk.yellow('  This campaign has later mail. Turn on auto-reload before adding properties.'));
+    console.log(chalk.yellow('  This campaign has more than one step, a repeating step, or a delay. Turn on auto-reload before adding properties.'));
   }
   console.log(chalk.dim('  Properties already in the campaign or skipped are not charged.'));
 }
@@ -730,6 +736,8 @@ export async function mailCampaignsAddProperties(
       console.error(
         `No properties were added. Review the charge due today, get the user's approval, then rerun dm mail campaigns add-properties ${id} with --yes.`
       );
+      // Nothing was added, so a script must not read this as success.
+      process.exitCode = 1;
       return;
     }
 

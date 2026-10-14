@@ -706,10 +706,10 @@ dm mail campaigns end <id> --yes                          # Permanent
 
 - Statuses: `draft`, `ready`, `active`, `paused`, `ended`. Completed and Cancelled show as `ended`.
 - Ask the user owner or resident before adding. Each added property starts at step 1.
-- Always run `estimate-add` first and tell the user the charge due today (`pay_today_cents`) and later. Pass `--yes` only after they approve. Without `--yes`, `add-properties` returns the estimate and adds nothing.
+- Always run `estimate-add` first and tell the user the charge due today (`pay_today_cents`) and later. Pass `--yes` only after they approve. Without `--yes`, `add-properties` returns the estimate, adds nothing and exits with code 1. For a paused campaign nothing is charged today; pieces are charged as they go out after it resumes.
 - Report `added_count` and every skipped property with its reason.
 - Ending is permanent: unsent mail stops and the campaign can never be resumed or added to. Confirm with the user before `end --yes`.
-- Create a campaign with no audience to save it as Ready with no charge, then add properties later.
+- Create a campaign with no audience to save it as Ready with no charge, then add properties later. To add properties later to a campaign created with an audience, include `"accepts_properties": true` when you create it.
 
 ### Activity (FREE)
 

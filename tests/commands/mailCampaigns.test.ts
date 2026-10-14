@@ -142,6 +142,8 @@ describe('dm mail campaigns', () => {
       expect.objectContaining({ added: false, confirmation_required: true, data: estimate.data })
     );
     expect(errorSpy.mock.calls.join(' ')).toContain('No properties were added');
+    // Nothing was added, so scripts and agents see a failure, as end does.
+    expect(process.exitCode).toBe(1);
   });
 
   it('adds immediately with --yes', async () => {
