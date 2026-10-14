@@ -695,6 +695,22 @@ dm lists export <list_id> --anchor person
 dm lists export <list_id> --fields estimated_value,owner_full_name --anchor property
 ```
 
+### Mail Campaigns (adding properties costs mail credits)
+
+```bash
+dm mail campaigns list --accepting-properties --json      # Campaigns that can take properties now
+dm mail campaigns estimate-add <id> --count 25 --json     # Charge due today and later (FREE)
+dm mail campaigns add-properties <id> --property-ids 101 102 --recipient owner --yes --json
+dm mail campaigns end <id> --yes                          # Permanent
+```
+
+- Statuses: `draft`, `ready`, `active`, `paused`, `ended`. Completed and Cancelled show as `ended`.
+- Ask the user owner or resident before adding. Each added property starts at step 1.
+- Always run `estimate-add` first and tell the user the charge due today (`pay_today_cents`) and later. Pass `--yes` only after they approve. Without `--yes`, `add-properties` returns the estimate and adds nothing.
+- Report `added_count` and every skipped property with its reason.
+- Ending is permanent: unsent mail stops and the campaign can never be resumed or added to. Confirm with the user before `end --yes`.
+- Create a campaign with no audience to save it as Ready with no charge, then add properties later.
+
 ### Activity (FREE)
 
 ```bash

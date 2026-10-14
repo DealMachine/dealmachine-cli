@@ -25,6 +25,7 @@ This package has **zero** `@dealmachine/*` dependencies -- it is a self-containe
   - [Comps](#comps-commands) -- comparable property analysis
   - [Lists](#lists-commands) -- `search`, `create`, `get`, `update`, `delete`, `build`, `import`, `items`, `add`, `remove`, `export`
   - [Driving](#driving-commands) -- `list`, `get`
+  - [Mail campaigns](#mail-campaign-commands) -- `list`, `create`, `get`, `add-properties`, `estimate-add`, `pause`, `resume`, `end`
   - [Filters](#filters-commands) -- list available search filters
   - [Fields](#fields-commands) -- list available data fields
   - [Activity](#activity-commands) -- `search`, `get`
@@ -860,6 +861,34 @@ dm prospects list --source driving
 ```
 
 Drive history is read-only. Use `dm prospects` for lifecycle, notes, and tags on linked Prospects.
+
+### Mail Campaign Commands
+
+A mail campaign is a sequence of mail steps. Campaigns created through the API or the app's campaign creator keep accepting properties while they are Ready, Active or Paused. Each added property starts at step 1 on its own schedule; properties already in the campaign are not changed.
+
+Statuses are `draft`, `ready`, `active`, `paused` and `ended`. Ready means nothing is queued to mail. Completed and Cancelled campaigns from before this change show as `ended`; `--status completed` and `--status cancelled` still work as filters.
+
+```bash
+dm mail campaigns list --accepting-properties          # Campaigns you can add properties to now
+dm mail campaigns list --status ended --json
+dm mail campaigns create --body '{"name":"Seller follow-up","steps":[{"design_id":"des_123"}]}'   # No audience: saved as Ready, no charge
+dm mail campaigns estimate-add camp_abc123 --count 25
+dm mail campaigns add-properties camp_abc123 --property-ids 101 102 --recipient owner
+dm mail campaigns add-properties camp_abc123 --property-ids 101,102 --recipient resident --yes --json
+dm mail campaigns pause camp_abc123
+dm mail campaigns end camp_abc123
+```
+
+| Command | What it does |
+| --- | --- |
+| `add-properties <id> --property-ids <ids...> --recipient owner\|resident` | Shows the charge due today and later, asks for confirmation, then adds up to 5,000 properties. Prints the added count and each skipped property with its reason (already in the campaign, Do Not Contact, no mailing address, duplicate mailing address, archived prospect, not found). |
+| `estimate-add <id> --count <n>` | Shows what adding `n` properties costs: charged today, charged later, pieces per property and whether your wallet covers it. Nothing is added. |
+| `end <id>` | Ends the campaign permanently after a confirmation. Unsent mail stops; the campaign cannot be paused, resumed or added to. Mail already printed still delivers. |
+| `list --accepting-properties` | Lists only campaigns that properties can be added to now. |
+
+`--recipient owner` mails the owner's mailing address; `--recipient resident` mails the current resident at the property address. Pieces going out today are charged when added; later pieces are charged as they go out.
+
+`add-properties` and `end` need `--yes` when run by an agent, a script, with `--json`, or without a terminal. Without it, `add-properties` prints the estimate and adds nothing, and `end` stops with an error. `delete <id>` still cancels a campaign without a confirmation and gives the same result as `end`.
 
 ### Filters Commands
 
