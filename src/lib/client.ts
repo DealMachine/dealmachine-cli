@@ -92,6 +92,16 @@ export async function apiRequest<T>(
     const code = error.error?.code ? ` [${error.error.code}]` : '';
     console.error(chalk.red(`Error: ${message}${code}`));
     console.error(chalk.dim(`  ${method} ${path} -> ${response.status}`));
+    // Validation errors name each rejected field in details.issues; show them so
+    // "Validation failed" says what to change (for example an unsupported --status).
+    const issues = (error.error?.details as { issues?: unknown } | undefined)?.issues;
+    if (Array.isArray(issues)) {
+      for (const issue of issues as Array<{ path?: unknown; message?: unknown }>) {
+        if (typeof issue?.message !== 'string') continue;
+        const field = typeof issue.path === 'string' && issue.path ? `${issue.path}: ` : '';
+        console.error(chalk.yellow(`  ${field}${issue.message}`));
+      }
+    }
     if (response.status === 401) {
       console.error(chalk.dim('  Run `dm login` to re-authenticate.'));
     } else if (response.status === 402 && error.error?.code === 'prospect_limit_reached') {
