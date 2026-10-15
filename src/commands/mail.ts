@@ -14,6 +14,7 @@ import {
   truncate,
   createSpinner,
 } from '../lib/output.js';
+import { confirmPrompt, isNonInteractive } from '../lib/confirm.js';
 
 // ============================================================================
 // Types
@@ -34,6 +35,10 @@ interface Campaign {
   updated_at: string;
   launched_at: string | null;
   completed_at: string | null;
+  /** True when the campaign was built to take properties after it starts. */
+  is_accepting_properties?: boolean;
+  /** True when properties can be added right now (Ready, Active or Paused). */
+  can_add_properties?: boolean;
   steps: CampaignStep[];
 }
 
@@ -103,6 +108,42 @@ interface CostEstimateResponse {
     can_afford: boolean;
     auto_reload_available: boolean;
   };
+}
+
+interface AddPropertiesEstimateResponse {
+  data: {
+    campaign_id: string;
+    status: string;
+    property_count: number;
+    pay_today_cents: number;
+    pay_later_cents: number;
+    total_cost_cents: number;
+    pieces_per_property: number;
+    wallet_available_cents: number;
+    auto_reload_enabled: boolean;
+    can_afford: boolean;
+    requires_auto_reload: boolean;
+    /** True for a paused campaign: nothing is charged today; pieces are charged as they go out after it resumes. */
+    charged_on_resume?: boolean;
+    steps: unknown[];
+  };
+}
+
+interface AddPropertiesResponse {
+  data: {
+    campaign_id: string;
+    status: string;
+    added_count: number;
+    skipped: { property_id: string; reason: string }[];
+    enqueued_count: number;
+    scheduled_count: number;
+  };
+}
+
+interface EndCampaignResponse {
+  data: Campaign;
+  stopped_mail_count?: number;
+  already_printed_count?: number;
 }
 
 interface Design {
@@ -207,6 +248,7 @@ interface WalletPricingResponse {
 
 export async function mailCampaignsList(options: {
   status?: string;
+  acceptingProperties?: boolean;
   search?: string;
   page?: string;
   perPage?: string;
@@ -216,6 +258,7 @@ export async function mailCampaignsList(options: {
   const data = await apiRequest<CampaignListResponse>('/mail/campaigns', {
     query: {
       ...(options.status && { status: options.status }),
+      ...(options.acceptingProperties && { accepting_properties: true }),
       ...(options.search && { search: options.search }),
       ...(options.page && { page: parseInt(options.page, 10) }),
       ...(options.perPage && { per_page: parseInt(options.perPage, 10) }),
@@ -310,6 +353,7 @@ export async function mailCampaignsGet(id: string, options: { json?: boolean }):
     Name: c.name,
     Description: c.description || '—',
     Status: c.status,
+    'Accepts Properties': c.can_add_properties ? 'yes' : 'no',
     Audience: c.audience_kind || '—',
     Recipients: c.total_recipients,
     Sent: c.total_sent,
@@ -563,6 +607,233 @@ export async function mailCampaignsCostEstimate(
     'Wallet Balance': `$${(e.wallet_balance_cents / 100).toFixed(2)}`,
     'Can Afford': e.can_afford ? 'yes' : 'no',
   });
+  console.log();
+}
+
+// ============================================================================
+// Campaigns: Add properties
+// ============================================================================
+
+const MAX_PROPERTIES_PER_ADD = 5000;
+
+const SKIP_REASON_LABELS: Record<string, string> = {
+  already_in_campaign: 'Already in this campaign',
+  do_not_contact: 'Marked Do Not Contact',
+  no_mailing_address: 'No complete mailing address',
+  duplicate_mailing_address: 'Same mailing address as another recipient',
+  archived_prospect: 'Archived prospect',
+  not_found: 'Property not found',
+};
+
+function failInput(message: string): void {
+  console.error(chalk.red(`Error: ${message}`));
+  process.exitCode = 1;
+}
+
+function dollars(cents: number): string {
+  return `$${(cents / 100).toFixed(2)}`;
+}
+
+/** Accept "1,2 3" style input from one or more --property-ids values. */
+export function parsePropertyIds(values: string | string[] | undefined): string[] {
+  const raw = (Array.isArray(values) ? values : values ? [values] : [])
+    .flatMap((value) => value.split(/[\s,]+/))
+    .map((value) => value.trim())
+    .filter(Boolean);
+  const invalid = raw.filter((value) => !/^[1-9]\d*$/.test(value));
+  if (invalid.length > 0) {
+    throw new Error(`Property IDs must be positive whole numbers. Not valid: ${invalid.slice(0, 5).join(', ')}`);
+  }
+  const ids = [...new Set(raw)];
+  if (ids.length === 0) throw new Error('Pass at least one property ID with --property-ids.');
+  if (ids.length > MAX_PROPERTIES_PER_ADD) {
+    throw new Error(`Add at most ${MAX_PROPERTIES_PER_ADD} properties at a time. You passed ${ids.length}.`);
+  }
+  return ids;
+}
+
+function printAddEstimate(e: AddPropertiesEstimateResponse['data']): void {
+  printHeader('Cost to Add Properties');
+  printKeyValue({
+    'Campaign ID': e.campaign_id,
+    Status: e.status,
+    Properties: e.property_count,
+    'Pieces Per Property': e.pieces_per_property,
+    'Charged Today': dollars(e.pay_today_cents),
+    'Charged Later': dollars(e.pay_later_cents),
+    'Total Cost': dollars(e.total_cost_cents),
+    'Wallet Available': dollars(e.wallet_available_cents),
+    'Auto-reload': e.auto_reload_enabled ? 'on' : 'off',
+    'Can Afford': e.can_afford ? 'yes' : 'no',
+  });
+  if (e.charged_on_resume) {
+    console.log();
+    console.log(chalk.dim('  This campaign is paused. Nothing is charged today; each piece is charged as it goes out after you resume it.'));
+  }
+  if (e.requires_auto_reload) {
+    console.log();
+    console.log(chalk.yellow('  This campaign has more than one step, a repeating step, or a delay. Turn on auto-reload before adding properties.'));
+  }
+  console.log(chalk.dim('  Properties already in the campaign or skipped are not charged.'));
+}
+
+async function fetchAddEstimate(id: string, count: number) {
+  return apiRequest<AddPropertiesEstimateResponse>(
+    `/mail/campaigns/${encodeURIComponent(id)}/properties/estimate`,
+    { query: { count } }
+  );
+}
+
+export async function mailCampaignsEstimateAdd(
+  id: string,
+  options: { count?: string; json?: boolean }
+): Promise<void> {
+  const count = Number(options.count);
+  if (!Number.isInteger(count) || count < 1 || count > MAX_PROPERTIES_PER_ADD) {
+    failInput(`--count must be a whole number from 1 to ${MAX_PROPERTIES_PER_ADD}.`);
+    return;
+  }
+  const spinner = createSpinner('Estimating cost...').start();
+  const data = await fetchAddEstimate(id, count);
+  spinner.stop();
+
+  if (options.json) {
+    printJson(data);
+    return;
+  }
+  printAddEstimate(data.data);
+  console.log();
+}
+
+export async function mailCampaignsAddProperties(
+  id: string,
+  options: { propertyIds?: string | string[]; recipient?: string; yes?: boolean; json?: boolean }
+): Promise<void> {
+  if (options.recipient !== 'owner' && options.recipient !== 'resident') {
+    failInput('Choose who receives the mail with --recipient owner or --recipient resident.');
+    return;
+  }
+  let propertyIds: string[];
+  try {
+    propertyIds = parsePropertyIds(options.propertyIds);
+  } catch (err) {
+    failInput(err instanceof Error ? err.message : String(err));
+    return;
+  }
+
+  if (!options.yes) {
+    const spinner = createSpinner('Estimating cost...').start();
+    const estimate = await fetchAddEstimate(id, propertyIds.length);
+    spinner.stop();
+
+    if (isNonInteractive(options)) {
+      if (options.json) {
+        printJson({ ...estimate, added: false, confirmation_required: true });
+      } else {
+        printAddEstimate(estimate.data);
+        console.log();
+      }
+      console.error(
+        `No properties were added. Review the charge due today, get the user's approval, then rerun dm mail campaigns add-properties ${id} with --yes.`
+      );
+      // Nothing was added, so a script must not read this as success.
+      process.exitCode = 1;
+      return;
+    }
+
+    printAddEstimate(estimate.data);
+    console.log();
+    const confirmed = await confirmPrompt(
+      `Add ${propertyIds.length} propert${propertyIds.length === 1 ? 'y' : 'ies'} and charge ${dollars(estimate.data.pay_today_cents)} today?`
+    );
+    if (!confirmed) {
+      console.log(chalk.dim('  No properties were added.'));
+      return;
+    }
+  }
+
+  const spinner = createSpinner('Adding properties...').start();
+  const data = await apiRequest<AddPropertiesResponse>(
+    `/mail/campaigns/${encodeURIComponent(id)}/properties`,
+    { method: 'POST', body: { property_ids: propertyIds, recipient: options.recipient } }
+  );
+  spinner.stop();
+
+  if (options.json) {
+    printJson(data);
+    return;
+  }
+
+  const r = data.data;
+  printHeader('Properties Added');
+  printKeyValue({
+    'Campaign ID': r.campaign_id,
+    Status: r.status,
+    Added: r.added_count,
+    Skipped: r.skipped.length,
+    'Pieces Going Out Now': r.enqueued_count,
+    'Pieces Scheduled Later': r.scheduled_count,
+  });
+  if (r.skipped.length > 0) {
+    console.log();
+    printTable(
+      r.skipped.map((s) => ({
+        property: s.property_id,
+        reason: SKIP_REASON_LABELS[s.reason] ?? s.reason,
+      })),
+      ['property', 'reason']
+    );
+  }
+  console.log();
+}
+
+// ============================================================================
+// Campaigns: End
+// ============================================================================
+
+export async function mailCampaignsEnd(
+  id: string,
+  options: { yes?: boolean; json?: boolean }
+): Promise<void> {
+  if (!options.yes) {
+    if (isNonInteractive(options)) {
+      console.error(
+        `Ending a campaign is permanent: its unsent mail stops and it can never be resumed or added to. Get the user's approval, then rerun dm mail campaigns end ${id} with --yes.`
+      );
+      process.exitCode = 1;
+      return;
+    }
+    console.log(
+      chalk.yellow(
+        '  Ending is permanent. Unsent mail stops, and the campaign can never be resumed or added to again. Mail already printed still delivers.'
+      )
+    );
+    const confirmed = await confirmPrompt(`End campaign ${id}?`);
+    if (!confirmed) {
+      console.log(chalk.dim('  Campaign not ended.'));
+      return;
+    }
+  }
+
+  const spinner = createSpinner('Ending campaign...').start();
+  const data = await apiRequest<EndCampaignResponse>(
+    `/mail/campaigns/${encodeURIComponent(id)}/end`,
+    { method: 'POST', body: {} }
+  );
+  spinner.stop();
+
+  if (options.json) {
+    printJson(data);
+    return;
+  }
+
+  console.log(chalk.green(`  Campaign ${id} ended.`));
+  if (data.stopped_mail_count !== undefined) {
+    console.log(chalk.dim(`  Stopped ${data.stopped_mail_count} unsent piece(s).`));
+  }
+  if (data.already_printed_count) {
+    console.log(chalk.dim(`  ${data.already_printed_count} piece(s) already printed will still deliver.`));
+  }
   console.log();
 }
 

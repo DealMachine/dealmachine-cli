@@ -44,3 +44,40 @@ it('requires login after stored credentials are removed even if the environment 
   expect(process.exit).toHaveBeenCalledWith(1);
   expect(fetch).not.toHaveBeenCalled();
 });
+
+it('names each rejected field when the API returns a validation error', async () => {
+  readConfig.mockReturnValue({ apiKey: 'stored-account-key' });
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue({
+      ok: false,
+      status: 400,
+      json: async () => ({
+        error: {
+          code: 'validation_error',
+          message: 'Validation failed',
+          details: {
+            issues: [
+              {
+                path: 'status',
+                message: 'status must be one of draft, ready, active, paused, ended, completed, cancelled',
+              },
+            ],
+          },
+        },
+      }),
+    })
+  );
+  const printed: string[] = [];
+  vi.spyOn(console, 'error').mockImplementation((line: unknown) => {
+    printed.push(String(line));
+  });
+  vi.spyOn(process, 'exit').mockImplementation(() => {
+    throw new Error('exit');
+  });
+
+  await expect(apiRequest('/mail/campaigns', { query: { status: 'finished' } })).rejects.toThrow('exit');
+  expect(printed.join('\n')).toContain(
+    'status: status must be one of draft, ready, active, paused, ended, completed, cancelled'
+  );
+});
