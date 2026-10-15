@@ -81,6 +81,9 @@ import {
   mailCampaignsRecipients,
   mailCampaignsAnalytics,
   mailCampaignsCostEstimate,
+  mailCampaignsAddProperties,
+  mailCampaignsEstimateAdd,
+  mailCampaignsEnd,
   mailDesignsList,
   mailDesignsCreate,
   mailDesignsGet,
@@ -2175,7 +2178,11 @@ mailCampaignsCmd
   .command('list')
   .alias('ls')
   .description('List mail campaigns')
-  .option('--status <status>', 'Filter by status: draft, active, paused, completed, cancelled')
+  .option(
+    '--status <status>',
+    'Filter by status: draft, ready, active, paused, ended (completed and cancelled still work)'
+  )
+  .option('--accepting-properties', 'Only campaigns that properties can be added to now')
   .option('--search <term>', 'Search by campaign name')
   .option('-p, --page <n>', 'Page number')
   .option('--per-page <n>', 'Results per page')
@@ -2186,7 +2193,10 @@ mailCampaignsCmd
 Examples:
   dm mail campaigns list --json
   dm mail camp ls --status active
-  dm mail campaigns list --search "Austin" --per-page 50`
+  dm mail campaigns list --accepting-properties --json
+  dm mail campaigns list --search "Austin" --per-page 50
+
+Statuses: draft, ready, active, paused, ended. Completed and Cancelled campaigns show as ended.`
   )
   .action(async (options) => {
     await mailCampaignsList(options);
@@ -2205,7 +2215,11 @@ Examples:
   dm mail campaigns create -f campaign.json --json
   dm mail campaigns create --body '{"name":"Austin Owners","property_ids":[123],"address_to":"owner","steps":[{"design_prompt":"Professional postcard"}]}'
 
-Note: Set "launch": true in body to send immediately, or leave as draft.`
+Note: Set "launch": true in body to send immediately, or leave as draft.
+Set "accepts_properties": true to keep adding properties after the campaign starts.
+Leave out property_ids, contact_ids and list_ids to save a Ready campaign with no properties
+and no charge; it always accepts properties. Add properties later with:
+dm mail campaigns add-properties <id>`
   )
   .action(async (options) => {
     await mailCampaignsCreate(options);
@@ -2245,7 +2259,7 @@ Note: Only draft campaigns can be updated.`
 
 mailCampaignsCmd
   .command('delete <id>')
-  .description('Cancel a campaign')
+  .description('Cancel a campaign (same as end, without the confirmation)')
   .option('--dry-run', 'Preview what would be cancelled without making changes')
   .option('--json', 'Output as JSON')
   .addHelpText(
@@ -2290,7 +2304,7 @@ Note: Verify wallet balance first with: dm mail wallet balance`
 
 mailCampaignsCmd
   .command('pause <id>')
-  .description('Pause an active campaign')
+  .description('Pause an active or ready campaign')
   .option('--json', 'Output as JSON')
   .addHelpText(
     'after',
@@ -2359,6 +2373,65 @@ Examples:
   )
   .action(async (id, options) => {
     await mailCampaignsCostEstimate(id, options);
+  });
+
+mailCampaignsCmd
+  .command('add-properties <id>')
+  .description('Add properties to a Ready, Active or Paused campaign; each starts at step 1')
+  .requiredOption(
+    '--property-ids <ids...>',
+    'Property IDs, space or comma separated (up to 5,000)'
+  )
+  .requiredOption('--recipient <recipient>', 'Who receives the mail: owner or resident')
+  .option('--yes', 'Skip the confirmation (required for agents, scripts and --json)')
+  .option('--json', 'Output as JSON')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  dm mail campaigns add-properties camp_abc123 --property-ids 101 102 --recipient owner
+  dm mail campaigns add-properties camp_abc123 --property-ids 101,102 --recipient resident --yes --json
+
+Shows the charge due today and later, then asks before adding. Without --yes, agents and
+scripts get the estimate only and nothing is added. Pieces going out today are charged now;
+later pieces are charged as they go out. Skipped properties are listed with a reason.`
+  )
+  .action(async (id, options) => {
+    await mailCampaignsAddProperties(id, options);
+  });
+
+mailCampaignsCmd
+  .command('estimate-add <id>')
+  .description('Estimate the cost of adding properties to a campaign')
+  .requiredOption('--count <n>', 'Number of properties to add (1 to 5,000)')
+  .option('--json', 'Output as JSON')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  dm mail campaigns estimate-add camp_abc123 --count 25 --json`
+  )
+  .action(async (id, options) => {
+    await mailCampaignsEstimateAdd(id, options);
+  });
+
+mailCampaignsCmd
+  .command('end <id>')
+  .description('End a campaign permanently')
+  .option('--yes', 'Skip the confirmation (required for agents, scripts and --json)')
+  .option('--json', 'Output as JSON')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  dm mail campaigns end camp_abc123
+  dm mail campaigns end camp_abc123 --yes --json
+
+Ending is permanent. Unsent mail stops and the campaign cannot be paused, resumed or added to.
+Mail already printed still delivers. To reuse its steps, create a new campaign.`
+  )
+  .action(async (id, options) => {
+    await mailCampaignsEnd(id, options);
   });
 
 // ── Designs ──
