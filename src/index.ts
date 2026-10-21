@@ -391,8 +391,9 @@ Examples:
 
 program
   .command('checkout')
-  .description('Create a Stripe checkout session for a self-serve plan')
+  .description('Review a plan and create a Stripe checkout link after approval')
   .requiredOption('--price-id <price-id>', 'Stripe price ID from dm plans')
+  .option('--yes', 'The customer approved this plan, recurring price, interval and quantity')
   .option('--quantity <quantity>', 'Seat quantity', '1')
   .option('--json', 'Output as JSON')
   .addHelpText(
@@ -400,7 +401,7 @@ program
     `
 Examples:
   dm checkout --price-id price_xxx_monthly
-  dm checkout --price-id price_xxx_monthly --quantity 2 --json`
+  dm checkout --price-id price_xxx_monthly --quantity 2 --yes --json`
   )
   .action(async (options) => {
     await checkout(options);
