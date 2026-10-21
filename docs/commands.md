@@ -110,7 +110,7 @@ dm login --key dm_sk_live_abc123...
 
 The key is verified against `GET /v1/account` before being stored. If verification fails, the CLI exits with a non-zero code.
 
-If you do not have an API key yet, use `dm signup`, `dm plans`, and `dm checkout` first. Public plan checkout only accepts self-serve Basic and Pro prices from the shared plan catalog and is capped at 60,000 monthly data credits.
+If you do not have an API key yet, use `dm signup <email> --login` or `dm login`. Counts and estimates work before payment. Public plan checkout only accepts self-serve Basic and Pro prices from the shared plan catalog and is capped at 60,000 monthly data credits.
 
 ### Switching Environments
 
@@ -232,7 +232,7 @@ dm agents permissions --json
 
 #### `dm signup`
 
-Create a public API account and receive an API key:
+Create a public API account and receive an API key. With `--login`, the credential is saved locally and omitted from output (including JSON); use this form from an agent:
 
 ```bash
 dm signup developer@example.com --first-name Ada --last-name Lovelace --phone-number +15551234567
@@ -241,7 +241,7 @@ dm signup developer@example.com --login
 
 #### `dm plans`
 
-List public self-serve Basic and Pro plans:
+List live self-serve plans, included credits, features and free API access. Connected customers receive their workspace prices:
 
 ```bash
 dm plans
@@ -250,11 +250,15 @@ dm plans --json
 
 #### `dm checkout`
 
-Create a Stripe checkout session using a price ID from `dm plans`:
+Preview the recurring terms using a current price ID from `dm plans`. After the customer approves the exact price, billing interval and quantity, add `--yes` to create the Stripe checkout link:
 
 ```bash
-dm checkout --price-id price_xxx_monthly
+dm checkout --price-id price_xxx_monthly --quantity 1 --json
+# Only after approval:
+dm checkout --price-id price_xxx_monthly --quantity 1 --yes --json
 ```
+
+Payment is completed on Stripe. Creating checkout does not activate a plan; check `dm account --json` and `dm usage` after payment before retrying enrichment. Counts do not award credits. Free operations still require authentication and obey permissions and rate limits.
 
 #### `dm login`
 
