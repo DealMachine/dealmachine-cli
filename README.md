@@ -286,7 +286,7 @@ dm agents permissions --json
 
 #### `dm signup`
 
-Create a public API account and receive an API key:
+Create a public API account and receive an API key. With `--login`, the credential is saved locally and omitted from output (including JSON); use this form from an agent:
 
 ```bash
 dm signup developer@example.com --first-name Ada --last-name Lovelace --phone-number +15551234567

@@ -150,7 +150,10 @@ export async function signup(options: {
   }
 
   if (options.json) {
-    printJson(data);
+    if (options.login) {
+      const { api_key: _credential, ...account } = data;
+      printJson({ ...account, api_key_saved: true, message: 'Account created and credential saved locally.' });
+    } else printJson(data);
     return;
   }
 
@@ -158,12 +161,12 @@ export async function signup(options: {
   console.log(`  ${chalk.cyan('Organization:')}  ${data.organization.name}`);
   console.log(`  ${chalk.cyan('Org ID:')}        ${data.organization.id}`);
   console.log(`  ${chalk.cyan('Key ID:')}        ${data.key_id}`);
-  console.log(`  ${chalk.cyan('API Key:')}       ${data.api_key}`);
+  if (!options.login) console.log(`  ${chalk.cyan('API Key:')}       ${data.api_key}`);
   console.log();
-  console.log(chalk.yellow('Store this API key securely. It is shown once.'));
   if (options.login) {
     console.log(chalk.green('Saved this API key for the CLI.'));
   } else {
+    console.log(chalk.yellow('Store this API key securely. It is shown once.'));
     console.log(chalk.dim(`Run ${chalk.cyan('dm login --key <api-key>')} to store it locally.`));
   }
   console.log();
