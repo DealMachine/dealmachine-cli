@@ -4,7 +4,7 @@
 
 import chalk from 'chalk';
 import { apiRequest, getApiBaseUrl, type ApiError } from '../lib/client.js';
-import { writeConfig, type ApiEnvironment } from '../lib/config.js';
+import { readConfig, writeConfig, type ApiEnvironment } from '../lib/config.js';
 import { createSpinner, printHeader, printJson, printTable } from '../lib/output.js';
 import { CLI_USER_AGENT } from '../version.js';
 
@@ -39,6 +39,7 @@ interface PublicPlan {
     monthly: string;
     annual: string;
   };
+  features: string[];
   seats: {
     min: number | null;
     max: number | null;
@@ -50,6 +51,10 @@ interface PlansResponse {
   free_tier: {
     enrichment_credit_cap: number;
     ai_credit_cap: number;
+    api_access?: boolean;
+    counts_and_estimates_cost_credits?: boolean;
+    enrichment_requires_subscription?: boolean;
+    available_operations?: string[];
   };
 }
 
@@ -57,6 +62,8 @@ interface CheckoutResponse {
   checkout_url: string;
   session_id: string;
   expires_at: string;
+  payment_status?: 'pending';
+  next_step?: string;
 }
 
 async function publicApiRequest<T>(
@@ -143,7 +150,10 @@ export async function signup(options: {
   }
 
   if (options.json) {
-    printJson(data);
+    if (options.login) {
+      const { api_key: _credential, ...account } = data;
+      printJson({ ...account, api_key_saved: true, message: 'Account created and credential saved locally.' });
+    } else printJson(data);
     return;
   }
 
@@ -151,12 +161,12 @@ export async function signup(options: {
   console.log(`  ${chalk.cyan('Organization:')}  ${data.organization.name}`);
   console.log(`  ${chalk.cyan('Org ID:')}        ${data.organization.id}`);
   console.log(`  ${chalk.cyan('Key ID:')}        ${data.key_id}`);
-  console.log(`  ${chalk.cyan('API Key:')}       ${data.api_key}`);
+  if (!options.login) console.log(`  ${chalk.cyan('API Key:')}       ${data.api_key}`);
   console.log();
-  console.log(chalk.yellow('Store this API key securely. It is shown once.'));
   if (options.login) {
     console.log(chalk.green('Saved this API key for the CLI.'));
   } else {
+    console.log(chalk.yellow('Store this API key securely. It is shown once.'));
     console.log(chalk.dim(`Run ${chalk.cyan('dm login --key <api-key>')} to store it locally.`));
   }
   console.log();
@@ -171,17 +181,19 @@ export async function plans(options: {
     process.env.DM_ENV = options.env;
   }
 
-  const data = await publicApiRequest<PlansResponse>('/plans', {
-    query: {
-      type: options.type,
-    },
-  });
+  const data = readConfig()?.apiKey
+    ? await apiRequest<PlansResponse>('/account/plans')
+    : await publicApiRequest<PlansResponse>('/plans', { query: { type: options.type } });
 
   if (options.json) {
     printJson(data);
     return;
   }
 
+  printHeader('Free API Access');
+  console.log('  Counts, supported cost estimates, field discovery and account access cost no data credits.');
+  console.log(`  Starter data credits: ${data.free_tier.enrichment_credit_cap}. Enrichment requires a paid plan.`);
+  console.log();
   printHeader('Self-Serve Plans');
   printTable(
     data.plans.map((plan) => ({
@@ -191,25 +203,49 @@ export async function plans(options: {
       Credits: plan.credits.enrichment_per_month.toLocaleString(),
       Seats: plan.seats.max ? `${plan.seats.min ?? 1}-${plan.seats.max}` : `${plan.seats.min ?? 1}+`,
       'Monthly Price ID': plan.stripe_price_ids.monthly,
+      'Annual Price ID': plan.stripe_price_ids.annual,
     }))
   );
   console.log();
-  console.log(chalk.dim('Use the monthly or annual price ID with dm checkout.'));
+  for (const plan of data.plans) console.log(`  ${plan.name}: ${plan.features.join('; ')}`);
+  console.log(chalk.dim('Use a price ID with dm checkout to review the plan. Add --yes only after approval.'));
   console.log(chalk.dim('Scale and private offer plans are not available through self-serve checkout.'));
   console.log();
 }
 
 export async function checkout(options: {
   priceId: string;
+  yes?: boolean;
   quantity?: string;
   json?: boolean;
 }): Promise<void> {
-  const quantity = Number.parseInt(options.quantity || '1', 10);
-  if (!Number.isInteger(quantity) || quantity < 1) {
+  const quantity = Number(options.quantity ?? '1');
+  if (!/^\d+$/.test(options.quantity ?? '1') || !Number.isSafeInteger(quantity) || quantity < 1 || quantity > 100) {
     console.error(chalk.red('Error: --quantity must be a positive integer'));
     process.exit(1);
   }
 
+  const catalog = await apiRequest<PlansResponse>('/account/plans');
+  const plan = catalog.plans.find(item => Object.values(item.stripe_price_ids).includes(options.priceId));
+  if (!plan) {
+    console.error(chalk.red('This price is not available for your workspace. Run dm plans again.'));
+    process.exit(1);
+  }
+  const interval = plan.stripe_price_ids.monthly === options.priceId ? 'month' : 'year';
+  const unitPrice = interval === 'month' ? plan.pricing.monthly_price_cents : plan.pricing.annual_price_cents;
+  const quote = { plan: plan.name, currency: plan.pricing.currency, amount_cents: unitPrice * quantity,
+    billing_interval: interval, quantity, features: plan.features, credits: plan.credits };
+  if (!options.yes) {
+    const preview = { checkout_created: false, confirmation_required: true, quote,
+      next_step: 'Review this recurring price with the customer. After explicit approval, rerun with --yes to create a Stripe checkout link. Payment is completed on Stripe.' };
+    if (options.json) printJson(preview);
+    else {
+      printHeader('Review Plan');
+      console.log(`  ${plan.name}: ${quote.currency.toUpperCase()} ${(quote.amount_cents / 100).toFixed(2)} per ${interval}, ${quantity} seat(s).`);
+      console.log(`  ${preview.next_step}`);
+    }
+    return;
+  }
   const spinner = createSpinner('Creating checkout session...').start();
   const data = await apiRequest<CheckoutResponse>('/checkout', {
     method: 'POST',
@@ -225,9 +261,10 @@ export async function checkout(options: {
     return;
   }
 
-  printHeader('Checkout Session');
+  printHeader('Checkout Pending Payment');
   console.log(`  ${chalk.cyan('URL:')}        ${data.checkout_url}`);
   console.log(`  ${chalk.cyan('Session ID:')} ${data.session_id}`);
   console.log(`  ${chalk.cyan('Expires:')}    ${new Date(data.expires_at).toLocaleString()}`);
+  console.log('  Complete payment on Stripe, then run dm account --json and dm usage before retrying paid work.');
   console.log();
 }

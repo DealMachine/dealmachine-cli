@@ -104,6 +104,10 @@ export async function apiRequest<T>(
     }
     if (response.status === 401) {
       console.error(chalk.dim('  Run `dm login` to re-authenticate.'));
+    } else if (error.error?.code === 'subscription_required') {
+      console.error(chalk.dim('  Free counts and cost estimates remain available. Run dm plans to see options.'));
+      console.error(chalk.dim('  Review with dm checkout --price-id <id>; add --yes only after customer approval.'));
+      console.error(chalk.dim('  Complete payment on Stripe, then check dm account --json and dm usage before retrying.'));
     } else if (response.status === 402 && error.error?.code === 'prospect_limit_reached') {
       const details = error.error?.details as
         | { limit?: number; used?: number; remaining?: number }
