@@ -12,6 +12,8 @@ The job updates the version only in its temporary build checkout. Both npm manif
 
 Releases run serially. A job whose source is no longer current `master` stops before publication. Re-running the current commit discovers any package already published for that SHA, rebuilds and compares its integrity, then publishes only the missing package. A conflicting source, changed bytes, multiple versions for one source, or a newer published stable version stops the retry. The workflow never overwrites immutable npm versions or silently moves `latest` backward.
 
+After an upload, verification waits up to three minutes for npm to expose the version and its distribution tag. Registry reads retry temporary connection failures and use fresh connections after the build. Package identity, source, archive integrity, alias dependency and channel checks still have to pass before the release succeeds.
+
 The workflow retains both archives and `release.json` under the `cli-release-<sha>-<attempt>` GitHub artifact for 90 days, including evidence available after a failure. The receipt has source SHA, workflow run ID, version, channel, integrity digests and a `verified` result. A successful job requires verification of both packages. The run summary links to both exact npm versions.
 
 ## One-time access setup
