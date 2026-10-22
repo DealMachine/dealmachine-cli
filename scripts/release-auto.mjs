@@ -3,8 +3,8 @@ import { execFileSync } from 'node:child_process';
 import { appendFileSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { setTimeout } from 'node:timers/promises';
 import { planRelease, releasePackages, verifyPublishedPackage } from './release-plan.mjs';
+import { registry, waitForPublishedPackage } from './release-registry.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const [mode, ...extra] = process.argv.slice(2);
@@ -25,16 +25,6 @@ if (mode === 'publish') {
   assertCurrentMaster();
 }
 
-async function registry(name) {
-  const response = await fetch(`https://registry.npmjs.org/${encodeURIComponent(name)}`, {
-    headers: { accept: 'application/json', 'cache-control': 'no-cache' },
-    redirect: 'error', signal: AbortSignal.timeout(30_000),
-  });
-  assert(response.ok, `Cannot read ${name} registry metadata (${response.status}). No release decision was made.`);
-  const metadata = await response.json();
-  assert(metadata.name === name && metadata.versions && typeof metadata.versions === 'object', `Invalid registry metadata for ${name}.`);
-  return metadata;
-}
 const registries = Object.fromEntries(await Promise.all(releasePackages.map(async name => [name, await registry(name)])));
 const manifest = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8'));
 const plan = planRelease(manifest.version, sourceSha, registries);
@@ -67,14 +57,7 @@ try {
       execute('npm', ['publish', resolve(output, artifact.filename), '--ignore-scripts', '--access', 'public', '--registry', 'https://registry.npmjs.org', '--tag', plan.tag, ...(mode === 'dry-run' ? ['--dry-run'] : [])]);
     }
     if (mode === 'publish') {
-      // Public registry replicas may briefly lag the successful publish response.
-      let metadata;
-      for (let attempt = 0; attempt < 6; attempt++) {
-        metadata = await registry(artifact.name);
-        if (metadata.versions?.[plan.version] && metadata['dist-tags']?.[plan.tag] === plan.version) break;
-        if (attempt < 5) await setTimeout(2_000);
-      }
-      verifyPublishedPackage(artifact, metadata, plan, { requireTag: true });
+      await waitForPublishedPackage(artifact, plan);
     }
   }
   if (mode === 'publish') {

@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { planRelease, verifyPublishedPackage } from '../scripts/release-plan.mjs';
+import { registry as readRegistry, waitForPublishedPackage } from '../scripts/release-registry.mjs';
 
 const sourceSha = 'a'.repeat(40);
 const otherSha = 'b'.repeat(40);
@@ -8,6 +9,7 @@ const published = (sha = otherSha, integrity = 'sha512-reviewed') => ({
   dist: { integrity },
   dependencies: { '@dealmachine/cli': '0.4.1' },
 });
+
 const registry = (versions = {}, latest = '0.3.0') => ({ versions, 'dist-tags': { latest } });
 const registries = (implementation = registry(), alias = registry()) => ({ '@dealmachine/cli': implementation, dealmachine: alias });
 
@@ -54,5 +56,43 @@ describe('automatic CLI release contract', () => {
       { version: '0.4.1', tag: 'latest', sourceSha },
       { requireTag: true },
     )).toThrow(error);
+  });
+});
+
+describe('npm registry recovery', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  const response = (available = true) => new Response(JSON.stringify({
+    name: '@dealmachine/cli',
+    ...registry(available ? { '0.4.1': published(sourceSha) } : {}, available ? '0.4.1' : '0.3.0'),
+  }), { headers: { 'content-type': 'application/json' } });
+
+  it('finishes reading a published version after the registry connection drops', async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal('fetch', vi.fn()
+      .mockRejectedValueOnce(new TypeError('fetch failed', { cause: Object.assign(new Error('read ECONNRESET'), { code: 'ECONNRESET' }) }))
+      .mockImplementation(async () => response()));
+    const pending = readRegistry('@dealmachine/cli').then(value => ({ value, error: null }), error => ({ value: null, error }));
+    await vi.advanceTimersByTimeAsync(180_000);
+    const result = await pending;
+    expect(result.error).toBeNull();
+    expect(result.value?.versions['0.4.1'].dealmachineRelease.sourceSha).toBe(sourceSha);
+  });
+
+  it('verifies a release when npm processing takes longer than ten seconds', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(0);
+    vi.stubGlobal('fetch', async () => response(Date.now() >= 12_000));
+    const pending = waitForPublishedPackage(
+      { name: '@dealmachine/cli', integrity: 'sha512-reviewed' },
+      { version: '0.4.1', tag: 'latest', sourceSha },
+    ).then(value => ({ value, error: null }), error => ({ value: null, error }));
+    await vi.advanceTimersByTimeAsync(180_000);
+    const result = await pending;
+    expect(result.error).toBeNull();
+    expect(result.value?.['dist-tags'].latest).toBe('0.4.1');
   });
 });
