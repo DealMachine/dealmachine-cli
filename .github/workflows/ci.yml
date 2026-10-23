@@ -1,5 +1,8 @@
 name: CLI checks
 on:
+  merge_group:
+    types: [checks_requested]
+    branches: [master, staging]
   pull_request:
   push:
     branches: [master]
