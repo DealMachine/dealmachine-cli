@@ -12,6 +12,7 @@ permissions:
   contents: read
 concurrency:
   group: cli-npm-release
+  # The release in progress always finishes. One run waits behind it, and a newer push replaces that waiting run, so the newest commit publishes next.
   cancel-in-progress: false
 jobs:
   publish:
