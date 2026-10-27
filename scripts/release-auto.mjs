@@ -12,9 +12,6 @@ assert(['dry-run', 'publish'].includes(mode) && !extra.length, 'Use release:auto
 const execute = (command, args, options = {}) => execFileSync(command, args, { cwd: root, stdio: 'inherit', ...options });
 const git = (...args) => execute('git', args, { encoding: 'utf8', stdio: 'pipe' }).trim();
 const sourceSha = git('rev-parse', 'HEAD');
-const assertCurrentMaster = () => {
-  assert.equal(git('ls-remote', 'origin', 'refs/heads/master').split(/\s/)[0], sourceSha, 'Source is no longer current master. Let the newest master run publish.');
-};
 if (mode === 'publish') {
   assert.equal(process.env.GITHUB_ACTIONS, 'true', 'Automatic publishing runs only in GitHub Actions; use release:publish for an authorized local release.');
   assert.equal(process.env.GITHUB_REPOSITORY, 'DealMachine/dealmachine-cli');
@@ -22,7 +19,10 @@ if (mode === 'publish') {
   assert.equal(process.env.GITHUB_SHA, sourceSha);
   assert(['push', 'workflow_dispatch'].includes(process.env.GITHUB_EVENT_NAME), 'Only master push and recovery dispatch may publish.');
   assert.equal(git('status', '--porcelain'), '', 'Start from the clean committed release source.');
-  assertCurrentMaster();
+  // Only the current master may start a release, so a rerun of an older commit never publishes. Once started, the
+  // release finishes even if newer merges land during its checks: the workflow runs it in one concurrency group that
+  // never cancels a run in progress, so the newer merge waits and publishes next.
+  assert.equal(git('ls-remote', 'origin', 'refs/heads/master').split(/\s/)[0], sourceSha, 'Source is no longer current master. Let the newest master run publish.');
 }
 
 const registries = Object.fromEntries(await Promise.all(releasePackages.map(async name => [name, await registry(name)])));
@@ -49,7 +49,6 @@ try {
   for (const artifact of record.artifacts) {
     if (registries[artifact.name].versions?.[plan.version]) verifyPublishedPackage(artifact, registries[artifact.name], plan, { requireTag: true });
   }
-  if (mode === 'publish') assertCurrentMaster();
   for (const artifact of record.artifacts) {
     if (registries[artifact.name].versions?.[plan.version]) {
       console.log(`Verified existing ${artifact.name}@${plan.version}; resuming without republishing it.`);
