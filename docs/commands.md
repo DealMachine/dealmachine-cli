@@ -862,9 +862,22 @@ dm driving list
 dm driving list --mode free_drive --started-after 2026-08-01 --json
 dm driving get drive_session_501
 dm prospects list --source driving
+dm prospects list --source-group d4d --added-by 7 --added-after 2026-10-01
 ```
 
 Drive history is read-only. Use `dm prospects` for lifecycle, notes, and tags on linked Prospects.
+
+`dm prospects list` also filters by how and when a Prospect was added:
+
+| Option | Description |
+| --- | --- |
+| `--source-group <group>` | `d4d` (added while driving) or `map` (added any other way) |
+| `--added-by <ids>` | Comma-separated user IDs who added the Prospect, e.g. `7,12` |
+| `--added-after <date>` | Added on or after this ISO date or date-time. A date means midnight UTC |
+| `--added-before <date>` | Added before this ISO date or date-time (not inclusive) |
+| `--status <statuses>` | Comma-separated: `hot`, `warm`, `cold`, `follow_up`, `do_not_contact`, `none` |
+
+Property and person records from `dm properties` and `dm people` include `is_prospect`, `prospect_source`, `prospect_added_by` and `prospect_added_at`.
 
 ### Mail Campaign Commands
 

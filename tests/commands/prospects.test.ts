@@ -154,3 +154,37 @@ describe('dm prospects status display', () => {
     expect(printed).toContain(label);
   });
 });
+
+// The flags are registered on the real program, so a renamed option or query param fails here.
+describe('dm prospects list attribution filters', () => {
+  it('sends source group, added by, added dates and status as query params', async () => {
+    const { program } = await import('../../src/index.js');
+    fetchMock.mockResolvedValue(
+      jsonResponse(200, {
+        data: [],
+        pagination: { page: 1, per_page: 25, total: 0, has_more: false },
+      })
+    );
+
+    await program.parseAsync([
+      'node', 'dm', 'prospects', 'list',
+      '--source-group', 'd4d',
+      '--added-by', '7,12',
+      '--added-after', '2026-10-01',
+      '--added-before', '2026-10-15T12:00:00Z',
+      '--status', 'hot,none',
+      '--json',
+    ]);
+
+    const [url] = fetchMock.mock.calls.at(-1) as [string, RequestInit];
+    const parsed = new URL(url);
+    expect(parsed.pathname).toMatch(/\/prospects$/);
+    expect(Object.fromEntries(parsed.searchParams)).toEqual({
+      source_group: 'd4d',
+      added_by: '7,12',
+      added_after: '2026-10-01',
+      added_before: '2026-10-15T12:00:00Z',
+      status: 'hot,none',
+    });
+  });
+});
