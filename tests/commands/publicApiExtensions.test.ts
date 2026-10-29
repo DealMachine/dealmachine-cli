@@ -46,6 +46,7 @@ import { drivingGet, drivingList } from '../../src/commands/driving.js';
 import { prospectsList } from '../../src/commands/prospects.js';
 import { listsItems } from '../../src/commands/lists.js';
 import { phonesDnc } from '../../src/commands/phones.js';
+import { comps } from '../../src/commands/comps.js';
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -59,6 +60,25 @@ beforeEach(() => {
 });
 
 describe('CLI public API extensions', () => {
+  it.each([{ body: '{}' }, { file: 'comps.json' }])(
+    'forwards Year Built criteria from JSON input %j',
+    async (input) => {
+      const request = {
+        property_ids: ['prop_123'],
+        criteria: { min_year_built: 1980, max_year_built: 2000 },
+      };
+      mockParseRequestBody.mockResolvedValue(request);
+
+      await comps([], { ...input, json: true });
+
+      expect(mockParseRequestBody).toHaveBeenCalledWith(expect.objectContaining(input));
+      expect(mockApiRequest).toHaveBeenCalledWith('/comps', {
+        method: 'POST',
+        body: request,
+      });
+    }
+  );
+
   it('reads drive history and filters prospects added during drives', async () => {
     mockApiRequest
       .mockResolvedValueOnce({

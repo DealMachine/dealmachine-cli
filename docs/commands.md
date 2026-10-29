@@ -720,6 +720,14 @@ dm comps --body '{
 
 Output includes subject property details, value estimation with confidence interval, summary statistics (average/median price, price per sqft), and a table of comparable properties.
 
+Use `criteria.min_year_built` and `criteria.max_year_built` in a JSON body or file to limit comps by year built:
+
+```bash
+dm comps --body '{"property_ids":["prop_12345"],"criteria":{"min_year_built":1980,"max_year_built":2000}}' --json
+```
+
+Both bounds are inclusive whole years from 1 through 9999. Either bound can stand alone; the minimum must not exceed the maximum. Omit both for no year filter. A specified bound excludes comps with an unknown year built.
+
 ---
 
 ### Lists Commands
