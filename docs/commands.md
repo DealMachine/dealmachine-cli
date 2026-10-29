@@ -483,7 +483,10 @@ Export properties as CSV (up to 1,000,000 records). Returns signed download URLs
 dm properties export -f search.json
 dm properties export -f search.json --require-phone --scrub-dnc
 dm properties export --body '{"locations": [...]}' --mobile-only --json
+dm properties export --body '{"locations": [...], "fields": ["estimated_value", "tags"]}'
 ```
+
+Add `tags` to `fields` for a column listing every tag your team applied to each row's property, joined with `; ` (blank when untagged, no credits). To search by tag, use the `tags` filter: `{"filter_id": "tags", "operator": "contains_any", "value": ["Vacant"]}`.
 
 | Option              | Description                                                 |
 | ------------------- | ----------------------------------------------------------- |

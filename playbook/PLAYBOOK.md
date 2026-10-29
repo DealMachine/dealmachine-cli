@@ -416,6 +416,7 @@ Ask if they want to:
 | "free and clear" / "no mortgage"         | `{"filter_id": "is_free_and_clear", "operator": "equals", "value": true}` (use `num_mortgages` equals 0 only when the user literally means no recorded mortgages) |
 | "off market" / "not listed"              | `{"filter_id": "is_off_market", "operator": "equals", "value": true}` (never the Market status "Off Market" option)  |
 | "sold in the last year"                  | `{"filter_id": "last_sale_date", "operator": "relative_time", "value": "last_12_months"}`        |
+| "we tagged Vacant" / "tagged while driving" | `{"filter_id": "tags", "operator": "contains_any", "value": ["Vacant"]}` (tag names or `tag_` IDs from `dm tags list`; `contains_none` leaves tagged properties out; property searches only, never inside `filter_groups`) |
 
 **When unsure about a filter:** Run `dm filters --source-type properties --search "<keyword>" --json` to find matching filters. Always verify the filter exists before using it.
 
