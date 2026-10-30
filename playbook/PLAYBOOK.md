@@ -593,6 +593,9 @@ dm comps prop_12345 --include-foreclosures
 
 # Full control via JSON body
 dm comps --body '{"property_ids": ["prop_12345"], "location": {"type": "radius", "radius_miles": 2}, "criteria": {"timeframe": "12months", "limit": 50}}'
+
+# Inclusive year-built range; either bound may be omitted
+dm comps --body '{"property_ids":["prop_12345"],"criteria":{"min_year_built":1980,"max_year_built":2000}}' --json
 ```
 
 ### People
