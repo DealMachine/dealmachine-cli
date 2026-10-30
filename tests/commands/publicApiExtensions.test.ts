@@ -32,7 +32,7 @@ vi.mock('../../src/lib/output.js', () => ({
 
 import { printJson, printTable } from '../../src/lib/output.js';
 import { peopleGet, peopleIds, peopleSearch, peopleExport } from '../../src/commands/people.js';
-import { propertiesGet, propertiesIds, propertiesSearch, propertiesExport } from '../../src/commands/properties.js';
+import { propertiesGet, propertiesIds, propertiesSearch, propertiesExport, propertiesCount } from '../../src/commands/properties.js';
 import {
   enrichAddress,
   enrichApn,
@@ -589,4 +589,12 @@ describe.each([
       },
     });
   });
+});
+
+
+it.each([true, false])('passes International Owner %s to property counts without changing its meaning', async (value) => {
+  const filters = [{ filter_id: "international_owner", value }];
+  mockParseRequestBody.mockResolvedValue({ filters });
+  await propertiesCount({ body: JSON.stringify({ filters }), json: true });
+  expect(mockApiRequest).toHaveBeenCalledWith("/properties/search/count", expect.objectContaining({ method: "POST", body: expect.objectContaining({ filters }) }));
 });

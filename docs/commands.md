@@ -1332,3 +1332,11 @@ The summary counts changed prospects, prospects already in that lifecycle, and
 records that are not prospects. Bulk archive ends mail and keeps list membership;
 it closes open opportunities unless `--no-cascade` is supplied. A positional
 `prospect_...` ID continues to use the single-prospect operation.
+
+### International Owner
+
+Property search, count and export accept `international_owner` in the `--body` filters array. Use `true` for foreign mailing addresses, `false` to exclude them, or omit the filter for Any. The source is `MailingForeignAddressInd`: Canada (`C`) and other foreign addresses (`Y`) are international; null values and US territories are excluded.
+
+```bash
+dm properties count --body '{"filters":[{"filter_id":"international_owner","value":true}]}'
+```

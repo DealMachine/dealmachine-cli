@@ -678,10 +678,16 @@ propertiesCmd
     `
 Examples:
   dm properties search --body '{"locations":[{"type":"zip_code","code":"78704"}]}'
+  dm properties search --body '{"filters":[{"filter_id":"international_owner","value":true}]}' --estimate-cost
   dm properties search -f search-query.json --estimate-cost
   dm properties search -f query.json --json             Estimate automatically
   dm properties search -f query.json --json --yes       Run after approval
-  cat query.json | dm properties search --json`
+  cat query.json | dm properties search --json
+
+International Owner: use international_owner in --body filters.
+  true: foreign mailing addresses (Canada and other countries).
+  false: only addresses without a foreign indicator. Omit for Any.
+  Source: MailingForeignAddressInd; US territories are excluded.`
   )
   .action(async (options) => {
     await propertiesSearch(options);
