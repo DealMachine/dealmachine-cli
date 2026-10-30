@@ -51,6 +51,7 @@ interface CampaignStep {
   delay_days: number;
   interval_days: number;
   repeat_count: number;
+  repeat_forever?: boolean;
   skip_if_responded: boolean;
 }
 
@@ -101,6 +102,9 @@ interface CostEstimateResponse {
     price_per_card_cents: number;
     total_cost_cents: number;
     total_cost_dollars: number;
+    repeat_forever?: boolean;
+    repeat_interval_days?: number | null;
+    recurring_cost_cents?: number | null;
     pay_now_cost_cents: number;
     pay_later_cost_cents: number;
     wallet_balance_cents: number;
@@ -373,7 +377,7 @@ export async function mailCampaignsGet(id: string, options: { json?: boolean }):
       name: s.step_name || '—',
       design: s.design_id ? truncate(s.design_id, 16) : '(prompt)',
       delay: `${s.delay_days}d`,
-      repeat: s.repeat_count,
+      repeat: s.repeat_forever ? `Forever, every ${s.interval_days}d` : s.repeat_count,
     }));
     printTable(stepRows, ['order', 'name', 'design', 'delay', 'repeat']);
   }
@@ -601,7 +605,8 @@ export async function mailCampaignsCostEstimate(
   printKeyValue({
     Recipients: e.recipient_count,
     'Price Per Card': `$${(e.price_per_card_cents / 100).toFixed(2)}`,
-    'Total Cost': `$${e.total_cost_dollars.toFixed(2)}`,
+    [e.repeat_forever ? 'Scheduled Cost' : 'Total Cost']: `${e.total_cost_dollars.toFixed(2)}`,
+    ...(e.repeat_forever ? { Repeats: `Every ${e.repeat_interval_days} days until stopped`, 'Each Repeat': `${((e.recurring_cost_cents ?? 0) / 100).toFixed(2)}` } : {}),
     'Pay Now': `$${(e.pay_now_cost_cents / 100).toFixed(2)}`,
     'Pay Later': `$${(e.pay_later_cost_cents / 100).toFixed(2)}`,
     'Wallet Balance': `$${(e.wallet_balance_cents / 100).toFixed(2)}`,
@@ -1399,6 +1404,9 @@ interface MailSettings {
   contact_frequency_limit_days: number | null;
   default_qr_code_url: string | null;
   default_signature_image_url: string | null;
+  default_single_send_interval_days?: number | null;
+  default_single_send_repeat_count?: number | null;
+  default_single_send_repeat_forever?: boolean | null;
 }
 
 interface MailSettingsResponse {
@@ -1414,6 +1422,7 @@ function printMailSettings(s: MailSettings): void {
       : '— (1 day)',
     'Default QR Code URL': s.default_qr_code_url ?? '—',
     'Default Signature Image': s.default_signature_image_url ?? '—',
+    'Default Postcard Schedule': s.default_single_send_repeat_forever ? `Repeat forever, every ${s.default_single_send_interval_days ?? 21} days` : s.default_single_send_interval_days === 0 ? 'Just once' : `${s.default_single_send_repeat_count ?? 6} sends, every ${s.default_single_send_interval_days ?? 21} days`,
   });
 }
 
