@@ -84,6 +84,7 @@ import {
   mailCampaignsAddProperties,
   mailCampaignsEstimateAdd,
   mailCampaignsEnd,
+  mailCampaignsArchive,
   mailDesignsList,
   mailDesignsCreate,
   mailDesignsGet,
@@ -2181,7 +2182,7 @@ mailCampaignsCmd
   .description('List mail campaigns')
   .option(
     '--status <status>',
-    'Filter by status: draft, ready, active, paused, ended (completed and cancelled still work)'
+    'Filter by status: draft, ready, active, paused, ended, archived (completed and cancelled still work)'
   )
   .option('--accepting-properties', 'Only campaigns that properties can be added to now')
   .option('--search <term>', 'Search by campaign name')
@@ -2433,6 +2434,25 @@ Mail already printed still delivers. To reuse its steps, create a new campaign.`
   )
   .action(async (id, options) => {
     await mailCampaignsEnd(id, options);
+  });
+
+mailCampaignsCmd
+  .command('archive <id>')
+  .description('Archive a campaign and cancel its unsent mail')
+  .option('--yes', 'Skip the confirmation (required for agents, scripts and --json)')
+  .option('--json', 'Output as JSON')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  dm mail campaigns archive camp_abc123
+  dm mail campaigns archive camp_abc123 --yes --json
+
+Archiving preserves history and stops reminders. Unsent mail stops and the campaign cannot be paused, resumed or added to.
+Mail already printed still delivers. To reuse its steps, create a new campaign.`
+  )
+  .action(async (id, options) => {
+    await mailCampaignsArchive(id, options);
   });
 
 // ── Designs ──
