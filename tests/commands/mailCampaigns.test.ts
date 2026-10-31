@@ -36,6 +36,7 @@ import { printJson, printKeyValue, printTable } from '../../src/lib/output.js';
 import {
   mailCampaignsAddProperties,
   mailCampaignsEnd,
+  mailCampaignsArchive,
   mailCampaignsEstimateAdd,
   mailCampaignsList,
   parsePropertyIds,
@@ -213,4 +214,14 @@ describe('dm mail campaigns', () => {
     await mailCampaignsEnd('camp_1', { json: true, yes: true });
     expect(mockApiRequest).toHaveBeenCalledTimes(1);
   });
+});
+
+
+it('requires confirmation before archiving and posts the archive request after approval', async () => {
+  mockNonInteractive.mockReturnValue(true);
+  await mailCampaignsArchive('camp_1', { json: true });
+  expect(mockApiRequest).not.toHaveBeenCalled();
+  mockApiRequest.mockResolvedValue({ data: { id: 'camp_1', status: 'archived' } });
+  await mailCampaignsArchive('camp_1', { yes: true, json: true });
+  expect(mockApiRequest).toHaveBeenCalledWith('/mail/campaigns/camp_1/archive', { method: 'POST', body: {} });
 });

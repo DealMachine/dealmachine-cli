@@ -1332,3 +1332,7 @@ The summary counts changed prospects, prospects already in that lifecycle, and
 records that are not prospects. Bulk archive ends mail and keeps list membership;
 it closes open opportunities unless `--no-cascade` is supplied. A positional
 `prospect_...` ID continues to use the single-prospect operation.
+
+## Archive a mail campaign
+
+`dm mail campaigns archive <id> --yes` cancels remaining unsent mail, releases reserved funds, and stops mail-attention reminders while keeping campaign history. Confirm the cancellation before passing `--yes`. Use `dm mail campaigns list --status archived` to view archived campaigns.
