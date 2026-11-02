@@ -837,6 +837,52 @@ export async function mailCampaignsEnd(
   console.log();
 }
 
+export async function mailCampaignsArchive(
+  id: string,
+  options: { yes?: boolean; json?: boolean }
+): Promise<void> {
+  if (!options.yes) {
+    if (isNonInteractive(options)) {
+      console.error(
+        `Archiving a campaign is permanent: unsent mail is cancelled, reserved funds released and reminders stopped. Mailing history is kept. Get the user's approval, then rerun dm mail campaigns archive ${id} with --yes.`
+      );
+      process.exitCode = 1;
+      return;
+    }
+    console.log(
+      chalk.yellow(
+        '  Archiving is permanent. Unsent mail stops, and the campaign can never be resumed or added to again. Mail already printed still delivers.'
+      )
+    );
+    const confirmed = await confirmPrompt(`Archive campaign ${id}?`);
+    if (!confirmed) {
+      console.log(chalk.dim('  Campaign not archived.'));
+      return;
+    }
+  }
+
+  const spinner = createSpinner('Archiving campaign...').start();
+  const data = await apiRequest<EndCampaignResponse>(
+    `/mail/campaigns/${encodeURIComponent(id)}/archive`,
+    { method: 'POST', body: {} }
+  );
+  spinner.stop();
+
+  if (options.json) {
+    printJson(data);
+    return;
+  }
+
+  console.log(chalk.green(`  Campaign ${id} archived.`));
+  if (data.stopped_mail_count !== undefined) {
+    console.log(chalk.dim(`  Stopped ${data.stopped_mail_count} unsent piece(s).`));
+  }
+  if (data.already_printed_count) {
+    console.log(chalk.dim(`  ${data.already_printed_count} piece(s) already printed will still deliver.`));
+  }
+  console.log();
+}
+
 // ============================================================================
 // Designs — List
 // ============================================================================
