@@ -486,7 +486,7 @@ export async function listsRemove(
 
 export async function listsExport(
   listId: string,
-  options: { fields?: string; anchor?: string; json?: boolean }
+  options: { fields?: string; anchor?: string; requirePhone?: boolean; json?: boolean }
 ): Promise<void> {
   const requestBody: Record<string, unknown> = {};
   if (options.fields) {
@@ -495,6 +495,8 @@ export async function listsExport(
   if (options.anchor) {
     requestBody.anchor = options.anchor;
   }
+
+  if (options.requirePhone && options.anchor !== 'property') requestBody.require_phone = true;
 
   const spinner = createSpinner('Starting export...').start();
   const data = await apiRequest<{ data: { export_id: string; status: string; record_count: number } }>(

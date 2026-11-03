@@ -1032,7 +1032,8 @@ Examples:
 
 listsCmd
   .command('export <id>')
-  .description('Export list items (credits charged per record)')
+  .description('Export items from a completed list')
+  .option('--require-phone', 'Only export people with a phone number')
   .option('--fields <csv>', 'Comma-separated list of fields to export')
   .option('--anchor <type>', 'Anchor type: property or person')
   .option('--json', 'Output as JSON')

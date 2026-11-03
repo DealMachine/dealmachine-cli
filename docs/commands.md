@@ -850,17 +850,18 @@ dm lists remove list_abc123 --ids 111,222,333
 
 #### `dm lists export <id>`
 
-Export list items. Credits are charged per record.
+Export items from a completed list. A person-anchored export uses credits for distinct people your organization has not already unlocked this cycle.
 
 ```bash
-dm lists export list_abc123
+dm lists export list_abc123 --require-phone
 dm lists export list_abc123 --fields "full_address,estimated_value,owner_name" --anchor property
 ```
 
 | Option            | Description                              |
 | ----------------- | ---------------------------------------- |
 | `--fields <csv>`  | Comma-separated list of fields to export |
-| `--anchor <type>` | `property` or `person`                   |
+| `--anchor <type>` | `property` or `person` (default)         |
+| `--require-phone` | Only export people with a phone number   |
 
 ---
 

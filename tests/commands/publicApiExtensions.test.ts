@@ -44,7 +44,7 @@ import {
 import { addressesAutocomplete, locationsAutocomplete } from '../../src/commands/locations.js';
 import { drivingGet, drivingList } from '../../src/commands/driving.js';
 import { prospectsList } from '../../src/commands/prospects.js';
-import { listsItems } from '../../src/commands/lists.js';
+import { listsExport, listsItems } from '../../src/commands/lists.js';
 import { phonesDnc } from '../../src/commands/phones.js';
 import { comps } from '../../src/commands/comps.js';
 
@@ -486,6 +486,14 @@ describe('CLI public API extensions', () => {
       }
     }
   );
+
+  it('sends the phone requirement on a person-anchored list export', async () => {
+    mockApiRequest.mockResolvedValue({ data: { export_id: 'export-1' } });
+    await listsExport('list_1', { requirePhone: true, json: true });
+    expect(mockApiRequest).toHaveBeenCalledWith('/lists/list_1/export', {
+      method: 'POST', body: { require_phone: true },
+    });
+  });
 
   it('keeps numeric list person IDs and uses opaque IDs only when the numeric ID is unavailable', async () => {
     mockApiRequest.mockResolvedValue({
