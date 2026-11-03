@@ -84,6 +84,7 @@ import {
   mailCampaignsAddProperties,
   mailCampaignsEstimateAdd,
   mailCampaignsEnd,
+  mailCampaignsArchive,
   mailDesignsList,
   mailDesignsCreate,
   mailDesignsGet,
@@ -1644,6 +1645,11 @@ prospectsCmd
   .option('--record-type <type>', 'property (default) or person')
   .option('--lifecycle <lifecycle>', 'active (default), opportunity, or archived')
   .option('--source <source>', 'Filter by source, e.g. driving, import, api, cli, or mcp')
+  .option('--source-group <group>', 'd4d (added while driving) or map (added any other way)')
+  .option('--added-by <ids>', 'Comma-separated user IDs who added the prospect, e.g. 7,12')
+  .option('--added-after <date>', 'Added on or after this date or ISO date-time (dates are UTC)')
+  .option('--added-before <date>', 'Added before this date or ISO date-time (dates are UTC)')
+  .option('--status <statuses>', 'Comma-separated: hot, warm, cold, follow_up, do_not_contact, none')
   .option('--favorites', 'Only starred prospects')
   .option('--list <listId>', 'Only members of this list')
   .option('--tag <tagId>', 'Only prospects with this tag, e.g. tag_31')
@@ -1658,6 +1664,7 @@ prospectsCmd
 Examples:
   dm prospects list
   dm prospects list --source driving
+  dm prospects list --source-group d4d --added-after 2026-10-01 --status hot,warm
   dm prospects list --lifecycle opportunity --tag tag_31
   dm prospects list --record-type person --search "austin" --json`
   )
@@ -2181,7 +2188,7 @@ mailCampaignsCmd
   .description('List mail campaigns')
   .option(
     '--status <status>',
-    'Filter by status: draft, ready, active, paused, ended (completed and cancelled still work)'
+    'Filter by status: draft, ready, active, paused, ended, archived (completed and cancelled still work)'
   )
   .option('--accepting-properties', 'Only campaigns that properties can be added to now')
   .option('--search <term>', 'Search by campaign name')
@@ -2433,6 +2440,25 @@ Mail already printed still delivers. To reuse its steps, create a new campaign.`
   )
   .action(async (id, options) => {
     await mailCampaignsEnd(id, options);
+  });
+
+mailCampaignsCmd
+  .command('archive <id>')
+  .description('Archive a campaign and cancel its unsent mail')
+  .option('--yes', 'Skip the confirmation (required for agents, scripts and --json)')
+  .option('--json', 'Output as JSON')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  dm mail campaigns archive camp_abc123
+  dm mail campaigns archive camp_abc123 --yes --json
+
+Archiving preserves history and stops reminders. Unsent mail stops and the campaign cannot be paused, resumed or added to.
+Mail already printed still delivers. To reuse its steps, create a new campaign.`
+  )
+  .action(async (id, options) => {
+    await mailCampaignsArchive(id, options);
   });
 
 // ── Designs ──
