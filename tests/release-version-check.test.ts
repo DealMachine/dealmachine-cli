@@ -1,3 +1,7 @@
+import { spawnSync } from 'node:child_process';
+import { mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { readVersions, targetBranch, versionProblems } from '../scripts/check-release-version.mjs';
@@ -47,5 +51,28 @@ describe('version check before staging and master', () => {
     const versions = readVersions(root);
     expect(Object.keys(versions)).toHaveLength(6);
     expect(new Set(Object.values(versions)).size).toBe(1);
+  });
+
+  // The script decides whether to run by its own path, so run it the way CI does, through a symlink too.
+  it.each([
+    ['0.5.1-archive-mail.1', 1],
+    ['0.5.5', 0],
+  ])('runs as a script through a symlinked path: %s exits %i', (version, status) => {
+    const temp = mkdtempSync(join(tmpdir(), 'cli-version-check-'));
+    const checkout = join(temp, 'checkout');
+    mkdirSync(join(checkout, 'npm-alias'), { recursive: true });
+    mkdirSync(join(checkout, 'src'));
+    writeFileSync(join(checkout, 'package.json'), JSON.stringify({ version }));
+    writeFileSync(join(checkout, 'npm-alias/package.json'), JSON.stringify({ version, dependencies: { '@dealmachine/cli': version } }));
+    writeFileSync(join(checkout, 'package-lock.json'), JSON.stringify({ version, packages: { '': { version } } }));
+    writeFileSync(join(checkout, 'src/version.ts'), `export const CLI_VERSION = '${version}';\n`);
+    symlinkSync(join(root, 'scripts'), join(temp, 'linked-scripts'));
+    const run = spawnSync(process.execPath, [join(temp, 'linked-scripts', 'check-release-version.mjs'), checkout], {
+      encoding: 'utf8',
+      env: { PATH: process.env.PATH, GITHUB_BASE_REF: 'staging' },
+    });
+    expect(run.status).toBe(status);
+    if (status) expect(run.stderr).toContain(`${version} is a test version, and this change is headed for staging`);
+    else expect(run.stdout).toContain(`CLI version ${version} may merge into staging`);
   });
 });

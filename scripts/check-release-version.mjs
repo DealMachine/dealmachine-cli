@@ -3,7 +3,7 @@
 // every place that names it agrees. Staging is promoted to master whole, and every master merge
 // publishes to npm latest, so a test version on staging becomes a failed production release
 // (CLI release #59, November 3, 2026; WORK-13683). Test versions stay usable on other branches.
-import { readFileSync } from 'node:fs';
+import { readFileSync, realpathSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { isStableVersion } from './release-plan.mjs';
@@ -54,8 +54,11 @@ export function versionProblems(versions, branch) {
   return problems;
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
-  const root = fileURLToPath(new URL('..', import.meta.url));
+// Compare real paths: a checkout reached through a symlink must still run the check, never skip it.
+const invoked = process.argv[1] ? pathToFileURL(realpathSync(process.argv[1])).href : '';
+if (import.meta.url === invoked) {
+  // An optional checkout folder, for tests; by default the checkout this script lives in.
+  const root = process.argv[2] ?? fileURLToPath(new URL('..', import.meta.url));
   const branch = targetBranch();
   const problems = versionProblems(readVersions(root), branch);
   for (const problem of problems) console.error(process.env.GITHUB_ACTIONS ? `::error::${problem}` : problem);
