@@ -60,7 +60,7 @@ npm run release:pack
 npm run release:publish -- --tag next
 ```
 
-The manual commands retain an explicit `next` or `latest` channel; prereleases cannot use `latest`. Do not merge a prerelease version into master because its automatic production job requires a stable version. Do not run manual publication concurrently with the automatic workflow.
+The manual commands retain an explicit `next` or `latest` channel; prereleases cannot use `latest`. Keep a prerelease version on its own branch. The required `CLI checks` job refuses a pull request or merge queue run into `staging` or `master` whose committed version is not stable, because staging is released to master and the automatic production job publishes only a stable version (CLI release #59 failed this way on November 3, 2026). The same check, `npm run check:version`, fails anywhere the CLI, the alias, its dependency, the lockfile and `src/version.ts` disagree. Before merging a change that used a test version, set a stable one with `release:version`. Do not run manual publication concurrently with the automatic workflow.
 
 ## Verify and recover
 
