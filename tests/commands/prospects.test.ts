@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { prospectsArchive, prospectsReactivate, prospectsGet } from '../../src/commands/prospects.js';
+import { prospectsList, prospectsArchive, prospectsReactivate, prospectsGet } from '../../src/commands/prospects.js';
 
 vi.mock('../../src/lib/config.js', () => ({
   readConfig: () => ({ apiKey: 'fixture-only', apiEnvironment: 'staging' }),
@@ -187,4 +187,13 @@ describe('dm prospects list attribution filters', () => {
       status: 'hot,none',
     });
   });
+});
+
+
+it('sends included and excluded tags in the same prospects request', async () => {
+  fetchMock.mockResolvedValue(jsonResponse(200, { data: [], pagination: { page: 1, per_page: 25, total: 0, has_more: false } }));
+  await prospectsList({ includeTags: 'tag_3,tag_4', excludeTags: 'tag_9', json: true });
+  const params = new URL(String(fetchMock.mock.calls[0][0])).searchParams;
+  expect(params.get('include_tag_ids')).toBe('tag_3,tag_4');
+  expect(params.get('exclude_tag_ids')).toBe('tag_9');
 });
