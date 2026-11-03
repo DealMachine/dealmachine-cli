@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   publish:
-    runs-on: ubuntu-latest
+    runs-on: dm-gcp-public-x64
     steps:
       - name: Check out the public metadata
         uses: actions/checkout@v4
