@@ -844,7 +844,7 @@ export async function mailCampaignsArchive(
   if (!options.yes) {
     if (isNonInteractive(options)) {
       console.error(
-        `Archiving a campaign is permanent: unsent mail is cancelled, reserved funds released and reminders stopped. Mailing history is kept. Get the user's approval, then rerun dm mail campaigns archive ${id} with --yes.`
+        `End the campaign before archiving it. Archiving is permanent: unsent mail is cancelled, reserved funds released and reminders stopped. Mailing history is kept. Get the user's approval, then rerun dm mail campaigns archive ${id} with --yes.`
       );
       process.exitCode = 1;
       return;

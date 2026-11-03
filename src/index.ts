@@ -2444,7 +2444,7 @@ Mail already printed still delivers. To reuse its steps, create a new campaign.`
 
 mailCampaignsCmd
   .command('archive <id>')
-  .description('Archive a campaign and cancel its unsent mail')
+  .description('Archive an ended campaign and cancel its unsent mail')
   .option('--yes', 'Skip the confirmation (required for agents, scripts and --json)')
   .option('--json', 'Output as JSON')
   .addHelpText(
