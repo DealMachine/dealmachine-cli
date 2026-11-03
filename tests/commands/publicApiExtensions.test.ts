@@ -14,6 +14,7 @@ vi.mock('../../src/lib/output.js', () => ({
   parseRequestBody: mockParseRequestBody,
   printJson: vi.fn(),
   printHeader: vi.fn(),
+  printKeyValue: vi.fn(),
   printTable: vi.fn(),
   printPagination: vi.fn(),
   printTotals: vi.fn(),
@@ -30,7 +31,7 @@ vi.mock('../../src/lib/output.js', () => ({
   })),
 }));
 
-import { printJson, printTable } from '../../src/lib/output.js';
+import { printJson, printKeyValue, printTable } from '../../src/lib/output.js';
 import { peopleGet, peopleIds, peopleSearch, peopleExport } from '../../src/commands/people.js';
 import { propertiesGet, propertiesIds, propertiesSearch, propertiesExport } from '../../src/commands/properties.js';
 import {
@@ -488,8 +489,9 @@ describe('CLI public API extensions', () => {
   );
 
   it('sends the phone requirement on a person-anchored list export', async () => {
-    mockApiRequest.mockResolvedValue({ data: { export_id: 'export-1' } });
-    await listsExport('list_1', { requirePhone: true, json: true });
+    mockApiRequest.mockResolvedValue({ export_id: 'export-1', status: 'completed', record_count: 2 });
+    await listsExport('list_1', { requirePhone: true });
+    expect(printKeyValue).toHaveBeenCalledWith({ 'Export ID': 'export-1', 'Status': 'completed', 'Record Count': 2 });
     expect(mockApiRequest).toHaveBeenCalledWith('/lists/list_1/export', {
       method: 'POST', body: { require_phone: true },
     });
