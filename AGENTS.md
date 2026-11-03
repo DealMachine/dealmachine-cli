@@ -10,7 +10,7 @@ Do not copy private beta Commands, private references, application credentials o
 
 Use the existing behavioral tests for changed Commands. Run `npm run check` and `npm run test:package` for packaging or release changes. Cold-start published/deployed evaluations contact external services and are separate release verification.
 
-Set versions with `npm run release:version -- <version>` so the canonical package, alias and lockfile agree. A release requires an explicit channel and approved release scope. Publishing the CLI does not deploy the API, MCP server, docs site or Next app.
+Set versions with `npm run release:version -- <version>` so the canonical package, alias and lockfile agree. A test version such as `0.5.1-feature.1` never merges: the required checks refuse it on a pull request into `staging` or `master`, so set a stable version before queuing. A release requires an explicit channel and approved release scope. Publishing the CLI does not deploy the API, MCP server, docs site or Next app.
 
 Every merge into `master` publishes both packages to npm `latest` within minutes; the GitHub `PRODUCTION_DEPLOY_ENABLED` variable has been `true` since October 22, 2026. A staging merge publishes nothing. Release `staging` into `master` only once the API changes the new commands call are live in production. The committed stable version is a release floor; the workflow selects the next available patch and records the source SHA in both packages. Source delivery alone never authorizes changing the gate or npm publisher settings. See the release guide for retry, integrity and setup requirements.
 
