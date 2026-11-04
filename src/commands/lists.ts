@@ -486,7 +486,7 @@ export async function listsRemove(
 
 export async function listsExport(
   listId: string,
-  options: { fields?: string; anchor?: string; json?: boolean }
+  options: { fields?: string; anchor?: string; requirePhone?: boolean; json?: boolean }
 ): Promise<void> {
   const requestBody: Record<string, unknown> = {};
   if (options.fields) {
@@ -496,8 +496,11 @@ export async function listsExport(
     requestBody.anchor = options.anchor;
   }
 
+  if (options.requirePhone && options.anchor !== 'property') requestBody.require_phone = true;
+
   const spinner = createSpinner('Starting export...').start();
-  const data = await apiRequest<{ data: { export_id: string; status: string; record_count: number } }>(
+  type ExportResult = { export_id: string; status: string; record_count: number };
+  const data = await apiRequest<ExportResult | { data: ExportResult }>(
     `/lists/${listId}/export`,
     { method: 'POST', body: requestBody }
   );
@@ -508,7 +511,7 @@ export async function listsExport(
     return;
   }
 
-  const e = data.data;
+  const e = 'data' in data ? data.data : data;
   printHeader('Export Started');
   printKeyValue({
     'Export ID': e.export_id,
