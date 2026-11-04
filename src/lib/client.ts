@@ -122,6 +122,9 @@ export async function apiRequest<T>(
       console.error(
         chalk.dim('  Add capacity in Billing settings or remove prospects, then retry.')
       );
+    } else if (response.status === 402 && error.error?.code === 'export_limit_exceeded' &&
+               typeof error.error.details?.required_credits === 'number') {
+      console.error(chalk.dim('  Check your data credit balance with dm usage before retrying.'));
     } else if (response.status === 402) {
       console.error(chalk.dim('  Your plan does not cover this request. Check Billing settings.'));
     } else if (response.status === 422) {

@@ -1032,7 +1032,8 @@ Examples:
 
 listsCmd
   .command('export <id>')
-  .description('Export list items (credits charged per record)')
+  .description('Export items from a completed list')
+  .option('--require-phone', 'Only export people with a phone number')
   .option('--fields <csv>', 'Comma-separated list of fields to export')
   .option('--anchor <type>', 'Anchor type: property or person')
   .option('--json', 'Output as JSON')
@@ -2444,7 +2445,7 @@ Mail already printed still delivers. To reuse its steps, create a new campaign.`
 
 mailCampaignsCmd
   .command('archive <id>')
-  .description('Archive a campaign and cancel its unsent mail')
+  .description('Archive an ended campaign and cancel its unsent mail')
   .option('--yes', 'Skip the confirmation (required for agents, scripts and --json)')
   .option('--json', 'Output as JSON')
   .addHelpText(
