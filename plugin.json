@@ -2,7 +2,7 @@
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "dealmachine",
   "version": "0.3.0",
-  "description": "Search and enrich US property, owner, and people data with DealMachine.",
+  "description": "Find US property owners, including LLC owners, and owner phones and emails with DealMachine.",
   "author": {
     "name": "DealMachine",
     "email": "support@dealmachine.com",
