@@ -76,3 +76,16 @@ Replace `0.4.0` with the exact version from the release receipt. `eval:cold-star
 The two npm uploads are separate operations. If the alias upload fails, the implementation may already be available; keep the workflow failed until both are verified. Retry the current master workflow to reuse the same source version and verify its bytes. If the source has moved, its next release can publish a new pair, while the partial version remains available for diagnosis. If bytes differ on a retry, retain the original archive and receipt for an owner; do not bypass the integrity check.
 
 An authorized rollback moves both distribution tags to the previous verified version, then verifies fresh installs. Existing installed versions do not change. The automated publisher never performs that rollback. After a rollback, a new reviewed master commit receives a higher version, even though `latest` points backward. Moving a tag does not rename an immutable package version.
+
+## MCP registry listing
+
+`server.json` is the official MCP Registry listing: the server's name, title, description, version and address. The registry holds nothing else, so tool descriptions, bug fixes and other MCP server changes never need a registry release. The MCP server serves its own copy of the same listing at `https://mcp.dealmachine.com/.well-known/mcp.json`, and the two must agree.
+
+**Publish MCP registry metadata** (`publish-mcp-registry.yml`) runs on its own after a `master` push that changes `server.json`, and every three hours as a catch-up. Behind the same `PRODUCTION_DEPLOY_ENABLED` gate as npm, it compares `server.json` with the live server's copy and with the versions the registry already has, then:
+
+- publishes, and confirms the registry lists the version as latest, when `server.json` has a new version the live server already serves;
+- passes without publishing when the registry already has that exact version;
+- passes without publishing when `server.json` is ahead of the live server, and publishes on a later scheduled run once the MCP server release lands;
+- fails without publishing when `server.json` changed its wording but kept a published version number, when the live server serves a newer version, or when both copies share a version but not their wording. Published registry versions cannot change, so a new wording always needs a new version in both copies.
+
+To change the listing, raise the version and edit the wording in the MCP server's listing and in `server.json` together, and release both. The manual **Run workflow** button repeats the same check, which is safe to rerun; it never republishes an existing version. Before November 4, 2026, nobody had run the manual publish since July, so the registry showed an old description for months (WORK-14167).
