@@ -86,6 +86,6 @@ An authorized rollback moves both distribution tags to the previous verified ver
 - publishes, and confirms the registry lists the version as latest, when `server.json` has a new version the live server already serves;
 - passes without publishing when the registry already has that exact version;
 - passes without publishing when `server.json` is ahead of the live server, and publishes on a later scheduled run once the MCP server release lands;
-- fails without publishing when `server.json` changed its wording but kept a published version number, when the live server serves a newer version, or when both copies share a version but not their wording. Published registry versions cannot change, so a new wording always needs a new version in both copies.
+- fails without publishing, with a message naming the copy to update, when either copy changed its wording but kept a published version number, when the live server serves a newer version, when both unpublished copies share a version but not their wording, or when the registry already has a higher version. Published registry versions cannot change, so a new wording always needs a new version in both copies.
 
 To change the listing, raise the version and edit the wording in the MCP server's listing and in `server.json` together, and release both. The manual **Run workflow** button repeats the same check, which is safe to rerun; it never republishes an existing version. Before November 4, 2026, nobody had run the manual publish since July, so the registry showed an old description for months (WORK-14167).

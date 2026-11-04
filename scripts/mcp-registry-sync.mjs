@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { appendFile, readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isDeepStrictEqual } from 'node:util';
 
 const REGISTRY = 'https://registry.modelcontextprotocol.io';
 const LISTING_FIELDS = ['name', 'title', 'description', 'version', 'repository', 'remotes'];
@@ -24,9 +25,9 @@ export function compareVersions(left, right) {
   return 0;
 }
 
-// Fields that differ between two listings, ignoring the schema address and registry bookkeeping.
+// Fields that differ between two listings, ignoring the schema address, registry bookkeeping and key order.
 export function listingDifferences(left, right) {
-  return LISTING_FIELDS.filter(field => JSON.stringify(left?.[field] ?? null) !== JSON.stringify(right?.[field] ?? null));
+  return LISTING_FIELDS.filter(field => !isDeepStrictEqual(left?.[field] ?? null, right?.[field] ?? null));
 }
 
 /**
@@ -39,34 +40,52 @@ export function planRegistryPublish({ listing, live, published }) {
   parseVersion(listing?.version, 'server.json');
   parseVersion(live?.version, 'The listing mcp.dealmachine.com serves');
   assert.equal(live.name, listing.name, `mcp.dealmachine.com serves the listing for ${live.name}, but server.json is ${listing.name}.`);
+  const nothing = 'Nothing was published.';
 
-  const order = compareVersions(live.version, listing.version);
-  if (order > 0) {
-    throw new Error(
-      `mcp.dealmachine.com serves listing version ${live.version}, newer than ${listing.version} in server.json. ` +
-      'Copy the MCP server\'s listing into server.json with that version, then release this repository. Nothing was published.'
-    );
-  }
-  if (order === 0) {
-    const differences = listingDifferences(listing, live);
-    if (differences.length) {
-      throw new Error(
-        `server.json and mcp.dealmachine.com both say version ${listing.version} but differ in ${differences.join(', ')}. ` +
-        'Make both copies match, with a new version if the wording changed. Nothing was published.'
-      );
-    }
-  }
-
+  // The registry copy of a version is fixed, so it settles which copy changed when the two disagree.
   const existing = published.find(server => server.version === listing.version);
   if (existing) {
     const differences = listingDifferences(listing, existing);
     if (differences.length) {
       throw new Error(
-        `The registry already has version ${listing.version} with a different ${differences.join(', ')}. ` +
-        'Published versions cannot change, so give the new wording a new version in server.json and in the MCP server. Nothing was published.'
+        `server.json changed its ${differences.join(', ')} but kept version ${listing.version}, which the registry already has. ` +
+        `Published versions cannot change, so give the new wording a new version in server.json and in the MCP server's listing. ${nothing}`
       );
     }
-    return { action: 'skip', message: `The registry already lists version ${listing.version}. Nothing to publish.` };
+  }
+
+  const order = compareVersions(live.version, listing.version);
+  if (order > 0) {
+    throw new Error(
+      `mcp.dealmachine.com serves listing version ${live.version}, newer than ${listing.version} in server.json. ` +
+      `Copy the MCP server's listing into server.json with that version, then release this repository. ${nothing}`
+    );
+  }
+  if (order === 0) {
+    const differences = listingDifferences(listing, live);
+    if (differences.length && existing) {
+      throw new Error(
+        `mcp.dealmachine.com changed its ${differences.join(', ')} but kept version ${listing.version}, which the registry already has. ` +
+        `Give the MCP server's listing a new version and copy it into server.json. ${nothing}`
+      );
+    }
+    if (differences.length) {
+      throw new Error(
+        `server.json and mcp.dealmachine.com both say version ${listing.version} but differ in ${differences.join(', ')}. ` +
+        `Make both copies match before it is published. ${nothing}`
+      );
+    }
+  }
+
+  if (existing) return { action: 'skip', message: `The registry already lists version ${listing.version}. Nothing to publish.` };
+
+  const newest = published.reduce((top, server) =>
+    STABLE_VERSION.test(server.version ?? '') && (!top || compareVersions(server.version, top) > 0) ? server.version : top, null);
+  if (newest && compareVersions(newest, listing.version) > 0) {
+    throw new Error(
+      `The registry already has version ${newest}, newer than ${listing.version} in server.json, so this version would never show as the latest. ` +
+      `Raise the version above ${newest} in server.json and in the MCP server's listing. ${nothing}`
+    );
   }
 
   if (order < 0) {

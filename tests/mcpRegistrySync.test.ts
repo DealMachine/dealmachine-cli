@@ -22,10 +22,15 @@ describe('MCP registry publish decision', () => {
     expect(decision.message).toMatch(/still serves 0\.3\.9/);
   });
 
-  it('refuses changed wording that kept an already published version number', () => {
-    const published = [listing({ description: 'Wording already in the registry.' })];
-    expect(() => planRegistryPublish({ listing: listing(), live: listing(), published }))
-      .toThrow(/already has version 0\.4\.0 with a different description/);
+  it('names server.json when its wording changed under a version the registry already has', () => {
+    const published = listing({ description: 'Wording already in the registry.' });
+    expect(() => planRegistryPublish({ listing: listing(), live: published, published: [published] }))
+      .toThrow(/server\.json changed its description but kept version 0\.4\.0/);
+  });
+
+  it('names the MCP server when its wording changed under a version the registry already has', () => {
+    expect(() => planRegistryPublish({ listing: listing(), live: listing({ description: 'Reworded on the server.' }), published: [listing()] }))
+      .toThrow(/mcp\.dealmachine\.com changed its description but kept version 0\.4\.0/);
   });
 
   it('refuses when the live server serves a newer listing than server.json', () => {
@@ -36,6 +41,16 @@ describe('MCP registry publish decision', () => {
   it('refuses when both copies share a version but not their wording', () => {
     expect(() => planRegistryPublish({ listing: listing(), live: listing({ description: 'Other wording.' }), published: [older] }))
       .toThrow(/differ in description/);
+  });
+
+  it('refuses a version below one the registry already has', () => {
+    expect(() => planRegistryPublish({ listing: listing(), live: listing(), published: [listing({ version: '0.5.0' })] }))
+      .toThrow(/already has version 0\.5\.0, newer than 0\.4\.0/);
+  });
+
+  it('treats the same listing written in another key order as unchanged', () => {
+    const reordered = { ...listing(), repository: { source: 'github', url: serverJson.repository.url } };
+    expect(planRegistryPublish({ listing: listing(), live: reordered, published: [reordered] }).action).toBe('skip');
   });
 
   it('matches the copy this repository ships today', () => {
