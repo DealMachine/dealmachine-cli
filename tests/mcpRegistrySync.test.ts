@@ -1,5 +1,7 @@
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, rmSync, symlinkSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { planRegistryPublish } from '../scripts/mcp-registry-sync.mjs';
 
@@ -55,5 +57,19 @@ describe('MCP registry publish decision', () => {
 
   it('matches the copy this repository ships today', () => {
     expect(planRegistryPublish({ listing: serverJson, live: serverJson, published: [serverJson] }).action).toBe('skip');
+  });
+});
+
+describe('MCP registry script entry', () => {
+  it('still runs when started through a linked folder, so a check can never pass without doing anything', () => {
+    const linked = mkdtempSync(join(tmpdir(), 'mcp-registry-'));
+    try {
+      symlinkSync(resolve(__dirname, '../scripts'), join(linked, 'scripts'), 'dir');
+      const result = spawnSync(process.execPath, [join(linked, 'scripts/mcp-registry-sync.mjs'), 'unknown'], { encoding: 'utf8' });
+      expect(result.status).toBe(2);
+      expect(result.stderr).toMatch(/Usage: node scripts\/mcp-registry-sync\.mjs <plan\|verify>/);
+    } finally {
+      rmSync(linked, { recursive: true, force: true });
+    }
   });
 });

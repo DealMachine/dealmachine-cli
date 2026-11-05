@@ -2,6 +2,7 @@
 // The registry holds only the listing (name, title, description, version, repository, address), never tool
 // descriptions, so only a new listing version is ever published. See docs/releases.md#mcp-registry-listing.
 import assert from 'node:assert/strict';
+import { realpathSync } from 'node:fs';
 import { appendFile, readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -168,7 +169,11 @@ async function verify() {
   throw new Error(`The registry did not list version ${listing.version} as the latest within three minutes.`);
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+// Node gives import.meta.url the real path but keeps process.argv[1] as typed, so compare real paths. Otherwise a
+// workspace reached through a linked folder would skip every command and still exit 0.
+const startedDirectly = process.argv[1] && realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url));
+
+if (startedDirectly) {
   const command = process.argv[2];
   const run = { plan, verify }[command];
   if (!run) {
