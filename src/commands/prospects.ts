@@ -107,6 +107,8 @@ export async function prospectsList(options: {
   favorites?: boolean;
   list?: string;
   tag?: string;
+  includeTags?: string;
+  excludeTags?: string;
   search?: string;
   sort?: string;
   page?: string;
@@ -127,6 +129,8 @@ export async function prospectsList(options: {
       favorites_only: options.favorites ? 'true' : undefined,
       list_id: options.list,
       tag_id: options.tag,
+      include_tag_ids: options.includeTags,
+      exclude_tag_ids: options.excludeTags,
       search: options.search,
       sort: options.sort,
       page: options.page ? parseInt(options.page, 10) : undefined,

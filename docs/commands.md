@@ -1363,3 +1363,11 @@ it closes open opportunities unless `--no-cascade` is supplied. A positional
 End the campaign first with `dm mail campaigns end <id> --yes`. Archiving an active, paused, ready or draft campaign returns `409 CAMPAIGN_NOT_ENDED` without changing it.
 
 `dm mail campaigns archive <id> --yes` cancels remaining unsent mail, releases reserved funds, and stops mail-attention reminders while keeping campaign history. Confirm the cancellation before passing `--yes`. Use `dm mail campaigns list --status archived` to view archived campaigns.
+
+
+### Include and exclude prospect tags together
+
+`dm prospects list --include-tags tag_3,tag_4 --exclude-tags tag_9` keeps
+prospects with tag 3 or 4 and no tag 9. Both flags accept up to 50 tag IDs.
+Exclusion wins when a prospect matches both sets. The existing `--tag` flag
+continues to narrow by one tag and can be combined with these flags.
