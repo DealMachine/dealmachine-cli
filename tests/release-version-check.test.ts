@@ -66,7 +66,7 @@ describe('version check before staging and master', () => {
     writeFileSync(join(checkout, 'npm-alias/package.json'), JSON.stringify({ version, dependencies: { '@dealmachine/cli': version } }));
     writeFileSync(join(checkout, 'package-lock.json'), JSON.stringify({ version, packages: { '': { version } } }));
     writeFileSync(join(checkout, 'src/version.ts'), `export const CLI_VERSION = '${version}';\n`);
-    symlinkSync(join(root, 'scripts'), join(temp, 'linked-scripts'));
+    symlinkSync(join(root, 'scripts'), join(temp, 'linked-scripts'), process.platform === 'win32' ? 'junction' : 'dir');
     const run = spawnSync(process.execPath, [join(temp, 'linked-scripts', 'check-release-version.mjs'), checkout], {
       encoding: 'utf8',
       env: { PATH: process.env.PATH, GITHUB_BASE_REF: 'staging' },
