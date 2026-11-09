@@ -1666,6 +1666,8 @@ prospectsCmd
   .option('--favorites', 'Only starred prospects')
   .option('--list <listId>', 'Only members of this list')
   .option('--tag <tagId>', 'Only prospects with this tag, e.g. tag_31')
+  .option('--include-tags <ids>', 'Match any of these comma-separated tag IDs')
+  .option('--exclude-tags <ids>', 'Exclude any of these comma-separated tag IDs at the same time')
   .option('--search <term>', 'Address words for properties; name or city for people')
   .option('--sort <order>', 'newest (default) or oldest')
   .option('-p, --page <n>', 'Page number')
