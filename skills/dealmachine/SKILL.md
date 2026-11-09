@@ -1,6 +1,6 @@
 ---
 name: dealmachine
-description: Search and enrich US property, owner, and people data with DealMachine through its MCP tools or dm CLI. Use for real estate lead generation, property and owner lookup, contact enrichment, prospecting, comparable sales, market research, targeted lists or exports, and credit-aware DealMachine workflows.
+description: Find US property owners, including LLC and company owners, and owner phones and emails, and search and enrich property and people data with DealMachine through its MCP tools or dm CLI. Use for real estate lead generation, finding who owns a property, property and owner lookup, contact enrichment, prospecting, comparable sales, market research, targeted lists or exports, and credit-aware DealMachine workflows.
 license: MIT
 allowed-tools:
   - Bash(dm agents)

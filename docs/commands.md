@@ -483,7 +483,10 @@ Export properties as CSV (up to 1,000,000 records). Returns signed download URLs
 dm properties export -f search.json
 dm properties export -f search.json --require-phone --scrub-dnc
 dm properties export --body '{"locations": [...]}' --mobile-only --json
+dm properties export --body '{"locations": [...], "fields": ["estimated_value", "tags"]}'
 ```
+
+Add `tags` to `fields` for a column listing every tag your team applied to each row's property, joined with `; ` (blank when untagged, no credits). To search by tag, use the `tags` filter: `{"filter_id": "tags", "operator": "contains_any", "value": ["Vacant"]}`.
 
 | Option              | Description                                                 |
 | ------------------- | ----------------------------------------------------------- |
@@ -720,6 +723,14 @@ dm comps --body '{
 
 Output includes subject property details, value estimation with confidence interval, summary statistics (average/median price, price per sqft), and a table of comparable properties.
 
+Use `criteria.min_year_built` and `criteria.max_year_built` in a JSON body or file to limit comps by year built:
+
+```bash
+dm comps --body '{"property_ids":["prop_12345"],"criteria":{"min_year_built":1980,"max_year_built":2000}}' --json
+```
+
+Both bounds are inclusive whole years from 1 through 9999. Either bound can stand alone; the minimum must not exceed the maximum. Omit both for no year filter. A specified bound excludes comps with an unknown year built.
+
 ---
 
 ### Lists Commands
@@ -839,17 +850,18 @@ dm lists remove list_abc123 --ids 111,222,333
 
 #### `dm lists export <id>`
 
-Export list items. Credits are charged per record.
+Export items from a completed list. A person-anchored export uses credits for distinct people your organization has not already unlocked this cycle.
 
 ```bash
-dm lists export list_abc123
+dm lists export list_abc123 --require-phone
 dm lists export list_abc123 --fields "full_address,estimated_value,owner_name" --anchor property
 ```
 
 | Option            | Description                              |
 | ----------------- | ---------------------------------------- |
 | `--fields <csv>`  | Comma-separated list of fields to export |
-| `--anchor <type>` | `property` or `person`                   |
+| `--anchor <type>` | `property` or `person` (default)         |
+| `--require-phone` | Only export people with a phone number   |
 
 ---
 
@@ -862,9 +874,22 @@ dm driving list
 dm driving list --mode free_drive --started-after 2026-08-01 --json
 dm driving get drive_session_501
 dm prospects list --source driving
+dm prospects list --source-group d4d --added-by 7 --added-after 2026-10-01
 ```
 
 Drive history is read-only. Use `dm prospects` for lifecycle, notes, and tags on linked Prospects.
+
+`dm prospects list` also filters by how and when a Prospect was added:
+
+| Option | Description |
+| --- | --- |
+| `--source-group <group>` | `d4d` (added while driving) or `map` (added any other way) |
+| `--added-by <ids>` | Comma-separated user IDs who added the Prospect, e.g. `7,12` |
+| `--added-after <date>` | Added on or after this ISO date or date-time. A date means midnight UTC |
+| `--added-before <date>` | Added before this ISO date or date-time (not inclusive) |
+| `--status <statuses>` | Comma-separated: `hot`, `warm`, `cold`, `follow_up`, `do_not_contact`, `none` |
+
+Property and person records from `dm properties` and `dm people` include `is_prospect`, `prospect_source`, `prospect_added_by` and `prospect_added_at`.
 
 ### Mail Campaign Commands
 
@@ -1340,3 +1365,9 @@ Property search, count and export accept `international_owner` in the `--body` f
 ```bash
 dm properties count --body '{"filters":[{"filter_id":"international_owner","value":true}]}'
 ```
+
+## Archive a mail campaign
+
+End the campaign first with `dm mail campaigns end <id> --yes`. Archiving an active, paused, ready or draft campaign returns `409 CAMPAIGN_NOT_ENDED` without changing it.
+
+`dm mail campaigns archive <id> --yes` cancels remaining unsent mail, releases reserved funds, and stops mail-attention reminders while keeping campaign history. Confirm the cancellation before passing `--yes`. Use `dm mail campaigns list --status archived` to view archived campaigns.

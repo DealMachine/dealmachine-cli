@@ -84,6 +84,7 @@ import {
   mailCampaignsAddProperties,
   mailCampaignsEstimateAdd,
   mailCampaignsEnd,
+  mailCampaignsArchive,
   mailDesignsList,
   mailDesignsCreate,
   mailDesignsGet,
@@ -653,6 +654,12 @@ Examples:
 // Properties commands
 // ============================================================================
 
+const internationalOwnerHelp = `
+International Owner: use international_owner in --body filters.
+  true: foreign mailing addresses (Canada and other countries).
+  false: only addresses without a foreign indicator. Omit for Any.
+  Source: MailingForeignAddressInd; US territories are excluded.`;
+
 const propertiesCmd = program
   .command('properties')
   .alias('prop')
@@ -682,13 +689,9 @@ Examples:
   dm properties search -f search-query.json --estimate-cost
   dm properties search -f query.json --json             Estimate automatically
   dm properties search -f query.json --json --yes       Run after approval
-  cat query.json | dm properties search --json
-
-International Owner: use international_owner in --body filters.
-  true: foreign mailing addresses (Canada and other countries).
-  false: only addresses without a foreign indicator. Omit for Any.
-  Source: MailingForeignAddressInd; US territories are excluded.`
+  cat query.json | dm properties search --json`
   )
+  .addHelpText('after', internationalOwnerHelp)
   .action(async (options) => {
     await propertiesSearch(options);
   });
@@ -711,8 +714,10 @@ propertiesCmd
     `
 Examples:
   dm properties count --body '{"locations":[{"type":"zip_code","code":"78704"}]}'
-  dm properties count -f query.json --json`
+  dm properties count -f query.json --json
+  dm properties count --body '{"filters":[{"filter_id":"international_owner","value":true}]}'`
   )
+  .addHelpText('after', internationalOwnerHelp)
   .action(async (options) => {
     await propertiesCount(options);
   });
@@ -796,8 +801,10 @@ Examples:
   dm properties export -f query.json --json
   dm properties export -f query.json --require-phone --scrub-dnc
   dm properties export --body '{"locations":[{"type":"state","code":"TX"}]}' --mobile-only
-  dm properties export -f query.json --anchor property --contact-audience none`
+  dm properties export -f query.json --anchor property --contact-audience none
+  dm properties export --body '{"filters":[{"filter_id":"international_owner","value":false}]}'`
   )
+  .addHelpText('after', internationalOwnerHelp)
   .action(async (options) => {
     await propertiesExport(options);
   });
@@ -1037,7 +1044,8 @@ Examples:
 
 listsCmd
   .command('export <id>')
-  .description('Export list items (credits charged per record)')
+  .description('Export items from a completed list')
+  .option('--require-phone', 'Only export people with a phone number')
   .option('--fields <csv>', 'Comma-separated list of fields to export')
   .option('--anchor <type>', 'Anchor type: property or person')
   .option('--json', 'Output as JSON')
@@ -1650,6 +1658,11 @@ prospectsCmd
   .option('--record-type <type>', 'property (default) or person')
   .option('--lifecycle <lifecycle>', 'active (default), opportunity, or archived')
   .option('--source <source>', 'Filter by source, e.g. driving, import, api, cli, or mcp')
+  .option('--source-group <group>', 'd4d (added while driving) or map (added any other way)')
+  .option('--added-by <ids>', 'Comma-separated user IDs who added the prospect, e.g. 7,12')
+  .option('--added-after <date>', 'Added on or after this date or ISO date-time (dates are UTC)')
+  .option('--added-before <date>', 'Added before this date or ISO date-time (dates are UTC)')
+  .option('--status <statuses>', 'Comma-separated: hot, warm, cold, follow_up, do_not_contact, none')
   .option('--favorites', 'Only starred prospects')
   .option('--list <listId>', 'Only members of this list')
   .option('--tag <tagId>', 'Only prospects with this tag, e.g. tag_31')
@@ -1664,6 +1677,7 @@ prospectsCmd
 Examples:
   dm prospects list
   dm prospects list --source driving
+  dm prospects list --source-group d4d --added-after 2026-10-01 --status hot,warm
   dm prospects list --lifecycle opportunity --tag tag_31
   dm prospects list --record-type person --search "austin" --json`
   )
@@ -2187,7 +2201,7 @@ mailCampaignsCmd
   .description('List mail campaigns')
   .option(
     '--status <status>',
-    'Filter by status: draft, ready, active, paused, ended (completed and cancelled still work)'
+    'Filter by status: draft, ready, active, paused, ended, archived (completed and cancelled still work)'
   )
   .option('--accepting-properties', 'Only campaigns that properties can be added to now')
   .option('--search <term>', 'Search by campaign name')
@@ -2439,6 +2453,25 @@ Mail already printed still delivers. To reuse its steps, create a new campaign.`
   )
   .action(async (id, options) => {
     await mailCampaignsEnd(id, options);
+  });
+
+mailCampaignsCmd
+  .command('archive <id>')
+  .description('Archive an ended campaign and cancel its unsent mail')
+  .option('--yes', 'Skip the confirmation (required for agents, scripts and --json)')
+  .option('--json', 'Output as JSON')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  dm mail campaigns archive camp_abc123
+  dm mail campaigns archive camp_abc123 --yes --json
+
+Archiving preserves history and stops reminders. Unsent mail stops and the campaign cannot be paused, resumed or added to.
+Mail already printed still delivers. To reuse its steps, create a new campaign.`
+  )
+  .action(async (id, options) => {
+    await mailCampaignsArchive(id, options);
   });
 
 // ── Designs ──

@@ -99,6 +99,11 @@ export async function prospectsList(options: {
   recordType?: string;
   lifecycle?: string;
   source?: string;
+  sourceGroup?: string;
+  addedBy?: string;
+  addedAfter?: string;
+  addedBefore?: string;
+  status?: string;
   favorites?: boolean;
   list?: string;
   tag?: string;
@@ -114,6 +119,11 @@ export async function prospectsList(options: {
       record_type: options.recordType,
       lifecycle: options.lifecycle,
       source: options.source,
+      source_group: options.sourceGroup,
+      added_by: options.addedBy,
+      added_after: options.addedAfter,
+      added_before: options.addedBefore,
+      status: options.status,
       favorites_only: options.favorites ? 'true' : undefined,
       list_id: options.list,
       tag_id: options.tag,

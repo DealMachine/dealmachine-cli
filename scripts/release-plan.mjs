@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 
 export const releasePackages = ['@dealmachine/cli', 'dealmachine'];
 const stable = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
+// The one rule for a version npm latest may carry. The pull request version check uses it too.
+export const isStableVersion = version => stable.test(version ?? '');
 const compare = (left, right) => {
   const a = left.split('.').map(Number);
   const b = right.split('.').map(Number);

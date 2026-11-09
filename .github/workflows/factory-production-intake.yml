@@ -18,7 +18,7 @@ concurrency:
 jobs:
   intake:
     if: github.ref == 'refs/heads/master' && vars.FACTORY_PRODUCTION_INTAKE_ENABLED == 'true'
-    runs-on: ubuntu-latest
+    runs-on: dm-gcp-public-x64
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
