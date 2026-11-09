@@ -850,17 +850,18 @@ dm lists remove list_abc123 --ids 111,222,333
 
 #### `dm lists export <id>`
 
-Export list items. Credits are charged per record.
+Export items from a completed list. A person-anchored export uses credits for distinct people your organization has not already unlocked this cycle.
 
 ```bash
-dm lists export list_abc123
+dm lists export list_abc123 --require-phone
 dm lists export list_abc123 --fields "full_address,estimated_value,owner_name" --anchor property
 ```
 
 | Option            | Description                              |
 | ----------------- | ---------------------------------------- |
 | `--fields <csv>`  | Comma-separated list of fields to export |
-| `--anchor <type>` | `property` or `person`                   |
+| `--anchor <type>` | `property` or `person` (default)         |
+| `--require-phone` | Only export people with a phone number   |
 
 ---
 
@@ -1368,3 +1369,11 @@ Use `dm mail settings update --body` with all three fields `default_single_send_
 End the campaign first with `dm mail campaigns end <id> --yes`. Archiving an active, paused, ready or draft campaign returns `409 CAMPAIGN_NOT_ENDED` without changing it.
 
 `dm mail campaigns archive <id> --yes` cancels remaining unsent mail, releases reserved funds, and stops mail-attention reminders while keeping campaign history. Confirm the cancellation before passing `--yes`. Use `dm mail campaigns list --status archived` to view archived campaigns.
+
+
+### Include and exclude prospect tags together
+
+`dm prospects list --include-tags tag_3,tag_4 --exclude-tags tag_9` keeps
+prospects with tag 3 or 4 and no tag 9. Both flags accept up to 50 tag IDs.
+Exclusion wins when a prospect matches both sets. The existing `--tag` flag
+continues to narrow by one tag and can be combined with these flags.

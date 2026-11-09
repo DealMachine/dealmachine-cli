@@ -1,20 +1,51 @@
 name: Publish MCP registry metadata
 
+# Publishes server.json to the official MCP Registry only when it holds a new listing version that
+# mcp.dealmachine.com already serves. A master release that changes the listing checks at once; the schedule
+# catches a listing whose MCP server release lands later. Every other run publishes nothing.
+# See docs/releases.md#mcp-registry-listing.
 on:
+  push:
+    branches: [master]
+    paths:
+      - server.json
+      - scripts/mcp-registry-sync.mjs
+      - .github/workflows/publish-mcp-registry.yml
+  schedule:
+    - cron: '41 */3 * * *'
   workflow_dispatch:
 
 permissions:
   contents: read
-  id-token: write
+
+concurrency:
+  group: mcp-registry-publish
+  cancel-in-progress: false
 
 jobs:
   publish:
+    if: github.ref == 'refs/heads/master' && vars.PRODUCTION_DEPLOY_ENABLED == 'true'
     runs-on: dm-gcp-public-x64
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: Check out the public metadata
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Compare the listing with the live server and the registry
+        id: plan
+        run: node scripts/mcp-registry-sync.mjs plan
 
       - name: Install the official MCP publisher
+        if: steps.plan.outputs.action == 'publish'
         shell: bash
         run: |
           curl -fsSLO https://github.com/modelcontextprotocol/registry/releases/download/v1.8.0/mcp-publisher_linux_amd64.tar.gz
@@ -22,7 +53,13 @@ jobs:
           tar -xzf mcp-publisher_linux_amd64.tar.gz mcp-publisher
 
       - name: Authenticate with GitHub OIDC
+        if: steps.plan.outputs.action == 'publish'
         run: ./mcp-publisher login github-oidc
 
-      - name: Publish version 0.3.0
+      - name: Publish listing version ${{ steps.plan.outputs.version }}
+        if: steps.plan.outputs.action == 'publish'
         run: ./mcp-publisher publish server.json
+
+      - name: Confirm the registry lists it as the latest
+        if: steps.plan.outputs.action == 'publish'
+        run: node scripts/mcp-registry-sync.mjs verify

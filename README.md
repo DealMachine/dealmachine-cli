@@ -29,7 +29,7 @@ The plugin package includes:
 - A credit-aware skill that discovers filters and fields, counts first, and confirms large paid operations
 - A portable [Agent Plugins](https://agent-plugins.org/) package for compatible clients
 - Manifests for OpenAI, Claude, Cursor, GitHub Copilot, and Gemini
-- Official MCP Registry metadata in `server.json`
+- Official MCP Registry metadata in `server.json`, published on its own when its version changes ([MCP registry listing](docs/releases.md#mcp-registry-listing))
 
 The portable package follows Agent Plugins 1.0.0:
 

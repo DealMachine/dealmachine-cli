@@ -81,3 +81,21 @@ it('names each rejected field when the API returns a validation error', async ()
     'status: status must be one of draft, ready, active, paused, ended, completed, cancelled'
   );
 });
+
+it('shows the list export credit shortfall and points to the balance', async () => {
+  readConfig.mockReturnValue({ apiKey: 'stored-account-key' });
+  const message = 'This export requires 12 data credits. You have 8 and need 4 more.';
+  vi.stubGlobal('fetch', async () => Response.json({
+    error: {
+      code: 'export_limit_exceeded', message,
+      details: { required_credits: 12, remaining_credits: 8, reason: 'insufficient_for_request' },
+    },
+  }, { status: 402 }));
+  const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+  vi.spyOn(process, 'exit').mockImplementation(() => { throw new Error('exit'); });
+  await expect(apiRequest('/lists/example/export', { method: 'POST', body: {} })).rejects.toThrow('exit');
+  const output = error.mock.calls.flat().join(' ');
+  expect(output).toContain(message);
+  expect(output).toContain('dm usage');
+  expect(output).not.toContain('plan does not cover');
+});

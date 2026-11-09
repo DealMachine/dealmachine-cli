@@ -1032,7 +1032,8 @@ Examples:
 
 listsCmd
   .command('export <id>')
-  .description('Export list items (credits charged per record)')
+  .description('Export items from a completed list')
+  .option('--require-phone', 'Only export people with a phone number')
   .option('--fields <csv>', 'Comma-separated list of fields to export')
   .option('--anchor <type>', 'Anchor type: property or person')
   .option('--json', 'Output as JSON')
@@ -1653,6 +1654,8 @@ prospectsCmd
   .option('--favorites', 'Only starred prospects')
   .option('--list <listId>', 'Only members of this list')
   .option('--tag <tagId>', 'Only prospects with this tag, e.g. tag_31')
+  .option('--include-tags <ids>', 'Match any of these comma-separated tag IDs')
+  .option('--exclude-tags <ids>', 'Exclude any of these comma-separated tag IDs at the same time')
   .option('--search <term>', 'Address words for properties; name or city for people')
   .option('--sort <order>', 'newest (default) or oldest')
   .option('-p, --page <n>', 'Page number')
