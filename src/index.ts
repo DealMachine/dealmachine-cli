@@ -654,6 +654,12 @@ Examples:
 // Properties commands
 // ============================================================================
 
+const internationalOwnerHelp = `
+International Owner: use international_owner in --body filters.
+  true: foreign mailing addresses (Canada and other countries).
+  false: only addresses without a foreign indicator. Omit for Any.
+  Source: MailingForeignAddressInd; US territories are excluded.`;
+
 const propertiesCmd = program
   .command('properties')
   .alias('prop')
@@ -679,11 +685,13 @@ propertiesCmd
     `
 Examples:
   dm properties search --body '{"locations":[{"type":"zip_code","code":"78704"}]}'
+  dm properties search --body '{"filters":[{"filter_id":"international_owner","value":true}]}' --estimate-cost
   dm properties search -f search-query.json --estimate-cost
   dm properties search -f query.json --json             Estimate automatically
   dm properties search -f query.json --json --yes       Run after approval
   cat query.json | dm properties search --json`
   )
+  .addHelpText('after', internationalOwnerHelp)
   .action(async (options) => {
     await propertiesSearch(options);
   });
@@ -706,8 +714,10 @@ propertiesCmd
     `
 Examples:
   dm properties count --body '{"locations":[{"type":"zip_code","code":"78704"}]}'
-  dm properties count -f query.json --json`
+  dm properties count -f query.json --json
+  dm properties count --body '{"filters":[{"filter_id":"international_owner","value":true}]}'`
   )
+  .addHelpText('after', internationalOwnerHelp)
   .action(async (options) => {
     await propertiesCount(options);
   });
@@ -791,8 +801,10 @@ Examples:
   dm properties export -f query.json --json
   dm properties export -f query.json --require-phone --scrub-dnc
   dm properties export --body '{"locations":[{"type":"state","code":"TX"}]}' --mobile-only
-  dm properties export -f query.json --anchor property --contact-audience none`
+  dm properties export -f query.json --anchor property --contact-audience none
+  dm properties export --body '{"filters":[{"filter_id":"international_owner","value":false}]}'`
   )
+  .addHelpText('after', internationalOwnerHelp)
   .action(async (options) => {
     await propertiesExport(options);
   });
