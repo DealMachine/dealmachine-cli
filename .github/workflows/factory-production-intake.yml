@@ -5,7 +5,7 @@ on:
     types: [requested, in_progress, completed]
     branches: [master]
   schedule:
-    - cron: '3,13,23,33,43,53 * * * *'
+    - cron: '43 8 * * *'
   workflow_dispatch:
 permissions:
   contents: read
