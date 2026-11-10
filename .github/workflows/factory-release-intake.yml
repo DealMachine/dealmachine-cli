@@ -1,8 +1,11 @@
 name: Track staging work in Factory
 
 on:
+  # Staging has no deployment workflow to follow here, so each push to staging reports at once (WORK-17632).
+  push:
+    branches: [staging]
   schedule:
-    - cron: '7,17,27,37,47,57 * * * *'
+    - cron: '17 8 * * *'
   workflow_dispatch:
 
 permissions:
