@@ -605,8 +605,8 @@ export async function mailCampaignsCostEstimate(
   printKeyValue({
     Recipients: e.recipient_count,
     'Price Per Card': `$${(e.price_per_card_cents / 100).toFixed(2)}`,
-    [e.repeat_forever ? 'Scheduled Cost' : 'Total Cost']: `${e.total_cost_dollars.toFixed(2)}`,
-    ...(e.repeat_forever ? { Repeats: `Every ${e.repeat_interval_days} days until stopped`, 'Each Repeat': `${((e.recurring_cost_cents ?? 0) / 100).toFixed(2)}` } : {}),
+    [e.repeat_forever ? 'Scheduled Cost' : 'Total Cost']: `$${e.total_cost_dollars.toFixed(2)}`,
+    ...(e.repeat_forever ? { Repeats: `Every ${e.repeat_interval_days} days until stopped`, 'Each Repeat': `$${((e.recurring_cost_cents ?? 0) / 100).toFixed(2)}` } : {}),
     'Pay Now': `$${(e.pay_now_cost_cents / 100).toFixed(2)}`,
     'Pay Later': `$${(e.pay_later_cost_cents / 100).toFixed(2)}`,
     'Wallet Balance': `$${(e.wallet_balance_cents / 100).toFixed(2)}`,

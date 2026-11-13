@@ -37,6 +37,7 @@ import {
   mailCampaignsAddProperties,
   mailCampaignsEnd,
   mailCampaignsArchive,
+  mailCampaignsCostEstimate,
   mailCampaignsEstimateAdd,
   mailCampaignsList,
   parsePropertyIds,
@@ -183,6 +184,35 @@ describe('dm mail campaigns', () => {
     await mailCampaignsEstimateAdd('camp_1', { count: '0' });
     expect(mockApiRequest).toHaveBeenCalledTimes(1);
     expect(process.exitCode).toBe(1);
+  });
+
+  const costEstimate = {
+    recipient_count: 10,
+    price_per_card_cents: 75,
+    total_cost_cents: 1500,
+    total_cost_dollars: 15,
+    pay_now_cost_cents: 750,
+    pay_later_cost_cents: 750,
+    wallet_balance_cents: 10000,
+    wallet_available_cents: 10000,
+    can_afford: true,
+    auto_reload_available: true,
+  };
+
+  it('shows the total cost of a finite campaign in dollars', async () => {
+    mockApiRequest.mockResolvedValueOnce({ data: costEstimate });
+    await mailCampaignsCostEstimate('camp_1', {});
+    expect(printKeyValue).toHaveBeenLastCalledWith(expect.objectContaining({ 'Total Cost': '$15.00' }));
+  });
+
+  it('shows the scheduled and repeat costs of a repeating campaign in dollars', async () => {
+    mockApiRequest.mockResolvedValueOnce({
+      data: { ...costEstimate, repeat_forever: true, repeat_interval_days: 30, recurring_cost_cents: 750 },
+    });
+    await mailCampaignsCostEstimate('camp_1', {});
+    expect(printKeyValue).toHaveBeenLastCalledWith(
+      expect.objectContaining({ 'Scheduled Cost': '$15.00', 'Each Repeat': '$7.50' })
+    );
   });
 
   it('ends a campaign only after the person confirms', async () => {
