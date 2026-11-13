@@ -1358,6 +1358,12 @@ records that are not prospects. Bulk archive ends mail and keeps list membership
 it closes open opportunities unless `--no-cascade` is supplied. A positional
 `prospect_...` ID continues to use the single-prospect operation.
 
+### Repeat forever
+
+Campaign step JSON accepts `repeat_forever: true` on the final step with `interval_days` of 21, 30, 45, 60, 90, 180, or 365. Earlier steps finish first. Read the cost estimate and enable auto-reload before sending; later pieces are charged when they go out. The CLI shows Forever for recurring steps; their bounded `repeat_count` is not a stopping limit.
+
+Use `dm mail settings update --body` with all three fields `default_single_send_interval_days`, `default_single_send_repeat_count`, and `default_single_send_repeat_forever` to save the workspace default for single postcards on web and mobile. This does not send mail or change existing campaigns.
+
 ### International Owner
 
 Property search, count and export accept `international_owner` in the `--body` filters array. Use `true` for foreign mailing addresses, `false` to exclude them, or omit the filter for Any. The source is `MailingForeignAddressInd`: Canada (`C`) and other foreign addresses (`Y`) are international; null values and US territories are excluded.
