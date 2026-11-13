@@ -1364,6 +1364,14 @@ Campaign step JSON accepts `repeat_forever: true` on the final step with `interv
 
 Use `dm mail settings update --body` with all three fields `default_single_send_interval_days`, `default_single_send_repeat_count`, and `default_single_send_repeat_forever` to save the workspace default for single postcards on web and mobile. This does not send mail or change existing campaigns.
 
+### International Owner
+
+Property search, count and export accept `international_owner` in the `--body` filters array. Use `true` for foreign mailing addresses, `false` to exclude them, or omit the filter for Any. The source is `MailingForeignAddressInd`: Canada (`C`) and other foreign addresses (`Y`) are international; null values and US territories are excluded.
+
+```bash
+dm properties count --body '{"filters":[{"filter_id":"international_owner","value":true}]}'
+```
+
 ## Archive a mail campaign
 
 End the campaign first with `dm mail campaigns end <id> --yes`. Archiving an active, paused, ready or draft campaign returns `409 CAMPAIGN_NOT_ENDED` without changing it.
