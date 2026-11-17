@@ -654,6 +654,12 @@ Examples:
 // Properties commands
 // ============================================================================
 
+const internationalOwnerHelp = `
+International Owner: use international_owner in --body filters.
+  true: foreign mailing addresses (Canada and other countries).
+  false: only addresses without a foreign indicator. Omit for Any.
+  Source: MailingForeignAddressInd; US territories are excluded.`;
+
 const propertiesCmd = program
   .command('properties')
   .alias('prop')
@@ -679,11 +685,13 @@ propertiesCmd
     `
 Examples:
   dm properties search --body '{"locations":[{"type":"zip_code","code":"78704"}]}'
+  dm properties search --body '{"filters":[{"filter_id":"international_owner","value":true}]}' --estimate-cost
   dm properties search -f search-query.json --estimate-cost
   dm properties search -f query.json --json             Estimate automatically
   dm properties search -f query.json --json --yes       Run after approval
   cat query.json | dm properties search --json`
   )
+  .addHelpText('after', internationalOwnerHelp)
   .action(async (options) => {
     await propertiesSearch(options);
   });
@@ -706,8 +714,10 @@ propertiesCmd
     `
 Examples:
   dm properties count --body '{"locations":[{"type":"zip_code","code":"78704"}]}'
-  dm properties count -f query.json --json`
+  dm properties count -f query.json --json
+  dm properties count --body '{"filters":[{"filter_id":"international_owner","value":true}]}'`
   )
+  .addHelpText('after', internationalOwnerHelp)
   .action(async (options) => {
     await propertiesCount(options);
   });
@@ -791,8 +801,10 @@ Examples:
   dm properties export -f query.json --json
   dm properties export -f query.json --require-phone --scrub-dnc
   dm properties export --body '{"locations":[{"type":"state","code":"TX"}]}' --mobile-only
-  dm properties export -f query.json --anchor property --contact-audience none`
+  dm properties export -f query.json --anchor property --contact-audience none
+  dm properties export --body '{"filters":[{"filter_id":"international_owner","value":false}]}'`
   )
+  .addHelpText('after', internationalOwnerHelp)
   .action(async (options) => {
     await propertiesExport(options);
   });
@@ -1207,6 +1219,14 @@ enrichCmd
     '--contact-audience <audience>',
     'Include contacts: owners, owners_and_family, renters, residents, none'
   )
+  .option(
+    '--anchor <anchor>',
+    'properties (default) or people: return owners, no property credit unless a paid field is requested'
+  )
+  .option(
+    '--require-phone',
+    'With --anchor people, leave out (and do not charge) owners without a phone'
+  )
   .option('--fields <csv>', 'Comma-separated field IDs from dm fields')
   .option('--json', 'Output as JSON')
   .addHelpText(
@@ -1216,6 +1236,7 @@ Examples:
   dm enrich address "123 Main St, Austin, TX 78704" --json
   dm enrich address "123 Main St, Austin, TX" --contact-audience none --json
   dm enrich address "123 Main St, Austin, TX" --contact-audience owners
+  dm enrich address "123 Main St, Austin, TX" --anchor people --require-phone
   dm enrich address -f addresses.csv --json          Batch enrich from CSV
   dm enrich address --body '{"addresses":[{"full_address":"123 Main St, Austin, TX"}]}'`
   )
@@ -1232,6 +1253,14 @@ enrichCmd
     '--contact-audience <audience>',
     'Include contacts: owners, owners_and_family, renters, residents, none'
   )
+  .option(
+    '--anchor <anchor>',
+    'properties (default) or people: return owners, no property credit unless a paid field is requested'
+  )
+  .option(
+    '--require-phone',
+    'With --anchor people, leave out (and do not charge) owners without a phone'
+  )
   .option('--fields <csv>', 'Comma-separated field IDs from dm fields')
   .option('--json', 'Output as JSON')
   .addHelpText(
@@ -1239,7 +1268,8 @@ enrichCmd
     `
 Examples:
   dm enrich latlng "30.2672,-97.7431" --json
-  dm enrich latlng -f coordinates.csv --contact-audience owners`
+  dm enrich latlng -f coordinates.csv --contact-audience owners
+  dm enrich latlng "30.2672,-97.7431" --anchor people --require-phone --json`
   )
   .action(async (coords, options) => {
     await enrichLatLng(coords, options);
@@ -1256,6 +1286,14 @@ enrichCmd
     '--contact-audience <audience>',
     'Include contacts: owners, owners_and_family, renters, residents, none'
   )
+  .option(
+    '--anchor <anchor>',
+    'properties (default) or people: return owners, no property credit unless a paid field is requested'
+  )
+  .option(
+    '--require-phone',
+    'With --anchor people, leave out (and do not charge) owners without a phone'
+  )
   .option('--fields <csv>', 'Comma-separated field IDs from dm fields')
   .option('--json', 'Output as JSON')
   .addHelpText(
@@ -1263,7 +1301,8 @@ enrichCmd
     `
 Examples:
   dm enrich apn "01-2345-0067" --state TX --json
-  dm enrich apn -f parcels.csv --state TX`
+  dm enrich apn -f parcels.csv --state TX
+  dm enrich apn "01-2345-0067" --state TX --anchor people --require-phone --json`
   )
   .action(async (apn, options) => {
     await enrichApn(apn, options);
@@ -1654,6 +1693,8 @@ prospectsCmd
   .option('--favorites', 'Only starred prospects')
   .option('--list <listId>', 'Only members of this list')
   .option('--tag <tagId>', 'Only prospects with this tag, e.g. tag_31')
+  .option('--include-tags <ids>', 'Match any of these comma-separated tag IDs')
+  .option('--exclude-tags <ids>', 'Exclude any of these comma-separated tag IDs at the same time')
   .option('--search <term>', 'Address words for properties; name or city for people')
   .option('--sort <order>', 'newest (default) or oldest')
   .option('-p, --page <n>', 'Page number')

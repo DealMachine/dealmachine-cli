@@ -176,6 +176,7 @@ Search has no name filter. Route a known name to State DM5 and use `dm enrich na
 - `dm enrich latlng "30.25,-97.75"`
 - `dm enrich apn "12345678"`
 - Add `--contact-audience owners` if contacts needed
+- Only need the owners' contact info? Add `--anchor people` (and `--require-phone` to skip owners without a phone): owners cost 1 people credit each, and the property comes back with its address and location for no property credit unless a paid property field is requested
 
 ### State DM5: Person Enrichment
 
@@ -625,6 +626,7 @@ dm people ids per_12345 per_67890
 dm enrich address "123 Main St, Austin TX 78704"
 dm enrich address --body '{"data": [{"full_address": "123 Main St, Austin TX"}]}'
 dm enrich address "123 Main St, Austin TX" --contact-audience owners
+dm enrich address "123 Main St, Austin TX" --anchor people --require-phone
 
 # By coordinates
 dm enrich latlng "30.2598,-97.7544"
@@ -924,9 +926,9 @@ These fields are always returned, even without requesting `fields`:
 
 **Workflow:**
 
-1. Enrich: `dm enrich address "742 Evergreen Terrace, Springfield" --contact-audience owners --json`
-2. Cost: 1 credit for property + 1 per owner found
-3. Present: Owner name, phone, email, property details
+1. Enrich: `dm enrich address "742 Evergreen Terrace, Springfield" --anchor people --json`
+2. Cost: 1 people credit per owner found; no property credit, since the property comes back with only its address and location (add `--fields` with a paid property field and it costs 1 property credit too)
+3. Present: Owner name, phone, email, property address
 
 ### Example 3: Reverse Phone Lookup
 

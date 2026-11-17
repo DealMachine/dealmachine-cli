@@ -1,8 +1,9 @@
 name: Track staging work in Factory
 
 on:
+  # No workflow runs on a push to staging here, so this catches up hourly instead of every 10 minutes (WORK-17632).
   schedule:
-    - cron: '7,17,27,37,47,57 * * * *'
+    - cron: '17 * * * *'
   workflow_dispatch:
 
 permissions:

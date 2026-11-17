@@ -33,7 +33,7 @@ vi.mock('../../src/lib/output.js', () => ({
 
 import { printJson, printKeyValue, printTable } from '../../src/lib/output.js';
 import { peopleGet, peopleIds, peopleSearch, peopleExport } from '../../src/commands/people.js';
-import { propertiesGet, propertiesIds, propertiesSearch, propertiesExport } from '../../src/commands/properties.js';
+import { propertiesGet, propertiesIds, propertiesSearch, propertiesExport, propertiesCount } from '../../src/commands/properties.js';
 import {
   enrichAddress,
   enrichApn,
@@ -164,6 +164,29 @@ describe('CLI public API extensions', () => {
         data: [{ apn: '1234567890' }],
         contact_audience: 'none',
       },
+    });
+  });
+
+  it('passes the people anchor and require_phone to every property lookup', async () => {
+    const owners = { contactAudience: 'owners', anchor: 'people', requirePhone: true, json: true };
+    const expected = { contact_audience: 'owners', anchor: 'people', require_phone: true };
+
+    await enrichAddress('123 Main St, Austin, TX 78704', owners);
+    expect(mockApiRequest).toHaveBeenCalledWith('/enrichment/address', {
+      method: 'POST',
+      body: { data: [{ full_address: '123 Main St, Austin, TX 78704' }], ...expected },
+    });
+
+    await enrichLatLng('30.25,-97.75', owners);
+    expect(mockApiRequest).toHaveBeenCalledWith('/enrichment/reverse-geocode', {
+      method: 'POST',
+      body: { data: [{ latitude: 30.25, longitude: -97.75 }], ...expected },
+    });
+
+    await enrichApn('1234567890', owners);
+    expect(mockApiRequest).toHaveBeenCalledWith('/enrichment/apn', {
+      method: 'POST',
+      body: { data: [{ apn: '1234567890' }], ...expected },
     });
   });
 
@@ -619,4 +642,12 @@ describe.each([
       },
     });
   });
+});
+
+
+it.each([true, false])('passes International Owner %s to property counts without changing its meaning', async (value) => {
+  const filters = [{ filter_id: "international_owner", value }];
+  mockParseRequestBody.mockResolvedValue({ filters });
+  await propertiesCount({ body: JSON.stringify({ filters }), json: true });
+  expect(mockApiRequest).toHaveBeenCalledWith("/properties/search/count", expect.objectContaining({ method: "POST", body: expect.objectContaining({ filters }) }));
 });

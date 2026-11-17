@@ -597,10 +597,14 @@ dm enrich address -f addresses.csv --contact-audience owners
 | `--body <json>`                 | Request body as JSON string                                   |
 | `-f, --file <path>`             | Read from JSON or CSV file                                    |
 | `--contact-audience <audience>` | `owners`, `owners_and_family`, `renters`, `residents`, `none` |
+| `--anchor <anchor>`             | `properties` (default) or `people`, which returns the owners and charges no property credit unless `--fields` asks for paid property data |
+| `--require-phone`               | With `--anchor people`, leave out owners without a phone; they are not charged |
 | `--fields <csv>`                | Comma-separated property or people field IDs                  |
 | `--json`                        | Output as JSON                                                |
 
 Use `--contact-audience none` whenever you only need the property. The response omits contacts and consumes zero people credits.
+
+To get a known property's owners without paying for the property, use `--anchor people`. Each returned owner costs 1 people credit, and the property comes back with its ID, address and location for free. Add `--require-phone` to leave out owners without a phone.
 
 #### `dm enrich latlng [coords]`
 
@@ -609,8 +613,11 @@ Look up a property by latitude/longitude coordinates.
 ```bash
 dm enrich latlng 30.25,-97.75
 dm enrich latlng -f coordinates.csv --contact-audience none --fields estimated_value
+dm enrich latlng 30.25,-97.75 --anchor people --require-phone
 # CSV columns: latitude, longitude (or lat, lng/lon/long)
 ```
+
+Takes the same `--contact-audience`, `--anchor`, `--require-phone` and `--fields` options as `dm enrich address`.
 
 #### `dm enrich apn [apn]`
 
@@ -627,6 +634,8 @@ dm enrich apn -f parcels.csv --zip 78704 --fields estimated_value
 | `--state <code>`                | Narrow by state (e.g., TX)                                    |
 | `--zip <code>`                  | Narrow by ZIP code                                            |
 | `--contact-audience <audience>` | `owners`, `owners_and_family`, `renters`, `residents`, `none` |
+| `--anchor <anchor>`             | `properties` (default) or `people`, which returns the owners and charges no property credit unless `--fields` asks for paid property data |
+| `--require-phone`               | With `--anchor people`, leave out owners without a phone; they are not charged |
 | `--fields <csv>`                | Comma-separated property or people field IDs                  |
 
 #### `dm enrich email [email]`
@@ -1358,8 +1367,30 @@ records that are not prospects. Bulk archive ends mail and keeps list membership
 it closes open opportunities unless `--no-cascade` is supplied. A positional
 `prospect_...` ID continues to use the single-prospect operation.
 
+### Repeat forever
+
+Campaign step JSON accepts `repeat_forever: true` on the final step with `interval_days` of 21, 30, 45, 60, 90, 180, or 365. Earlier steps finish first. Read the cost estimate and enable auto-reload before sending; later pieces are charged when they go out. The CLI shows Forever for recurring steps; their bounded `repeat_count` is not a stopping limit.
+
+Use `dm mail settings update --body` with all three fields `default_single_send_interval_days`, `default_single_send_repeat_count`, and `default_single_send_repeat_forever` to save the workspace default for single postcards on web and mobile. This does not send mail or change existing campaigns.
+
+### International Owner
+
+Property search, count and export accept `international_owner` in the `--body` filters array. Use `true` for foreign mailing addresses, `false` to exclude them, or omit the filter for Any. The source is `MailingForeignAddressInd`: Canada (`C`) and other foreign addresses (`Y`) are international; null values and US territories are excluded.
+
+```bash
+dm properties count --body '{"filters":[{"filter_id":"international_owner","value":true}]}'
+```
+
 ## Archive a mail campaign
 
 End the campaign first with `dm mail campaigns end <id> --yes`. Archiving an active, paused, ready or draft campaign returns `409 CAMPAIGN_NOT_ENDED` without changing it.
 
 `dm mail campaigns archive <id> --yes` cancels remaining unsent mail, releases reserved funds, and stops mail-attention reminders while keeping campaign history. Confirm the cancellation before passing `--yes`. Use `dm mail campaigns list --status archived` to view archived campaigns.
+
+
+### Include and exclude prospect tags together
+
+`dm prospects list --include-tags tag_3,tag_4 --exclude-tags tag_9` keeps
+prospects with tag 3 or 4 and no tag 9. Both flags accept up to 50 tag IDs.
+Exclusion wins when a prospect matches both sets. The existing `--tag` flag
+continues to narrow by one tag and can be combined with these flags.
