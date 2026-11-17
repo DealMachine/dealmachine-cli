@@ -167,6 +167,29 @@ describe('CLI public API extensions', () => {
     });
   });
 
+  it('passes the people anchor and require_phone to every property lookup', async () => {
+    const owners = { contactAudience: 'owners', anchor: 'people', requirePhone: true, json: true };
+    const expected = { contact_audience: 'owners', anchor: 'people', require_phone: true };
+
+    await enrichAddress('123 Main St, Austin, TX 78704', owners);
+    expect(mockApiRequest).toHaveBeenCalledWith('/enrichment/address', {
+      method: 'POST',
+      body: { data: [{ full_address: '123 Main St, Austin, TX 78704' }], ...expected },
+    });
+
+    await enrichLatLng('30.25,-97.75', owners);
+    expect(mockApiRequest).toHaveBeenCalledWith('/enrichment/reverse-geocode', {
+      method: 'POST',
+      body: { data: [{ latitude: 30.25, longitude: -97.75 }], ...expected },
+    });
+
+    await enrichApn('1234567890', owners);
+    expect(mockApiRequest).toHaveBeenCalledWith('/enrichment/apn', {
+      method: 'POST',
+      body: { data: [{ apn: '1234567890' }], ...expected },
+    });
+  });
+
   it('passes fields to a single person lookup', async () => {
     mockApiRequest.mockResolvedValue({
       data: { dm_person_id: 'per_123' },

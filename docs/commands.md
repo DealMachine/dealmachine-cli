@@ -597,10 +597,14 @@ dm enrich address -f addresses.csv --contact-audience owners
 | `--body <json>`                 | Request body as JSON string                                   |
 | `-f, --file <path>`             | Read from JSON or CSV file                                    |
 | `--contact-audience <audience>` | `owners`, `owners_and_family`, `renters`, `residents`, `none` |
+| `--anchor <anchor>`             | `properties` (default) or `people`, which returns the owners and charges no property credit unless `--fields` asks for paid property data |
+| `--require-phone`               | With `--anchor people`, leave out owners without a phone; they are not charged |
 | `--fields <csv>`                | Comma-separated property or people field IDs                  |
 | `--json`                        | Output as JSON                                                |
 
 Use `--contact-audience none` whenever you only need the property. The response omits contacts and consumes zero people credits.
+
+To get a known property's owners without paying for the property, use `--anchor people`. Each returned owner costs 1 people credit, and the property comes back with its ID, address and location for free. Add `--require-phone` to leave out owners without a phone.
 
 #### `dm enrich latlng [coords]`
 
@@ -609,8 +613,11 @@ Look up a property by latitude/longitude coordinates.
 ```bash
 dm enrich latlng 30.25,-97.75
 dm enrich latlng -f coordinates.csv --contact-audience none --fields estimated_value
+dm enrich latlng 30.25,-97.75 --anchor people --require-phone
 # CSV columns: latitude, longitude (or lat, lng/lon/long)
 ```
+
+Takes the same `--contact-audience`, `--anchor`, `--require-phone` and `--fields` options as `dm enrich address`.
 
 #### `dm enrich apn [apn]`
 
@@ -627,6 +634,8 @@ dm enrich apn -f parcels.csv --zip 78704 --fields estimated_value
 | `--state <code>`                | Narrow by state (e.g., TX)                                    |
 | `--zip <code>`                  | Narrow by ZIP code                                            |
 | `--contact-audience <audience>` | `owners`, `owners_and_family`, `renters`, `residents`, `none` |
+| `--anchor <anchor>`             | `properties` (default) or `people`, which returns the owners and charges no property credit unless `--fields` asks for paid property data |
+| `--require-phone`               | With `--anchor people`, leave out owners without a phone; they are not charged |
 | `--fields <csv>`                | Comma-separated property or people field IDs                  |
 
 #### `dm enrich email [email]`

@@ -197,12 +197,32 @@ async function runBatchEnrichment(opts: {
 // Address
 // ============================================================================
 
+/**
+ * The request fields shared by the address, map point and parcel number lookups.
+ * `anchor: "people"` returns owners as the results and skips the property credit
+ * unless a paid property field is requested; `require_phone` (people anchor only)
+ * leaves out owners without a phone.
+ */
+function propertyLookupOptions(options: {
+  contactAudience?: string;
+  anchor?: string;
+  requirePhone?: boolean;
+}): Record<string, unknown> {
+  const body: Record<string, unknown> = {};
+  if (options.contactAudience) body.contact_audience = options.contactAudience;
+  if (options.anchor) body.anchor = options.anchor;
+  if (options.requirePhone) body.require_phone = true;
+  return body;
+}
+
 export async function enrichAddress(
   address: string | undefined,
   options: {
     body?: string;
     file?: string;
     contactAudience?: string;
+    anchor?: string;
+    requirePhone?: boolean;
     fields?: string;
     json?: boolean;
   }
@@ -241,7 +261,7 @@ export async function enrichAddress(
     }
 
     const extraBody: Record<string, unknown> = {};
-    if (options.contactAudience) extraBody.contact_audience = options.contactAudience;
+    Object.assign(extraBody, propertyLookupOptions(options));
     if (options.fields) extraBody.fields = parseFieldsCsv(options.fields);
 
     const merged = await runBatchEnrichment({
@@ -263,7 +283,7 @@ export async function enrichAddress(
   let requestBody: Record<string, unknown>;
   if (address) {
     requestBody = { data: [{ full_address: address }] };
-    if (options.contactAudience) requestBody.contact_audience = options.contactAudience;
+    Object.assign(requestBody, propertyLookupOptions(options));
     if (options.fields) requestBody.fields = parseFieldsCsv(options.fields);
   } else {
     requestBody = await parseRequestBody(options);
@@ -314,6 +334,8 @@ export async function enrichLatLng(
     body?: string;
     file?: string;
     contactAudience?: string;
+    anchor?: string;
+    requirePhone?: boolean;
     fields?: string;
     json?: boolean;
   }
@@ -341,7 +363,7 @@ export async function enrichLatLng(
       .filter((c) => !isNaN(c.latitude) && !isNaN(c.longitude));
 
     const extraBody: Record<string, unknown> = {};
-    if (options.contactAudience) extraBody.contact_audience = options.contactAudience;
+    Object.assign(extraBody, propertyLookupOptions(options));
     if (options.fields) extraBody.fields = parseFieldsCsv(options.fields);
 
     const merged = await runBatchEnrichment({
@@ -370,7 +392,7 @@ export async function enrichLatLng(
       process.exit(1);
     }
     requestBody = { data: [{ latitude: lat, longitude: lng }] };
-    if (options.contactAudience) requestBody.contact_audience = options.contactAudience;
+    Object.assign(requestBody, propertyLookupOptions(options));
     if (options.fields) requestBody.fields = parseFieldsCsv(options.fields);
   } else {
     requestBody = await parseRequestBody(options);
@@ -423,6 +445,8 @@ export async function enrichApn(
     state?: string;
     zip?: string;
     contactAudience?: string;
+    anchor?: string;
+    requirePhone?: boolean;
     fields?: string;
     json?: boolean;
   }
@@ -444,7 +468,7 @@ export async function enrichApn(
     const items = rows.map((r) => ({ apn: r[apnCol] })).filter((a) => a.apn);
 
     const extraBody: Record<string, unknown> = {};
-    if (options.contactAudience) extraBody.contact_audience = options.contactAudience;
+    Object.assign(extraBody, propertyLookupOptions(options));
     if (options.fields) extraBody.fields = parseFieldsCsv(options.fields);
     if (options.state) extraBody.location = { type: 'state', code: options.state };
     else if (options.zip) extraBody.location = { type: 'zip_code', code: options.zip };
@@ -470,7 +494,7 @@ export async function enrichApn(
     requestBody = { data: [{ apn }] };
     if (options.state) requestBody.location = { type: 'state', code: options.state };
     else if (options.zip) requestBody.location = { type: 'zip_code', code: options.zip };
-    if (options.contactAudience) requestBody.contact_audience = options.contactAudience;
+    Object.assign(requestBody, propertyLookupOptions(options));
     if (options.fields) requestBody.fields = parseFieldsCsv(options.fields);
   } else {
     requestBody = await parseRequestBody(options);
