@@ -1219,6 +1219,14 @@ enrichCmd
     '--contact-audience <audience>',
     'Include contacts: owners, owners_and_family, renters, residents, none'
   )
+  .option(
+    '--anchor <anchor>',
+    'properties (default) or people: return owners, no property credit unless a paid field is requested'
+  )
+  .option(
+    '--require-phone',
+    'With --anchor people, leave out (and do not charge) owners without a phone'
+  )
   .option('--fields <csv>', 'Comma-separated field IDs from dm fields')
   .option('--json', 'Output as JSON')
   .addHelpText(
@@ -1228,6 +1236,7 @@ Examples:
   dm enrich address "123 Main St, Austin, TX 78704" --json
   dm enrich address "123 Main St, Austin, TX" --contact-audience none --json
   dm enrich address "123 Main St, Austin, TX" --contact-audience owners
+  dm enrich address "123 Main St, Austin, TX" --anchor people --require-phone
   dm enrich address -f addresses.csv --json          Batch enrich from CSV
   dm enrich address --body '{"addresses":[{"full_address":"123 Main St, Austin, TX"}]}'`
   )
@@ -1244,6 +1253,14 @@ enrichCmd
     '--contact-audience <audience>',
     'Include contacts: owners, owners_and_family, renters, residents, none'
   )
+  .option(
+    '--anchor <anchor>',
+    'properties (default) or people: return owners, no property credit unless a paid field is requested'
+  )
+  .option(
+    '--require-phone',
+    'With --anchor people, leave out (and do not charge) owners without a phone'
+  )
   .option('--fields <csv>', 'Comma-separated field IDs from dm fields')
   .option('--json', 'Output as JSON')
   .addHelpText(
@@ -1251,7 +1268,8 @@ enrichCmd
     `
 Examples:
   dm enrich latlng "30.2672,-97.7431" --json
-  dm enrich latlng -f coordinates.csv --contact-audience owners`
+  dm enrich latlng -f coordinates.csv --contact-audience owners
+  dm enrich latlng "30.2672,-97.7431" --anchor people --require-phone --json`
   )
   .action(async (coords, options) => {
     await enrichLatLng(coords, options);
@@ -1268,6 +1286,14 @@ enrichCmd
     '--contact-audience <audience>',
     'Include contacts: owners, owners_and_family, renters, residents, none'
   )
+  .option(
+    '--anchor <anchor>',
+    'properties (default) or people: return owners, no property credit unless a paid field is requested'
+  )
+  .option(
+    '--require-phone',
+    'With --anchor people, leave out (and do not charge) owners without a phone'
+  )
   .option('--fields <csv>', 'Comma-separated field IDs from dm fields')
   .option('--json', 'Output as JSON')
   .addHelpText(
@@ -1275,7 +1301,8 @@ enrichCmd
     `
 Examples:
   dm enrich apn "01-2345-0067" --state TX --json
-  dm enrich apn -f parcels.csv --state TX`
+  dm enrich apn -f parcels.csv --state TX
+  dm enrich apn "01-2345-0067" --state TX --anchor people --require-phone --json`
   )
   .action(async (apn, options) => {
     await enrichApn(apn, options);
