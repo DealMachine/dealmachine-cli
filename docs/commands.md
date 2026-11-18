@@ -501,7 +501,7 @@ Add `tags` to `fields` for a column listing every tag your team applied to each 
 | `--active-phones-only` | Exclude phone numbers with inactive or unknown reported activity |
 | `--address-format <full\|parsed>` | Property address as one column (default) or as street, city, state, ZIP and county columns |
 | `--person-address <full\|parsed>` | Add each contact's home address as one column or in parts |
-| `--phone-activity` | Add is_phone_1_active to is_phone_3_active (Yes or No). Not available on V2 yet |
+| `--phone-activity` | Add is_phone_1_active to is_phone_3_active (Yes or No) |
 | `--phone-match-confidence` | Add each phone's match confidence, 0 to 100 (contact rows) |
 | `--email-match-confidence` | Add each email's match confidence, 0 to 100 (contact rows) |
 | `--email-verification-status` | Add each email's verification status (contact rows) |

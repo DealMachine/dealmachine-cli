@@ -37,7 +37,7 @@ export function addExportColumnOptions(command: Command, source: 'properties' | 
   return command
     .option(
       '--phone-activity',
-      'Add is_phone_1_active to is_phone_3_active (Yes or No). Not available on V2 yet'
+      'Add whether each phone is active, Yes or No (is_phone_1_active to is_phone_3_active)'
     )
     .option('--phone-match-confidence', 'Add each phone match confidence, 0 to 100 (contact rows)')
     .option('--email-match-confidence', 'Add each email match confidence, 0 to 100 (contact rows)')
