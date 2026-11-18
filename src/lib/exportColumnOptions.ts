@@ -1,4 +1,4 @@
-import type { Command } from 'commander';
+import { Option, type Command } from 'commander';
 
 /**
  * The web export screen's column options (WORK-21135) as export Command
@@ -18,18 +18,27 @@ export interface ExportColumnCliOptions {
 const ADDRESS_FORMATS = ['full', 'parsed'];
 
 export function addExportColumnOptions(command: Command, source: 'properties' | 'people'): Command {
-  command.option(
-    '--address-format <format>',
-    'Address columns: full (one column, default) or parsed (street, city, state, ZIP and county columns)'
+  command.addOption(
+    new Option(
+      '--address-format <format>',
+      source === 'properties'
+        ? 'Property address as one column (full, default) or as street, city, state, ZIP and county columns (parsed)'
+        : 'Person address as one column (full, default) or as street, city, state and ZIP columns (parsed)'
+    ).choices(ADDRESS_FORMATS)
   );
   if (source === 'properties') {
-    command.option(
-      '--person-address <format>',
-      "Add each contact's home address: full (one column) or parsed (street, city, state and ZIP columns)"
+    command.addOption(
+      new Option(
+        '--person-address <format>',
+        "Add each contact's home address as one column (full) or as street, city, state and ZIP columns (parsed)"
+      ).choices(ADDRESS_FORMATS)
     );
   }
   return command
-    .option('--phone-activity', 'Add is_phone_1_active to is_phone_3_active (Yes or No)')
+    .option(
+      '--phone-activity',
+      'Add is_phone_1_active to is_phone_3_active (Yes or No). Not available on V2 yet'
+    )
     .option('--phone-match-confidence', 'Add each phone match confidence, 0 to 100 (contact rows)')
     .option('--email-match-confidence', 'Add each email match confidence, 0 to 100 (contact rows)')
     .option('--email-verification-status', 'Add each email verification status (contact rows)');
