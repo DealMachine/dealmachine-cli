@@ -22,6 +22,10 @@ import {
   type SearchProtocolCliOptions,
 } from '../lib/searchProtocol.js';
 import {
+  applyExportColumnOptions,
+  type ExportColumnCliOptions,
+} from '../lib/exportColumnOptions.js';
+import {
   applyCreditSafety,
   printAutomaticEstimateNotice,
   type CreditSafetyOptions,
@@ -354,7 +358,8 @@ export async function peopleExport(
     landlineOnly?: boolean;
     scrubDnc?: boolean;
     activePhonesOnly?: boolean;
-  } & SearchProtocolCliOptions
+  } & SearchProtocolCliOptions &
+    ExportColumnCliOptions
 ): Promise<void> {
   const requestBody = await parseRequestBody(options);
   applySearchProtocolOptions(requestBody, options, 'people');
@@ -366,6 +371,7 @@ export async function peopleExport(
   if (options.landlineOnly) requestBody.landline_only = true;
   if (options.scrubDnc) requestBody.scrub_dnc = true;
   if (options.activePhonesOnly) requestBody.active_phones_only = true;
+  applyExportColumnOptions(requestBody, options);
 
   const spinner = createSpinner('Exporting people (this may take 30-60 seconds)...').start();
   const data = await apiRequest<ExportResponse>('/people/export', {

@@ -484,6 +484,7 @@ dm properties export -f search.json
 dm properties export -f search.json --require-phone --scrub-dnc
 dm properties export --body '{"locations": [...]}' --mobile-only --json
 dm properties export --body '{"locations": [...], "fields": ["estimated_value", "tags"]}'
+dm properties export -f search.json --address-format parsed --person-address parsed --phone-match-confidence
 ```
 
 Add `tags` to `fields` for a column listing every tag your team applied to each row's property, joined with `; ` (blank when untagged, no credits). To search by tag, use the `tags` filter: `{"filter_id": "tags", "operator": "contains_any", "value": ["Vacant"]}`.
@@ -498,6 +499,12 @@ Add `tags` to `fields` for a column listing every tag your team applied to each 
 | `--landline-only`   | Only include landline phone numbers                         |
 | `--scrub-dnc`       | Exclude contacts on the Do Not Call registry                |
 | `--active-phones-only` | Exclude phone numbers with inactive or unknown reported activity |
+| `--address-format <full\|parsed>` | Property address as one column (default) or as street, city, state, ZIP and county columns |
+| `--person-address <full\|parsed>` | Add each contact's home address as one column or in parts |
+| `--phone-activity` | Add is_phone_1_active to is_phone_3_active (Yes or No). Not available on V2 yet |
+| `--phone-match-confidence` | Add each phone's match confidence, 0 to 100 (contact rows) |
+| `--email-match-confidence` | Add each email's match confidence, 0 to 100 (contact rows) |
+| `--email-verification-status` | Add each email's verification status (contact rows) |
 | `--json`            | Output as JSON                                              |
 
 ---
@@ -565,7 +572,7 @@ dm people export -f search.json --require-email
 dm people export -f search.json --mobile-only --scrub-dnc --json
 ```
 
-Contact filter options are the same as `dm properties export`.
+Contact filter and column options are the same as `dm properties export`, except `--person-address`: on a people export, `--address-format parsed` already splits the person address.
 
 ---
 

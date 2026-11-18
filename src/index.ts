@@ -3,6 +3,7 @@
 import { realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { Command } from 'commander';
+import { addExportColumnOptions } from './lib/exportColumnOptions.js';
 import { CLI_VERSION } from './version.js';
 import { login } from './commands/login.js';
 import { logout } from './commands/logout.js';
@@ -764,7 +765,7 @@ Examples:
     await propertiesIds({ ...options, ids: ids.length > 0 ? ids : undefined });
   });
 
-propertiesCmd
+const propertiesExportCommand = propertiesCmd
   .command('export')
   .description('Export property-owner contacts as CSV by default (up to 1,000,000 records)')
   .option('--body <json>', 'Request body as JSON string')
@@ -802,12 +803,14 @@ Examples:
   dm properties export -f query.json --require-phone --scrub-dnc
   dm properties export --body '{"locations":[{"type":"state","code":"TX"}]}' --mobile-only
   dm properties export -f query.json --anchor property --contact-audience none
+  dm properties export -f query.json --address-format parsed --person-address parsed --phone-match-confidence
   dm properties export --body '{"filters":[{"filter_id":"international_owner","value":false}]}'`
   )
   .addHelpText('after', internationalOwnerHelp)
   .action(async (options) => {
     await propertiesExport(options);
   });
+addExportColumnOptions(propertiesExportCommand, 'properties');
 
 // ============================================================================
 // Comps commands
@@ -1169,7 +1172,7 @@ Examples:
     await peopleIds({ ...options, ids: ids.length > 0 ? ids : undefined });
   });
 
-peopleCmd
+const peopleExportCommand = peopleCmd
   .command('export')
   .description('Export people as CSV (up to 1,000,000 records)')
   .option('--body <json>', 'Request body as JSON string')
@@ -1201,6 +1204,7 @@ Examples:
   .action(async (options) => {
     await peopleExport(options);
   });
+addExportColumnOptions(peopleExportCommand, 'people');
 
 // ============================================================================
 // Enrichment commands

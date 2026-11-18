@@ -651,3 +651,54 @@ it.each([true, false])('passes International Owner %s to property counts without
   await propertiesCount({ body: JSON.stringify({ filters }), json: true });
   expect(mockApiRequest).toHaveBeenCalledWith("/properties/search/count", expect.objectContaining({ method: "POST", body: expect.objectContaining({ filters }) }));
 });
+
+// WORK-21135: the web export screen's column options as export flags.
+describe.each([
+  ['people', peopleExport],
+  ['properties', propertiesExport],
+] as const)('%s export column flags', (source, exportRecords) => {
+  const audience = source === 'properties' ? { anchor: 'person', contact_audience: 'owners' } : {};
+
+  it('sends every selected column setting', async () => {
+    mockParseRequestBody.mockResolvedValue({});
+    await exportRecords({
+      addressFormat: 'parsed',
+      ...(source === 'properties' ? { personAddress: 'parsed' } : {}),
+      phoneActivity: true,
+      phoneMatchConfidence: true,
+      emailMatchConfidence: true,
+      emailVerificationStatus: true,
+      json: true,
+    });
+    expect(mockApiRequest).toHaveBeenCalledWith(`/${source}/export`, {
+      method: 'POST',
+      body: {
+        ...audience,
+        address_format: 'parsed',
+        ...(source === 'properties' ? { person_address: 'parsed' } : {}),
+        include_phone_activity: true,
+        include_phone_match_confidence: true,
+        include_email_match_confidence: true,
+        include_email_verification_status: true,
+      },
+    });
+  });
+
+  it('sends none of them when no flag is given', async () => {
+    mockParseRequestBody.mockResolvedValue({ fields: ['phone_1'] });
+    await exportRecords({ json: true });
+    expect(mockApiRequest).toHaveBeenCalledWith(`/${source}/export`, {
+      method: 'POST',
+      body: { fields: ['phone_1'], ...audience },
+    });
+  });
+
+  it('refuses an unknown address format before calling the API', async () => {
+    mockParseRequestBody.mockResolvedValue({});
+    mockApiRequest.mockClear();
+    await expect(exportRecords({ addressFormat: 'split', json: true })).rejects.toThrow(
+      '--address-format must be full or parsed'
+    );
+    expect(mockApiRequest).not.toHaveBeenCalled();
+  });
+});
