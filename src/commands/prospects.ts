@@ -10,6 +10,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { basename } from 'node:path';
 
 import { apiRequest, formatDate } from '../lib/client.js';
+import { confirmPrompt, isNonInteractive } from '../lib/confirm.js';
 import {
   createSpinner,
   parseRequestBody,
@@ -355,6 +356,79 @@ export async function prospectsRemove(
     return;
   }
   console.log(chalk.green(`✓ Archived ${id}`));
+  console.log();
+}
+
+type EndMailResponse = {
+  data: {
+    recipients_removed: number;
+    pieces_cancelled: number;
+    scheduled_sends_cancelled: number;
+    campaigns_ended: string[];
+  };
+};
+
+/**
+ * Stops every campaign from mailing one prospect, without archiving it or
+ * changing its status. Unsent mail is cancelled, so an agent has to pass --yes.
+ */
+export async function prospectsEndMail(
+  id: string,
+  options: { yes?: boolean; json?: boolean }
+): Promise<void> {
+  if (!options.yes) {
+    if (isNonInteractive(options)) {
+      console.error(
+        `Ending mail cancels this prospect's unsent mail and removes it from every campaign it is in. Get the user's approval, then rerun dm prospects end-mail ${id} with --yes.`
+      );
+      process.exitCode = 1;
+      return;
+    }
+    console.log(
+      chalk.yellow(
+        '  Unsent mail for this prospect is cancelled and it leaves every campaign it is in. Mail already printed still delivers. The prospect itself is not changed.'
+      )
+    );
+    const confirmed = await confirmPrompt(`End mail for ${id}?`);
+    if (!confirmed) {
+      console.log(chalk.dim('  Mail not ended.'));
+      return;
+    }
+  }
+
+  const spinner = createSpinner('Ending mail...').start();
+  const data = await apiRequest<EndMailResponse>(`/prospects/${encodeURIComponent(id)}/mail/end`, {
+    method: 'POST',
+    body: {},
+  });
+  spinner.stop();
+
+  if (options.json) {
+    printJson(data);
+    return;
+  }
+
+  const result = data.data;
+  // "No mail" only when nothing at all was stopped: a repeat run can still cancel what the first left.
+  const nothingStopped =
+    result.recipients_removed === 0 &&
+    result.pieces_cancelled === 0 &&
+    result.scheduled_sends_cancelled === 0 &&
+    result.campaigns_ended.length === 0;
+  if (nothingStopped) {
+    console.log(chalk.dim(`  ${id} had no mail to end.`));
+    console.log();
+    return;
+  }
+  console.log(chalk.green(`✓ Ended mail for ${id}`));
+  console.log(
+    chalk.dim(
+      `  Removed from ${result.recipients_removed} campaign(s). Cancelled ${result.pieces_cancelled} unsent piece(s) and ${result.scheduled_sends_cancelled} scheduled send(s).`
+    )
+  );
+  if (result.campaigns_ended.length) {
+    console.log(chalk.dim(`  ${result.campaigns_ended.length} campaign(s) ended because this was their last prospect.`));
+  }
   console.log();
 }
 
