@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "issue": "APP-21731",
+  "criteria": [
+    {
+      "id": "AC-4",
+      "text": "GIVEN the MCP and the CLI, WHEN a person lists or changes saved searches, THEN the same operations are available as in the Public API, AND the API docs describe them."
+    },
+    {
+      "id": "AC-5",
+      "text": "GIVEN a saved search, WHEN a Public API or MCP caller builds a list from it, THEN the list is filled with that search's results."
+    }
+  ],
+  "checks": [
+    {
+      "title": "dm saved-searches Commands send and read the planned API contract",
+      "surface": "cli",
+      "repository": "cli",
+      "preconditions": [
+        "Run the reviewed CLI candidate with the approved Factory executor. No API credentials are needed.",
+        "The Public API's saved search Endpoints do not exist yet. tests/fixtures/saved-search-api.mjs is a local stand-in built from the plan for them."
+      ],
+      "steps": [
+        "Run the CLI check suite. tests/commands/savedSearches.test.ts parses each command line with the public program and sends the request over HTTP to the local stand-in, including a stand-in for an API released before saved searches."
+      ],
+      "expected": "list sends search, kind, pinned, shared, include, page and per_page as the API names them and shows a person's own searches and the ones shared with their team; get shows what a search holds and names any part the API cannot run; rename, pin, unpin, share, unshare, duplicate and remove each send their own method and path and say what happened; remove --dry-run sends nothing; a teammate's shared search, a search the caller cannot see and an API key not tied to a person are each refused in the API's words with exit code 1. A workspace admin may stop a teammate's sharing and change nothing else. Against an API that has no saved search routes, each of the nine Commands says the API does not have saved searches yet instead of telling the person to check the ID; a real not-found for an ID keeps the API's words. get offers its run hint only for a search the API says is complete.",
+      "criterionId": "AC-4",
+      "execution": "automated",
+      "automation": {
+        "taskId": "cli:check"
+      }
+    },
+    {
+      "title": "--saved-search runs a saved search in place of filters and locations",
+      "surface": "cli",
+      "repository": "cli",
+      "preconditions": [
+        "Run the reviewed CLI candidate with the approved Factory executor. No API credentials are needed."
+      ],
+      "steps": [
+        "Run the CLI check suite. The --saved-search cases in tests/commands/savedSearches.test.ts run dm properties count, search and export, dm people count, search and export, dm lists create and dm lists build against the local stand-in. tests/commands/savedSearchPipedInput.integration.test.ts runs the CLI's entry file in child processes with real piped, empty, absent and open standard input."
+      ],
+      "expected": "Each of the eight Commands sends saved_search_id with no criteria and needs no --body; output options in --body and the other export flags are kept; --saved-search with filters, filter groups, locations, record IDs, --include-lists, --exclude-lists, --exclude-previously-exported or --ids is refused before any request; a search of the wrong kind, one the caller cannot see and one with a part the API cannot run show the API's refusal; a request without --saved-search is sent exactly as before. The older prospect_search_id beside --saved-search is refused too. Anything piped to a Command that names a saved search is refused before any request, while an input that is empty, absent or left open and never written to still runs and the process exits by itself. An empty --saved-search says it needs an ID. A list made from a saved search takes the search's kind. When an answer does not say which saved search was used, the Command exits 1 and prints no result; for dm lists create it names the empty list that was made and the Command that deletes it.",
+      "criterionId": "AC-5",
+      "execution": "automated",
+      "automation": {
+        "taskId": "cli:check"
+      }
+    },
+    {
+      "title": "The installed package has the saved search Commands",
+      "surface": "cli",
+      "repository": "cli",
+      "preconditions": [
+        "Run the reviewed CLI candidate with the approved Factory executor."
+      ],
+      "steps": [
+        "Run the package smoke. It installs both npm archives in an empty project and runs the installed dm binary against its local HTTP fixture."
+      ],
+      "expected": "dm saved-searches --help lists the Commands and dm properties count --help lists --saved-search. list, get, rename, share, remove, a count with --saved-search and a list build with --saved-search each send the expected method, path and body with the stored key and the CLI source header. A list create against a fixture that drops saved_search_id exits 1 and names the empty list and how to delete it.",
+      "criterionId": "AC-4",
+      "execution": "automated",
+      "automation": {
+        "taskId": "cli:test:package"
+      }
+    },
+    {
+      "title": "Saved search Commands against the staging API",
+      "surface": "cli",
+      "repository": "cli",
+      "preconditions": [
+        "Not yet run: the Public API's saved search Endpoints are a later step of APP-21731. Run this once they are on API staging.",
+        "An approved staging API URL and a QA key made by a signed-in person whose workspace has at least two saved property searches, one of them shared by a teammate. Never paste the key into evidence."
+      ],
+      "steps": [
+        "Run dm saved-searches list --json and dm saved-searches get <id> --json, and compare the field names with the ones the Command reference documents.",
+        "Run dm properties count --saved-search <id> and compare the count with the same search's count in the app.",
+        "Rename, pin, unpin, share, unshare and duplicate one of your own searches, then remove the copy. Try to rename the teammate's shared search.",
+        "Create a list with dm lists create --name \"From saved search\" --saved-search <id>, wait for the build with dm lists get, and delete the list."
+      ],
+      "expected": "Every Command succeeds with the documented fields; the count matches the app; each change shows in the app's sidebar history; renaming the teammate's search is refused; the list's count matches the saved search. Until this is run, the CLI is proved only against the local stand-in.",
+      "criterionId": "AC-4",
+      "execution": "human-required",
+      "executionReason": "The Endpoints these Commands call are not deployed yet, and the check changes saved searches in a real workspace with an approved QA key."
+    }
+  ]
+}

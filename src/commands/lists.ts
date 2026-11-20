@@ -14,6 +14,12 @@ import {
   truncate,
   createSpinner,
 } from '../lib/output.js';
+import {
+  applySavedSearchSource,
+  readCriteriaBody,
+  requireSavedSearchUsed,
+  type SavedSearchSourceCliOptions,
+} from '../lib/searchProtocol.js';
 
 // ============================================================================
 // Types
@@ -143,7 +149,7 @@ export async function listsCreate(options: {
   json?: boolean;
   /** Commander's `--no-prospects` sets this false; undefined means the API default (true). */
   prospects?: boolean;
-}): Promise<void> {
+} & SavedSearchSourceCliOptions): Promise<void> {
   let requestBody: Record<string, unknown> = { name: options.name };
 
   if (options.sourceType) {
@@ -163,6 +169,8 @@ export async function listsCreate(options: {
     const extra = await parseRequestBody(options);
     requestBody = { ...requestBody, ...extra };
   }
+  // The list is filled from the saved search's results, in place of filters or record IDs.
+  applySavedSearchSource(requestBody, options);
 
   const spinner = createSpinner('Creating list...').start();
   const data = await apiRequest<SingleListResponse>('/lists', {
@@ -170,6 +178,10 @@ export async function listsCreate(options: {
     body: requestBody,
   });
   spinner.stop();
+  requireSavedSearchUsed(requestBody, data, [
+    `A list named "${data.data?.name ?? options.name}" was created empty (${data.data?.list_id}).`,
+    `Delete it with: dm lists delete ${data.data?.list_id}`,
+  ]);
 
   if (options.json) {
     printJson(data);
@@ -287,9 +299,15 @@ export async function listsDelete(
 
 export async function listsBuild(
   listId: string,
-  options: { body?: string; file?: string; json?: boolean; prospects?: boolean }
+  options: {
+    body?: string;
+    file?: string;
+    json?: boolean;
+    prospects?: boolean;
+  } & SavedSearchSourceCliOptions
 ): Promise<void> {
-  const requestBody = await parseRequestBody(options);
+  const requestBody = await readCriteriaBody(options);
+  applySavedSearchSource(requestBody, options);
   if (options.prospects === false) {
     requestBody.add_as_prospects = false;
   }
@@ -300,6 +318,9 @@ export async function listsBuild(
     body: requestBody,
   });
   spinner.stop();
+  requireSavedSearchUsed(requestBody, data, [
+    `Whatever list ${listId} is building now did not come from the saved search. Check it with: dm lists get ${listId}`,
+  ]);
 
   if (options.json) {
     printJson(data);

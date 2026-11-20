@@ -18,7 +18,11 @@ import {
   createSpinner,
 } from '../lib/output.js';
 import {
+  applySavedSearchSource,
   applySearchProtocolOptions,
+  readCriteriaBody,
+  requireSavedSearchUsed,
+  type SavedSearchSourceCliOptions,
   type SearchProtocolCliOptions,
 } from '../lib/searchProtocol.js';
 import {
@@ -111,10 +115,12 @@ export async function peopleSearch(
     file?: string;
     json?: boolean;
   } & SearchProtocolCliOptions &
+    SavedSearchSourceCliOptions &
     CreditSafetyOptions
 ): Promise<void> {
-  const requestBody = await parseRequestBody(options);
+  const requestBody = await readCriteriaBody(options);
   applySearchProtocolOptions(requestBody, options, 'people');
+  applySavedSearchSource(requestBody, options);
   const creditSafety = applyCreditSafety(requestBody, options);
 
   const spinner = createSpinner(
@@ -125,6 +131,13 @@ export async function peopleSearch(
     body: requestBody,
   });
   spinner.stop();
+  requireSavedSearchUsed(
+    requestBody,
+    data,
+    creditSafety.isEstimate
+      ? []
+      : ['This was not an estimate, so credits may have been spent. Check with: dm usage']
+  );
 
   if (options.json) {
     printJson(data);
@@ -189,10 +202,12 @@ export async function peopleCount(
     body?: string;
     file?: string;
     json?: boolean;
-  } & SearchProtocolCliOptions
+  } & SearchProtocolCliOptions &
+    SavedSearchSourceCliOptions
 ): Promise<void> {
-  const requestBody = await parseRequestBody(options);
+  const requestBody = await readCriteriaBody(options);
   applySearchProtocolOptions(requestBody, options, 'people');
+  applySavedSearchSource(requestBody, options);
 
   const spinner = createSpinner('Counting people...').start();
   const data = await apiRequest<CountResponse>('/people/search/count', {
@@ -200,6 +215,7 @@ export async function peopleCount(
     body: requestBody,
   });
   spinner.stop();
+  requireSavedSearchUsed(requestBody, data);
 
   if (options.json) {
     printJson(data);
@@ -359,10 +375,12 @@ export async function peopleExport(
     scrubDnc?: boolean;
     activePhonesOnly?: boolean;
   } & SearchProtocolCliOptions &
+    SavedSearchSourceCliOptions &
     ExportColumnCliOptions
 ): Promise<void> {
-  const requestBody = await parseRequestBody(options);
+  const requestBody = await readCriteriaBody(options);
   applySearchProtocolOptions(requestBody, options, 'people');
+  applySavedSearchSource(requestBody, options);
 
   // Merge CLI contact filter flags into the request body
   if (options.requirePhone) requestBody.require_phone = true;
@@ -379,6 +397,10 @@ export async function peopleExport(
     body: requestBody,
   });
   spinner.stop();
+  requireSavedSearchUsed(requestBody, data, [
+    `An export was made (${data.export_id}) and may have spent credits. It was not made from the saved search.`,
+    `See it with: dm exports get ${data.export_id}`,
+  ]);
 
   if (options.json) {
     printJson(data);

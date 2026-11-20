@@ -138,6 +138,18 @@ import {
   prospectTagsRemove,
 } from './commands/prospects.js';
 import {
+  savedSearchesList,
+  savedSearchesGet,
+  savedSearchesRename,
+  savedSearchesPin,
+  savedSearchesUnpin,
+  savedSearchesShare,
+  savedSearchesUnshare,
+  savedSearchesDuplicate,
+  savedSearchesRemove,
+} from './commands/savedSearches.js';
+import { SAVED_SEARCH_OPTION_HELP } from './lib/searchProtocol.js';
+import {
   tagsList,
   tagsGet,
   tagsCreate,
@@ -675,6 +687,7 @@ propertiesCmd
   .option('--include-lists <ids>', 'Comma-separated list IDs to include')
   .option('--exclude-lists <ids>', 'Comma-separated list IDs to exclude')
   .option('--exclude-previously-exported', 'Exclude records already exported by this organization')
+  .option('--saved-search <id>', SAVED_SEARCH_OPTION_HELP)
   .option(
     '--bigquery-data-environment <n>',
     'Query Builder data environment: 1 production, 2 staging, 3 development'
@@ -691,7 +704,8 @@ Examples:
   dm properties search -f search-query.json --estimate-cost
   dm properties search -f query.json --json             Estimate automatically
   dm properties search -f query.json --json --yes       Run after approval
-  cat query.json | dm properties search --json`
+  cat query.json | dm properties search --json
+  dm properties search --saved-search <id> --estimate-cost      Run a saved search`
   )
   .addHelpText('after', internationalOwnerHelp)
   .action(async (options) => {
@@ -706,6 +720,7 @@ propertiesCmd
   .option('--include-lists <ids>', 'Comma-separated list IDs to include')
   .option('--exclude-lists <ids>', 'Comma-separated list IDs to exclude')
   .option('--exclude-previously-exported', 'Exclude records already exported by this organization')
+  .option('--saved-search <id>', SAVED_SEARCH_OPTION_HELP)
   .option(
     '--bigquery-data-environment <n>',
     'Query Builder data environment: 1 production, 2 staging, 3 development'
@@ -717,7 +732,8 @@ propertiesCmd
 Examples:
   dm properties count --body '{"locations":[{"type":"zip_code","code":"78704"}]}'
   dm properties count -f query.json --json
-  dm properties count --body '{"filters":[{"filter_id":"international_owner","value":true}]}'`
+  dm properties count --body '{"filters":[{"filter_id":"international_owner","value":true}]}'
+  dm properties count --saved-search <id>                Count a saved search`
   )
   .addHelpText('after', internationalOwnerHelp)
   .action(async (options) => {
@@ -774,6 +790,7 @@ const propertiesExportCommand = propertiesCmd
   .option('--include-lists <ids>', 'Comma-separated list IDs to include')
   .option('--exclude-lists <ids>', 'Comma-separated list IDs to exclude')
   .option('--exclude-previously-exported', 'Exclude records already exported by this organization')
+  .option('--saved-search <id>', SAVED_SEARCH_OPTION_HELP)
   .option(
     '--contact-audience <audience>',
     'Contact audience: owners (default), owners_and_family, renters, residents, none'
@@ -805,7 +822,8 @@ Examples:
   dm properties export --body '{"locations":[{"type":"state","code":"TX"}]}' --mobile-only
   dm properties export -f query.json --anchor property --contact-audience none
   dm properties export -f query.json --address-format parsed --person-address parsed --phone-match-confidence
-  dm properties export --body '{"filters":[{"filter_id":"international_owner","value":false}]}'`
+  dm properties export --body '{"filters":[{"filter_id":"international_owner","value":false}]}'
+  dm properties export --saved-search <id> --require-phone      Export a saved search`
   )
   .addHelpText('after', internationalOwnerHelp)
   .action(async (options) => {
@@ -840,6 +858,153 @@ Examples:
   )
   .action(async (propertyIds, options) => {
     await comps(propertyIds || [], options);
+  });
+
+// ============================================================================
+// Saved searches commands
+// ============================================================================
+
+const savedSearchesCmd = program
+  .command('saved-searches')
+  .description('Find and manage saved searches, yours and the ones shared with your team')
+  .addHelpText(
+    'after',
+    `
+Run a saved search by passing its ID to a Command that takes filters:
+  dm properties count --saved-search <id>
+  dm properties search --saved-search <id> --estimate-cost
+  dm properties export --saved-search <id>
+  dm people count|search|export --saved-search <id>
+  dm lists create --name "From my search" --saved-search <id>
+  dm lists build <listId> --saved-search <id>
+
+Only the person who saved a search can rename, pin, share, duplicate or remove it.
+That person or a workspace admin can stop sharing it. An API key that is not tied to a
+person reads the searches shared with the team and cannot change any.`
+  );
+
+savedSearchesCmd
+  .command('list')
+  .alias('ls')
+  .description('List your saved searches and the ones shared with your team')
+  .option('--search <term>', 'Search saved searches by name')
+  .option('--kind <kind>', 'Filter by kind: properties, people or companies')
+  .option('--pinned', 'Only searches you pinned')
+  .option('--no-pinned', 'Only searches you have not pinned')
+  .option('--shared', 'Only searches shared with your team')
+  .option('--no-shared', 'Only your own searches that are not shared')
+  .option('--include-filters', 'Include each search\'s filters and locations (one more read per search)')
+  .option('-p, --page <n>', 'Page number')
+  .option('--per-page <n>', 'Results per page (max 100)')
+  .option('--json', 'Output as JSON')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  dm saved-searches list                          Most recently changed first
+  dm saved-searches list --search "austin" --kind properties
+  dm saved-searches list --pinned --json
+  dm saved-searches list --shared --per-page 50
+  dm saved-searches list --include-filters --json   With each search's criteria`
+  )
+  .action(async (options) => {
+    await savedSearchesList(options);
+  });
+
+savedSearchesCmd
+  .command('get <id>')
+  .description('Show one saved search with its filters and locations')
+  .option('--json', 'Output as JSON')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  dm saved-searches get <id>
+  dm saved-searches get <id> --json     The full filters and locations, ready to send again
+
+The filters and locations come back in the shape dm properties search takes. A part the
+API cannot run is listed under "unsupported", and "complete" is then false.`
+  )
+  .action(async (id, options) => {
+    await savedSearchesGet(id, options);
+  });
+
+savedSearchesCmd
+  .command('rename <id> <name>')
+  .description('Rename a saved search (owner only)')
+  .option('--json', 'Output as JSON')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  dm saved-searches rename <id> "Austin absentee owners"`
+  )
+  .action(async (id, name, options) => {
+    await savedSearchesRename(id, name, options);
+  });
+
+savedSearchesCmd
+  .command('pin <id>')
+  .description('Pin a saved search in your history (owner only)')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await savedSearchesPin(id, options);
+  });
+
+savedSearchesCmd
+  .command('unpin <id>')
+  .description('Unpin a saved search (owner only)')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await savedSearchesUnpin(id, options);
+  });
+
+savedSearchesCmd
+  .command('share <id>')
+  .description('Share a saved search with your team (owner only)')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await savedSearchesShare(id, options);
+  });
+
+savedSearchesCmd
+  .command('unshare <id>')
+  .description('Stop sharing a saved search with your team (owner or workspace admin)')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await savedSearchesUnshare(id, options);
+  });
+
+savedSearchesCmd
+  .command('duplicate <id>')
+  .description('Copy a saved search into a new private one named "<name> (copy)" (owner only)')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    await savedSearchesDuplicate(id, options);
+  });
+
+savedSearchesCmd
+  .command('remove <id>')
+  .description('Remove a saved search from your history (owner only; nothing is deleted)')
+  .option('--dry-run', 'Preview what would be removed without making changes')
+  .option('--json', 'Output as JSON')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  dm saved-searches remove <id>
+  dm saved-searches remove <id> --dry-run   Preview removal
+
+The search leaves your history. It still opens by its link, and one shared with your team
+stays shared until you run dm saved-searches unshare <id>.`
+  )
+  .action(async (id, options) => {
+    if (options.dryRun) {
+      console.log(`Would remove saved search ${id} from your history.`);
+      console.log('No changes made (--dry-run).');
+      return;
+    }
+    await savedSearchesRemove(id, options);
   });
 
 // ============================================================================
@@ -878,6 +1043,7 @@ listsCmd
   .option('--ids <csv>', 'Comma-separated record IDs to pre-populate (max 250)')
   .option('--body <json>', 'Request body as JSON (filters/locations)')
   .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--saved-search <id>', 'Fill the list from a saved search, in place of filters, locations or IDs')
   .option('--no-prospects', 'File the records without adding them as prospects (default adds them)')
   .option('--json', 'Output as JSON')
   .addHelpText(
@@ -887,7 +1053,8 @@ Examples:
   dm lists create --name "Austin Leads"
   dm lists create --name "TX Owners" --source-type properties --json
   dm lists create --name "Import" --ids 100,200,300
-  dm lists create --name "Mailing only" --ids 100,200 --no-prospects`
+  dm lists create --name "Mailing only" --ids 100,200 --no-prospects
+  dm lists create --name "Absentee owners" --saved-search <id>`
   )
   .action(async (options) => {
     await listsCreate(options);
@@ -947,9 +1114,10 @@ Examples:
 
 listsCmd
   .command('build <id>')
-  .description('Build a list from search filters')
+  .description('Build a list from search filters or a saved search')
   .option('--body <json>', 'Request body as JSON (filters/locations)')
   .option('-f, --file <path>', 'Read request body from a JSON file')
+  .option('--saved-search <id>', 'Build from a saved search, in place of filters and locations')
   .option('--no-prospects', 'File the records without adding them as prospects (default adds them)')
   .option('--json', 'Output as JSON')
   .addHelpText(
@@ -958,6 +1126,7 @@ listsCmd
 Examples:
   dm lists build list_abc123 -f filters.json
   dm lists build list_abc123 --body '{"locations":[{"type":"zip_code","code":"78704"}]}'
+  dm lists build list_abc123 --saved-search <id>
 
 Note: Building is async. Poll status with: dm lists get list_abc123`
   )
@@ -1087,6 +1256,7 @@ peopleCmd
   .option('--include-lists <ids>', 'Comma-separated list IDs to include')
   .option('--exclude-lists <ids>', 'Comma-separated list IDs to exclude')
   .option('--exclude-previously-exported', 'Exclude records already exported by this organization')
+  .option('--saved-search <id>', SAVED_SEARCH_OPTION_HELP)
   .option(
     '--bigquery-data-environment <n>',
     'Query Builder data environment: 1 production, 2 staging, 3 development'
@@ -1101,6 +1271,7 @@ Examples:
   dm people search -f people-query.json --estimate-cost
   dm people search -f people-query.json --json            Estimate automatically
   dm people search -f people-query.json --json --yes      Run after approval
+  dm people search --saved-search <id> --estimate-cost    Run a saved people search
 
 Specific person by name:
   dm enrich name "Jane Smith" --state TX --estimate-cost`
@@ -1117,6 +1288,7 @@ peopleCmd
   .option('--include-lists <ids>', 'Comma-separated list IDs to include')
   .option('--exclude-lists <ids>', 'Comma-separated list IDs to exclude')
   .option('--exclude-previously-exported', 'Exclude records already exported by this organization')
+  .option('--saved-search <id>', SAVED_SEARCH_OPTION_HELP)
   .option(
     '--bigquery-data-environment <n>',
     'Query Builder data environment: 1 production, 2 staging, 3 development'
@@ -1127,7 +1299,8 @@ peopleCmd
     `
 Examples:
   dm people count -f query.json --json
-  dm people count --body '{"locations":[{"type":"state","code":"TX"}]}'`
+  dm people count --body '{"locations":[{"type":"state","code":"TX"}]}'
+  dm people count --saved-search <id>                     Count a saved people search`
   )
   .action(async (options) => {
     await peopleCount(options);
@@ -1181,6 +1354,7 @@ const peopleExportCommand = peopleCmd
   .option('--include-lists <ids>', 'Comma-separated list IDs to include')
   .option('--exclude-lists <ids>', 'Comma-separated list IDs to exclude')
   .option('--exclude-previously-exported', 'Exclude records already exported by this organization')
+  .option('--saved-search <id>', SAVED_SEARCH_OPTION_HELP)
   .option(
     '--bigquery-data-environment <n>',
     'Query Builder data environment: 1 production, 2 staging, 3 development'

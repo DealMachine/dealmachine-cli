@@ -48,12 +48,23 @@ export function getApiKey(): string {
   return config.apiKey;
 }
 
+/** A Command's own words for a refusal, in place of the API's message and the usual hint. */
+export interface ApiErrorDescription {
+  message: string;
+  hints?: string[];
+}
+
 export async function apiRequest<T>(
   path: string,
   options: {
     method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
     body?: Record<string, unknown>;
     query?: Record<string, string | number | boolean | undefined>;
+    /**
+     * Lets a Command say what a refusal means when the API's own words would mislead. Return
+     * nothing to keep the usual message and hints.
+     */
+    describeError?: (status: number, error: ApiError) => ApiErrorDescription | undefined;
   } = {}
 ): Promise<T> {
   const { method = 'GET', body, query } = options;
@@ -88,6 +99,13 @@ export async function apiRequest<T>(
 
   if (!response.ok) {
     const error = (await response.json().catch(() => ({}))) as ApiError;
+    const described = options.describeError?.(response.status, error);
+    if (described) {
+      console.error(chalk.red(`Error: ${described.message}`));
+      console.error(chalk.dim(`  ${method} ${path} -> ${response.status}`));
+      for (const hint of described.hints ?? []) console.error(chalk.dim(`  ${hint}`));
+      process.exit(1);
+    }
     const message = error.error?.message || `Request failed with status ${response.status}`;
     const code = error.error?.code ? ` [${error.error.code}]` : '';
     console.error(chalk.red(`Error: ${message}${code}`));

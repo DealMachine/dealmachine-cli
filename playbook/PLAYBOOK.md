@@ -278,7 +278,26 @@ to `dm enrich name --city <place-id>`.
 - **Remove items:** `dm lists remove <list_id> --ids 101`
 - **View items:** `dm lists items <list_id>`
 - **Export:** `dm lists export <list_id> --fields estimated_value,owner_full_name`
+- **Build from a saved search:** `dm lists create --name "My List" --saved-search <saved_search_id>` or `dm lists build <list_id> --saved-search <saved_search_id>` (async, poll with `dm lists get <id>`)
 - All list operations except export are FREE — no credits charged
+
+### State DM10b: Saved Searches
+
+**Symptoms:** User names a search they saved in the app ("my Austin absentee search", "the search Sam shared"), or wants to rename, pin, share, copy or remove one.
+**Key Questions:**
+
+- Which saved search? Find it by name first; never ask the user for an ID.
+- Do they want to run it (count, search, export, build a list) or manage it?
+  **Interventions:**
+- **Find by name:** `dm saved-searches list --search "austin" --json` (FREE). It returns the user's own searches and the ones shared with their team, each with `saved_search_id`, `kind`, `pinned`, `shared` and `is_owner`.
+- **See what it holds:** `dm saved-searches get <saved_search_id> --json` returns its `filters`, `filter_groups` and `locations` in the shape a search takes. If `complete` is `false`, `unsupported` names the parts the API cannot run and the search cannot be used as a source.
+- **Run it:** pass `--saved-search <saved_search_id>` in place of filters and locations: `dm properties count --saved-search <id>` (FREE), `dm properties search --saved-search <id> --estimate-cost`, `dm properties export --saved-search <id>`, and the same on `dm people`. Match the Command to the search's `kind`. Credits are the same as for the same filters sent directly, so estimate and get approval as usual.
+- **Never mix:** a saved search and your own filters or locations in one request is refused. To change what a saved search finds, read it with `get --json`, edit the filters and locations, and send those without `--saved-search`.
+- **Do not rebuild a saved search from memory.** When the user names a saved search, use the saved one. Building a new search that looks similar is a different search.
+- **Manage:** `dm saved-searches rename <id> "New name"`, `pin`, `unpin`, `share`, `unshare`, `duplicate`, `remove` (all FREE). Only the person who saved a search can change it; that person or a workspace admin can stop sharing it. `remove` takes it out of their history and deletes nothing. Confirm with the user before `share`, `unshare` or `remove`.
+- An API key that is not tied to a person reads the shared searches and cannot change any. Report the API's message as it is.
+- **Do not pipe a request body together with `--saved-search`.** It is refused. Put output options such as `fields` in `--body` or `-f`.
+- **If a Command says the API does not have or does not support saved searches yet, stop.** Do not retry and do not rebuild the search yourself without asking. If the message names an empty list that was created, delete it with the `dm lists delete <list_id>` it shows, then tell the user.
 
 ---
 
@@ -499,6 +518,7 @@ Always run the free count first and confirm before large exports.
 | `dm whoami`                                                       | FREE                |
 | `dm activity search` / `dm activity get`                          | FREE                |
 | `dm lists search` / `get` / `create` / `add` / `remove` / `items` | FREE                |
+| `dm saved-searches` (every Command)                               | FREE                |
 | Comps returned (only subject property costs)                      | FREE                |
 | Re-accessing same entity in same billing cycle                    | FREE (deduplicated) |
 | Enrichment with no match                                          | FREE                |
@@ -671,6 +691,33 @@ dm fields --search "bedroom"                  # Search fields by name
 dm addresses validate "123 Main St, Austin TX"
 dm addresses validate -f addresses.json
 dm addresses validate --body '{"data": [{"full_address": "123 Main St"}]}'
+```
+
+### Saved searches (FREE to find and manage)
+
+```bash
+# Find (FREE)
+dm saved-searches list                                   # Yours and the ones shared with your team
+dm saved-searches list --search "austin" --kind properties --json
+dm saved-searches list --pinned
+dm saved-searches get <saved_search_id> --json           # Its filters and locations
+
+# Run in place of filters and locations (credits as for the same filters)
+dm properties count --saved-search <saved_search_id>     # FREE
+dm properties search --saved-search <saved_search_id> --estimate-cost
+dm properties export --saved-search <saved_search_id>
+dm people count --saved-search <saved_search_id>
+dm lists create --name "My List" --saved-search <saved_search_id>
+dm lists build <list_id> --saved-search <saved_search_id>
+
+# Manage (owner only)
+dm saved-searches rename <saved_search_id> "New name"
+dm saved-searches pin <saved_search_id>
+dm saved-searches unpin <saved_search_id>
+dm saved-searches share <saved_search_id>
+dm saved-searches unshare <saved_search_id>              # Owner or workspace admin
+dm saved-searches duplicate <saved_search_id>
+dm saved-searches remove <saved_search_id>               # Out of your history; nothing is deleted
 ```
 
 ### Lists (FREE except export)
