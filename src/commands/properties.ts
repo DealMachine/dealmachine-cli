@@ -22,6 +22,7 @@ import {
   applySavedSearchSource,
   applySearchProtocolOptions,
   readCriteriaBody,
+  requireSavedSearchUsed,
   type SavedSearchSourceCliOptions,
   type SearchProtocolCliOptions,
 } from '../lib/searchProtocol.js';
@@ -131,6 +132,13 @@ export async function propertiesSearch(
     body: requestBody,
   });
   spinner.stop();
+  requireSavedSearchUsed(
+    requestBody,
+    data,
+    creditSafety.isEstimate
+      ? []
+      : ['This was not an estimate, so credits may have been spent. Check with: dm usage']
+  );
 
   if (options.json) {
     printJson(data);
@@ -211,6 +219,7 @@ export async function propertiesCount(
     body: requestBody,
   });
   spinner.stop();
+  requireSavedSearchUsed(requestBody, data);
 
   if (options.json) {
     printJson(data);
@@ -373,6 +382,10 @@ export async function propertiesExport(
     body: requestBody,
   });
   spinner.stop();
+  requireSavedSearchUsed(requestBody, data, [
+    `An export was made (${data.export_id}) and may have spent credits. It was not made from the saved search.`,
+    `See it with: dm exports get ${data.export_id}`,
+  ]);
 
   if (options.json) {
     printJson(data);

@@ -17,6 +17,7 @@ import {
 import {
   applySavedSearchSource,
   readCriteriaBody,
+  requireSavedSearchUsed,
   type SavedSearchSourceCliOptions,
 } from '../lib/searchProtocol.js';
 
@@ -177,6 +178,10 @@ export async function listsCreate(options: {
     body: requestBody,
   });
   spinner.stop();
+  requireSavedSearchUsed(requestBody, data, [
+    `A list named "${data.data?.name ?? options.name}" was created empty (${data.data?.list_id}).`,
+    `Delete it with: dm lists delete ${data.data?.list_id}`,
+  ]);
 
   if (options.json) {
     printJson(data);
@@ -313,6 +318,9 @@ export async function listsBuild(
     body: requestBody,
   });
   spinner.stop();
+  requireSavedSearchUsed(requestBody, data, [
+    `Whatever list ${listId} is building now did not come from the saved search. Check it with: dm lists get ${listId}`,
+  ]);
 
   if (options.json) {
     printJson(data);

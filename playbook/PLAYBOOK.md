@@ -296,6 +296,8 @@ to `dm enrich name --city <place-id>`.
 - **Do not rebuild a saved search from memory.** When the user names a saved search, use the saved one. Building a new search that looks similar is a different search.
 - **Manage:** `dm saved-searches rename <id> "New name"`, `pin`, `unpin`, `share`, `unshare`, `duplicate`, `remove` (all FREE). Only the person who saved a search can change it; that person or a workspace admin can stop sharing it. `remove` takes it out of their history and deletes nothing. Confirm with the user before `share`, `unshare` or `remove`.
 - An API key that is not tied to a person reads the shared searches and cannot change any. Report the API's message as it is.
+- **Do not pipe a request body together with `--saved-search`.** It is refused. Put output options such as `fields` in `--body` or `-f`.
+- **If a Command says the API does not have or does not support saved searches yet, stop.** Do not retry and do not rebuild the search yourself without asking. If the message names an empty list that was created, delete it with the `dm lists delete <list_id>` it shows, then tell the user.
 
 ---
 

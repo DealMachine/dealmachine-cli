@@ -904,11 +904,12 @@ dm lists create --name "Absentee owners" --saved-search <id>
 dm lists build <listId> --saved-search <id>
 ```
 
-- No `--body` or `-f` is needed. You may still pass one for output options such as `fields` or `pagination`. Piped input is not read with `--saved-search`.
-- Use a saved search or your own criteria, not both. `--saved-search` with filters, filter groups, locations, record IDs, `--include-lists`, `--exclude-lists` or `--exclude-previously-exported` is refused before any request. To change what a saved search finds, read it with `dm saved-searches get <id> --json` and send its filters and locations yourself.
-- The search has to be of the Command's kind: a people search runs on `dm people` Commands and a property search on `dm properties` Commands.
+- No `--body` or `-f` is needed. You may still pass one for output options such as `fields` or `pagination`.
+- Use a saved search or your own criteria, not both. `--saved-search` with filters, filter groups, locations, record IDs, `--include-lists`, `--exclude-lists` or `--exclude-previously-exported` is refused before any request. So is anything piped to the Command: without `--saved-search` piped JSON is the request, so with it the CLI refuses piped input instead of dropping it. To change what a saved search finds, read it with `dm saved-searches get <id> --json` and send its filters and locations yourself.
+- The search has to be of the Command's kind: a people search runs on `dm people` Commands and a property search on `dm properties` Commands. A list made with `dm lists create --saved-search` takes the search's kind, so `--source-type` is not needed.
 - Credits, estimates and export limits are the same as for the same filters and locations sent directly.
 - A list build takes a saved search made of filters and locations. One that also uses filter groups, lists or an export history rule is refused with what it uses named.
+- The API says in its answer which saved search it used. If an answer does not, the API is one from before saved searches: the Command exits with an error and does not show that answer as a result. For `dm lists create` it also names the empty list that API made and how to delete it.
 
 ### Lists Commands
 

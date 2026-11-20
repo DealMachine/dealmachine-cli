@@ -6,16 +6,28 @@
 // API. The tests run the real Commands against it over HTTP. It proves the CLI sends and reads
 // that contract. It does not prove the deployed API follows it.
 //
-// Two keys reach it. `person-key` belongs to a person (user 7). `workspace-key` belongs to the
-// workspace and to nobody in it: it reads the searches shared with the team and changes none.
+// Three keys reach it. `person-key` belongs to a person (user 7). `admin-key` belongs to a
+// workspace admin (user 9), who may stop a teammate's sharing and nothing else of theirs.
+// `workspace-key` belongs to the workspace and to nobody in it: it reads the searches shared
+// with the team and changes none.
+//
+// Two options make it a different API, for the CLI's own protection:
+//   createSavedSearchApi({ savedSearches: false })  an API released before saved searches. It
+//     has no /saved-searches routes and drops `saved_search_id` from a request without a word,
+//     as today's API does: a count, search, export or list build then has no criteria, and a
+//     list create makes an empty list.
+//   createSavedSearchApi({ acknowledge: false })    an API that runs a saved search and does
+//     not say so in its answer.
 
 import { createServer } from 'node:http';
 import { once } from 'node:events';
 
 export const PERSON_KEY = 'person-key';
 export const WORKSPACE_KEY = 'workspace-key';
+export const ADMIN_KEY = 'admin-key';
 const ME = 7;
 const TEAMMATE = 8;
+const ADMIN = 9;
 
 const TEXAS = { type: 'state', code: 'TX' };
 const AUSTIN = { type: 'city', code: '4805000', state: 'TX' };
@@ -102,6 +114,20 @@ function seed() {
       ],
     },
     {
+      // The API can call a search incomplete without listing a part. Seen only by the admin.
+      saved_search_id: 'ss_incomplete',
+      owner: ADMIN,
+      name: 'Admin search the API cannot run',
+      kind: 'properties',
+      pinned: false,
+      shared: false,
+      result_count: 3,
+      created_at: '2026-10-12T15:00:00.000Z',
+      updated_at: '2026-11-13T12:00:00.000Z',
+      criteria: { filters: [], locations: [TEXAS] },
+      incomplete: true,
+    },
+    {
       saved_search_id: 'ss_mate_private',
       owner: TEAMMATE,
       ownerName: 'Sam Ortiz',
@@ -123,6 +149,20 @@ const refusal = (status, code, message, details) => ({
 });
 const NOT_FOUND = (id) => refusal(404, 'not_found', `No saved search found with ID ${id}`);
 const OWNER_ONLY = refusal(403, 'forbidden', 'Only the person who saved this search can change it.');
+const OWNER_OR_ADMIN = refusal(
+  403,
+  'forbidden',
+  'Only the person who shared this search or a workspace admin can stop sharing it.'
+);
+const NO_CRITERIA = (ids) =>
+  refusal(400, 'validation_error', 'Validation failed', {
+    issues: [
+      {
+        path: 'locations',
+        message: `At least one of locations, ${ids}, include_lists, exclude_lists, or exclude_previously_exported must be provided`,
+      },
+    ],
+  });
 const PERSON_REQUIRED = refusal(
   403,
   'forbidden',
@@ -150,12 +190,15 @@ const sent = (value) =>
       ? Object.values(value).some(sent)
       : Boolean(value);
 
-export function createSavedSearchApi() {
+export function createSavedSearchApi({ savedSearches = true, acknowledge = true } = {}) {
   let searches = seed();
   let copies = 0;
+  let lists = 0;
   const requests = [];
 
-  const person = (key) => (key === PERSON_KEY ? ME : null);
+  const person = (key) => (key === PERSON_KEY ? ME : key === ADMIN_KEY ? ADMIN : null);
+  /** What an answer carries to say the saved search was used. */
+  const used = (search) => (search && acknowledge ? { saved_search_id: search.saved_search_id } : {});
   const visible = (search, userId) => search.shared || (userId !== null && search.owner === userId);
   const summary = (search, userId) => ({
     saved_search_id: search.saved_search_id,
@@ -176,7 +219,7 @@ export function createSavedSearchApi() {
       ...summary(search, userId),
       ...search.criteria,
       unsupported,
-      complete: unsupported.length === 0,
+      complete: unsupported.length === 0 && !search.incomplete,
     };
   };
 
@@ -188,7 +231,7 @@ export function createSavedSearchApi() {
     if (alsoSent.length > 0) return { refused: BOTH(alsoSent) };
     const search = searches.find((entry) => entry.saved_search_id === id);
     if (!search || !visible(search, userId)) return { refused: NOT_FOUND(id) };
-    if (search.kind !== kind) {
+    if (kind && search.kind !== kind) {
       return {
         refused: refusal(
           400,
@@ -221,11 +264,15 @@ export function createSavedSearchApi() {
       const [, kind, operation] = run;
       const { search, refused } = source(body, userId, kind);
       if (refused) return refused;
+      if (!search && !OWN_CRITERIA.some((field) => sent(body[field]))) {
+        return NO_CRITERIA(kind === 'people' ? 'people_ids' : 'property_ids');
+      }
       const total = search?.result_count ?? 25;
       if (operation === 'search/count') {
         return {
           status: 200,
           body: {
+            ...used(search),
             total_properties: kind === 'properties' ? total : 0,
             total_people: kind === 'people' ? total : 0,
             total_results: total,
@@ -237,6 +284,7 @@ export function createSavedSearchApi() {
         return {
           status: 200,
           body: {
+            ...used(search),
             totals,
             pagination: { ...pagination, total_results: total, total_pages: Math.ceil(total / 25) },
             estimated_credits: {
@@ -250,6 +298,7 @@ export function createSavedSearchApi() {
       return {
         status: 200,
         body: {
+          ...used(search),
           export_id: 'export_fixture',
           record_count: total,
           file_count: 1,
@@ -262,29 +311,42 @@ export function createSavedSearchApi() {
     }
     const listBuild = path.match(/^\/v1\/lists(?:\/([^/]+)\/build)?$/);
     if (listBuild && method === 'POST') {
-      const { refused } = source(body, userId, body.source_type ?? 'properties');
+      const building = Boolean(listBuild[1]);
+      // A list made from a saved search takes the search's kind. A source_type that is sent
+      // has to agree with it.
+      const { search, refused } = source(body, userId, body.source_type);
       if (refused) return refused;
+      const criteria = Boolean(search) || sent(body.filters) || sent(body.locations);
+      if (building && !criteria) {
+        return refusal(400, 'invalid_request', 'Provide filters or locations to build a list.');
+      }
+      lists += 1;
       return {
-        status: listBuild[1] ? 202 : 201,
+        // An async build answers 202; an empty list or one filled from record IDs answers 200.
+        status: criteria ? 202 : 200,
         body: {
           data: {
-            list_id: listBuild[1] ?? 'list_fixture',
+            list_id: listBuild[1] ?? `list_fixture_${lists}`,
             name: body.name ?? 'Fixture list',
-            source_type: body.source_type ?? 'properties',
-            build_type: body.saved_search_id ? 'search' : 'manual',
-            status: body.saved_search_id ? 'building' : 'ready',
+            source_type: search?.kind ?? body.source_type ?? 'properties',
+            build_type: criteria ? 'search' : 'prospect',
+            status: criteria ? 'building' : 'completed',
             total_count: 0,
             progress: 0,
             progress_stage: null,
             error_message: null,
             created_at: '2026-11-19T12:00:00.000Z',
             updated_at: '2026-11-19T12:00:00.000Z',
+            ...used(search),
           },
         },
       };
     }
 
     // ---- the saved search endpoints
+    if (!savedSearches && path.startsWith('/v1/saved-searches')) {
+      return refusal(404, 'not_found', `No route found for ${method} ${path}`);
+    }
     if (path === '/v1/saved-searches' && method === 'GET') {
       const page = Number(query.get('page') ?? 1);
       const perPage = Math.min(100, Number(query.get('per_page') ?? 25));
@@ -322,7 +384,11 @@ export function createSavedSearchApi() {
     if (!isRead && userId === null) return PERSON_REQUIRED;
     if (!search || !visible(search, userId)) return NOT_FOUND(decodeURIComponent(id));
     if (isRead) return { status: 200, body: { data: withCriteria(search, userId) } };
-    if (search.owner !== userId) return OWNER_ONLY;
+    // The owner changes a search. A workspace admin may stop a teammate's sharing, no more.
+    if (search.owner !== userId) {
+      if (action !== 'unshare') return OWNER_ONLY;
+      if (userId !== ADMIN) return OWNER_OR_ADMIN;
+    }
     const changed = () => {
       search.updated_at = '2026-11-19T12:00:00.000Z';
       return { status: 200, body: { data: summary(search, userId) } };
@@ -369,11 +435,14 @@ export function createSavedSearchApi() {
     for await (const chunk of request) chunks.push(chunk);
     const raw = Buffer.concat(chunks).toString();
     const url = new URL(request.url, 'http://localhost');
+    const sentBody = raw ? JSON.parse(raw) : {};
+    // An API that does not know the field drops it, as request validation does today.
+    if (!savedSearches) delete sentBody.saved_search_id;
     const call = {
       method: request.method,
       path: url.pathname,
       query: url.searchParams,
-      body: raw ? JSON.parse(raw) : {},
+      body: sentBody,
       key: String(request.headers.authorization ?? '').replace(/^Bearer /, ''),
     };
     requests.push({
@@ -383,7 +452,7 @@ export function createSavedSearchApi() {
       body: raw ? JSON.parse(raw) : undefined,
       source: request.headers['x-dealmachine-source'],
     });
-    const known = call.key === PERSON_KEY || call.key === WORKSPACE_KEY;
+    const known = [PERSON_KEY, WORKSPACE_KEY, ADMIN_KEY].includes(call.key);
     const result = known
       ? handle(call)
       : refusal(401, 'invalid_api_key', 'Invalid API key.');
@@ -397,6 +466,7 @@ export function createSavedSearchApi() {
     reset() {
       searches = seed();
       copies = 0;
+      lists = 0;
       requests.length = 0;
     },
     /** Start listening on a free local port. Resolves to the base URL, ending in /v1. */

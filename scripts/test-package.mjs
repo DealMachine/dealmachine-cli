@@ -64,11 +64,17 @@ try {
     const chunks = [];
     for await (const chunk of request) chunks.push(chunk);
     const body = Buffer.concat(chunks).toString();
-    requests.push({ method: request.method, path: request.url, body: body ? JSON.parse(body) : null, headers: request.headers });
+    const sent = body ? JSON.parse(body) : null;
+    requests.push({ method: request.method, path: request.url, body: sent, headers: request.headers });
+    // An API that knows saved searches says which one it used. `ss_unacknowledged` stands for
+    // an API that dropped the field, as one released before saved searches does.
+    const savedSearch = sent?.saved_search_id && sent.saved_search_id !== 'ss_unacknowledged' ? sent.saved_search_id : null;
     const estimate = { totals: { properties: 12, people: 0 }, estimated_credits: { this_page: 1, total_all_pages: 12 } };
     const account = { data: { organization: { id: 123, name: 'Package fixture' }, user: { id: null, authType: 'api_key' } } };
     const fields = { data: [{ field_id: 'property_address', name: 'Address' }] };
-    const result = request.url === '/v1/account' ? account : request.url.startsWith('/v1/fields') ? fields : request.url === '/v1/properties/search' ? estimate : { data: {} };
+    const result = request.url === '/v1/account' ? account : request.url.startsWith('/v1/fields') ? fields : request.url === '/v1/properties/search' ? estimate
+      : savedSearch ? { saved_search_id: savedSearch, data: { saved_search_id: savedSearch } }
+      : { data: { list_id: 'list_fixture', name: sent?.name } };
     response.writeHead(request.headers.authorization === 'Bearer rejected-fixture' ? 401 : 200, { 'Content-Type': 'application/json' });
     response.end(JSON.stringify(result));
   });
@@ -120,6 +126,19 @@ try {
       assert.equal(request.headers.authorization, 'Bearer dm-package-test');
       assert.equal(request.headers['x-dealmachine-source'], 'cli');
     }
+    // An API that drops saved_search_id answers a list create with a new, empty list. The
+    // installed binary must fail and say how to delete it, not report a list created.
+    await assert.rejects(
+      execute(process.execPath, ['--import', pathToFileURL(credentialIsolation).href, binary, 'lists', 'create', '--name', 'Package check', '--saved-search', 'ss_unacknowledged'], {
+        cwd: temporary,
+        timeout: 10000,
+        env: { ...process.env, DM_API_URL: `http://127.0.0.1:${server.address().port}/v1`, DM_API_KEY: 'unrelated-environment-key' },
+      }),
+      error => error.code === 1 && /does not support saved searches yet/.test(error.stderr)
+        && /A list named "Package check" was created empty \(list_fixture\)/.test(error.stderr)
+        && /dm lists delete list_fixture/.test(error.stderr) && !/List Created/.test(error.stdout)
+    );
+    requests.pop();
     // Exercise the same live-smoke entry point with the packed consumer's
     // protocol fixture. This proves command wiring, not deployed API behavior.
     const liveEnvironment = { ...process.env, DM_API_URL: `http://127.0.0.1:${server.address().port}/v1`, DM_API_KEY: 'dm-package-test' };

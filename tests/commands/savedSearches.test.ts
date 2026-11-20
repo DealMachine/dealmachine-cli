@@ -10,7 +10,7 @@
 
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 // @ts-expect-error the stand-in is plain JavaScript shared with the transcript script
-import { createSavedSearchApi, PERSON_KEY, WORKSPACE_KEY } from '../fixtures/saved-search-api.mjs';
+import { ADMIN_KEY, createSavedSearchApi, PERSON_KEY, WORKSPACE_KEY } from '../fixtures/saved-search-api.mjs';
 
 const login = vi.hoisted(() => ({ apiKey: 'person-key' }));
 vi.mock('../../src/lib/config.js', async (importOriginal) => ({
@@ -25,19 +25,29 @@ class ExitSignal extends Error {
 }
 
 const api = createSavedSearchApi();
+/** An API released before saved searches: no routes for them, and it drops saved_search_id. */
+const olderApi = createSavedSearchApi({ savedSearches: false });
+/** An API that runs a saved search and does not say so in its answer. */
+const silentApi = createSavedSearchApi({ acknowledge: false });
+const urls = { api: '', olderApi: '', silentApi: '' };
 let out: string[];
 let err: string[];
 
 beforeAll(async () => {
-  vi.stubEnv('DM_API_URL', await api.listen());
+  urls.api = await api.listen();
+  urls.olderApi = await olderApi.listen();
+  urls.silentApi = await silentApi.listen();
 });
 afterAll(async () => {
   vi.unstubAllEnvs();
-  await api.close();
+  await Promise.all([api.close(), olderApi.close(), silentApi.close()]);
 });
 
 beforeEach(() => {
   api.reset();
+  olderApi.reset();
+  silentApi.reset();
+  vi.stubEnv('DM_API_URL', urls.api);
   login.apiKey = PERSON_KEY;
   out = [];
   err = [];
@@ -67,6 +77,14 @@ async function dm(...args: string[]): Promise<{ code: number; stdout: string; st
 
 const json = (result: { stdout: string }) => JSON.parse(result.stdout);
 const lastRequest = () => api.requests.at(-1);
+/** A request exactly as the stand-in received it: nothing more was sent. */
+const sentExactly = (method: string, path: string, body?: unknown) => ({
+  method,
+  path,
+  query: {},
+  body,
+  source: 'cli',
+});
 
 describe('dm saved-searches list', () => {
   it('lists my searches and the ones shared with my team, newest change first', async () => {
@@ -159,7 +177,7 @@ describe('dm saved-searches get', () => {
   it('shows one search, what it holds, and how to run it', async () => {
     const result = await dm('saved-searches', 'get', 'ss_absentee');
 
-    expect(lastRequest()).toMatchObject({ method: 'GET', path: '/v1/saved-searches/ss_absentee' });
+    expect(lastRequest()).toEqual(sentExactly('GET', '/v1/saved-searches/ss_absentee'));
     expect(result.stdout).toContain('Saved Search ss_absentee');
     expect(result.stdout).toMatch(/Name\s+Absentee owners in Austin/);
     expect(result.stdout).toMatch(/Filters\s+2/);
@@ -190,6 +208,22 @@ describe('dm saved-searches get', () => {
     expect(result.stdout).not.toContain('Run it with');
   });
 
+  it('offers no run hint for a search the API calls incomplete without naming a part', async () => {
+    login.apiKey = ADMIN_KEY;
+
+    expect(json(await dm('saved-searches', 'get', 'ss_incomplete', '--json')).data).toMatchObject({
+      unsupported: [],
+      complete: false,
+    });
+
+    out = [];
+    const result = await dm('saved-searches', 'get', 'ss_incomplete');
+    expect(result.stdout).toContain(
+      'The API does not say this search is complete, so it cannot be used with --saved-search.'
+    );
+    expect(result.stdout).not.toContain('Run it with');
+  });
+
   it.each(['ss_mate_private', 'ss_does_not_exist'])(
     'reports %s as not found, in the API’s words, and exits 1',
     async (id) => {
@@ -198,6 +232,9 @@ describe('dm saved-searches get', () => {
       expect(result.code).toBe(1);
       expect(result.stderr).toContain(`No saved search found with ID ${id} [not_found]`);
       expect(result.stderr).toContain(`GET /saved-searches/${id} -> 404`);
+      // A real not-found for an ID keeps the hint to check the ID.
+      expect(result.stderr).toContain('Resource not found. Verify the ID is correct.');
+      expect(result.stderr).not.toContain('does not have saved searches yet');
     }
   );
 });
@@ -206,11 +243,9 @@ describe('changing a saved search', () => {
   it('renames with the trimmed name', async () => {
     const result = await dm('saved-searches', 'rename', 'ss_absentee', '  Austin absentee owners  ');
 
-    expect(lastRequest()).toMatchObject({
-      method: 'PATCH',
-      path: '/v1/saved-searches/ss_absentee',
-      body: { name: 'Austin absentee owners' },
-    });
+    expect(lastRequest()).toEqual(
+      sentExactly('PATCH', '/v1/saved-searches/ss_absentee', { name: 'Austin absentee owners' })
+    );
     expect(result.stdout).toContain('Saved search ss_absentee renamed to "Austin absentee owners".');
   });
 
@@ -246,10 +281,7 @@ describe('changing a saved search', () => {
   it('duplicates into a new private search and prints the copy', async () => {
     const result = await dm('saved-searches', 'duplicate', 'ss_absentee');
 
-    expect(lastRequest()).toMatchObject({
-      method: 'POST',
-      path: '/v1/saved-searches/ss_absentee/duplicate',
-    });
+    expect(lastRequest()).toEqual(sentExactly('POST', '/v1/saved-searches/ss_absentee/duplicate'));
     expect(result.stdout).toContain('Saved Search Duplicated');
     expect(result.stdout).toMatch(/Saved Search ID\s+ss_copy_1/);
     expect(result.stdout).toMatch(/Name\s+Absentee owners in Austin \(copy\)/);
@@ -257,7 +289,7 @@ describe('changing a saved search', () => {
 
   it('removes from history, and says when the search is still shared', async () => {
     const mine = await dm('saved-searches', 'remove', 'ss_absentee');
-    expect(lastRequest()).toMatchObject({ method: 'DELETE', path: '/v1/saved-searches/ss_absentee' });
+    expect(lastRequest()).toEqual(sentExactly('DELETE', '/v1/saved-searches/ss_absentee'));
     expect(mine.stdout).toContain('Saved search ss_absentee removed from your history.');
     expect(mine.stdout).not.toContain('still shared');
 
@@ -291,6 +323,162 @@ describe('changing a saved search', () => {
 
     expect(result.code).toBe(1);
     expect(result.stderr).toContain('Only the person who saved this search can change it. [forbidden]');
+  });
+});
+
+describe('stopping a teammate’s sharing', () => {
+  it('a workspace admin may', async () => {
+    login.apiKey = ADMIN_KEY;
+
+    const result = await dm('saved-searches', 'unshare', 'ss_probate');
+
+    expect(result.code).toBe(0);
+    expect(lastRequest()).toEqual(sentExactly('POST', '/v1/saved-searches/ss_probate/unshare'));
+    expect(result.stdout).toContain(
+      'Saved search "Probate leads Austin" is no longer shared with your team.'
+    );
+  });
+
+  it('an admin may change nothing else of a teammate’s', async () => {
+    login.apiKey = ADMIN_KEY;
+
+    const result = await dm('saved-searches', 'rename', 'ss_probate', 'Admin was here');
+
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('Only the person who saved this search can change it.');
+  });
+
+  it('another member may not, and is told who can', async () => {
+    const result = await dm('saved-searches', 'unshare', 'ss_probate');
+
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain(
+      'Only the person who shared this search or a workspace admin can stop sharing it. [forbidden]'
+    );
+  });
+});
+
+describe('an API that does not have saved searches yet', () => {
+  beforeEach(() => {
+    vi.stubEnv('DM_API_URL', urls.olderApi);
+  });
+
+  it.each([
+    [['list']],
+    [['get', 'ss_absentee']],
+    [['rename', 'ss_absentee', 'New name']],
+    [['pin', 'ss_absentee']],
+    [['unpin', 'ss_absentee']],
+    [['share', 'ss_absentee']],
+    [['unshare', 'ss_absentee']],
+    [['duplicate', 'ss_absentee']],
+    [['remove', 'ss_absentee']],
+  ])('dm saved-searches %j says so plainly, not that the ID is wrong', async (command) => {
+    const result = await dm('saved-searches', ...command);
+
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('Error: This API does not have saved searches yet.');
+    expect(result.stderr).toContain('Nothing was changed.');
+    expect(result.stderr).not.toContain('Verify the ID is correct');
+    expect(result.stderr).not.toContain('No route found');
+    expect(result.stdout).toBe('');
+  });
+
+  it('dm lists create --saved-search fails, and says an empty list was made and how to delete it', async () => {
+    const result = await dm(
+      'lists', 'create', '--name', 'Absentee owners', '--saved-search', 'ss_absentee'
+    );
+
+    // The older API dropped the field and made an empty list, as today's does.
+    expect(olderApi.requests.at(-1)).toMatchObject({ method: 'POST', path: '/v1/lists' });
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain(
+      'Error: This API does not support saved searches yet, so it did not use --saved-search.'
+    );
+    expect(result.stderr).toContain('A list named "Absentee owners" was created empty (list_fixture_1).');
+    expect(result.stderr).toContain('Delete it with: dm lists delete list_fixture_1');
+    // Nothing reads as a success.
+    expect(result.stdout).not.toContain('List Created');
+    expect(result.stdout).toBe('');
+  });
+
+  it('says the same with --json, and prints no result to mistake for one', async () => {
+    const result = await dm(
+      'lists', 'create', '--name', 'Absentee owners', '--saved-search', 'ss_absentee', '--json'
+    );
+
+    expect(result.code).toBe(1);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toContain('Delete it with: dm lists delete list_fixture_1');
+  });
+
+  it.each([
+    [['properties', 'count']],
+    [['properties', 'search']],
+    [['properties', 'export']],
+    [['people', 'count']],
+    [['lists', 'build', 'list_123']],
+  ])('dm %j --saved-search exits 1 on that API’s own refusal', async (command) => {
+    const result = await dm(...command, '--saved-search', 'ss_absentee', '--json');
+
+    expect(result.code).toBe(1);
+    expect(result.stdout).toBe('');
+  });
+});
+
+describe('an API that does not say it used the saved search', () => {
+  beforeEach(() => {
+    vi.stubEnv('DM_API_URL', urls.silentApi);
+  });
+
+  it.each([
+    [['properties', 'count'], 'ss_absentee', []],
+    [['properties', 'search', '--estimate-cost'], 'ss_absentee', []],
+    [
+      ['properties', 'search', '--yes'],
+      'ss_absentee',
+      ['This was not an estimate, so credits may have been spent. Check with: dm usage'],
+    ],
+    [
+      ['properties', 'export'],
+      'ss_absentee',
+      [
+        'An export was made (export_fixture) and may have spent credits. It was not made from the saved search.',
+        'See it with: dm exports get export_fixture',
+      ],
+    ],
+    [['people', 'count'], 'ss_landlords', []],
+    [['people', 'search', '--estimate-cost'], 'ss_landlords', []],
+    [['people', 'export'], 'ss_landlords', ['See it with: dm exports get export_fixture']],
+    [
+      ['lists', 'build', 'list_123'],
+      'ss_absentee',
+      ['Whatever list list_123 is building now did not come from the saved search. Check it with: dm lists get list_123'],
+    ],
+    [
+      ['lists', 'create', '--name', 'Absentee owners'],
+      'ss_absentee',
+      ['Delete it with: dm lists delete list_fixture_1'],
+    ],
+  ] as const)('dm %j is not taken as a result', async (command, id, lines) => {
+    const result = await dm(...command, '--saved-search', id, '--json');
+
+    expect(silentApi.requests.at(-1)?.body).toMatchObject({ saved_search_id: id });
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain(
+      'Error: This API does not support saved searches yet, so it did not use --saved-search.'
+    );
+    for (const line of lines) expect(result.stderr).toContain(line);
+    expect(result.stdout).toBe('');
+  });
+
+  it('a request without --saved-search needs no acknowledgement', async () => {
+    const result = await dm(
+      'properties', 'count', '--json', '--body', '{"locations":[{"type":"state","code":"TX"}]}'
+    );
+
+    expect(result.code).toBe(0);
+    expect(json(result)).toMatchObject({ total_results: 25 });
   });
 });
 
@@ -362,6 +550,7 @@ describe('--saved-search: a saved search as the source', () => {
 
   it('counts what the saved search finds', async () => {
     expect(json(await dm('properties', 'count', '--saved-search', 'ss_absentee', '--json'))).toEqual({
+      saved_search_id: 'ss_absentee',
       total_properties: 1840,
       total_people: 0,
       total_results: 1840,
@@ -397,6 +586,32 @@ describe('--saved-search: a saved search as the source', () => {
     });
   });
 
+  it('a list made from a saved search takes the search’s kind, with no --source-type', async () => {
+    const people = json(
+      await dm('lists', 'create', '--name', 'Landlords', '--saved-search', 'ss_landlords', '--json')
+    );
+    expect(lastRequest()?.body).toEqual({ name: 'Landlords', saved_search_id: 'ss_landlords' });
+    expect(people.data).toMatchObject({ source_type: 'people', saved_search_id: 'ss_landlords' });
+
+    out = [];
+    const properties = json(
+      await dm('lists', 'create', '--name', 'Owners', '--saved-search', 'ss_absentee', '--json')
+    );
+    expect(properties.data).toMatchObject({ source_type: 'properties', status: 'building' });
+  });
+
+  it('refuses a --source-type that is not the saved search’s kind', async () => {
+    const result = await dm(
+      'lists', 'create', '--name', 'Mixed', '--source-type', 'properties',
+      '--saved-search', 'ss_landlords', '--json'
+    );
+
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain(
+      'This saved search finds people, and this request is for properties. [invalid_request]'
+    );
+  });
+
   it('builds a list without adding prospects when asked', async () => {
     await dm('lists', 'build', 'list_123', '--saved-search', 'ss_absentee', '--no-prospects', '--json');
 
@@ -427,6 +642,16 @@ describe('--saved-search: a saved search as the source', () => {
     ],
     ['--ids on a new list', ['lists', 'create', '--name', 'Mixed', '--ids', '1,2'], 'record_ids'],
     [
+      'the older prospect_search_id on a new list',
+      ['lists', 'create', '--name', 'Two sources', '--body', '{"prospect_search_id":"ss_other"}'],
+      'prospect_search_id',
+    ],
+    [
+      'the older prospect_search_id on a list build',
+      ['lists', 'build', 'list_123', '--body', '{"prospect_search_id":"ss_other"}'],
+      'prospect_search_id',
+    ],
+    [
       'another saved search in --body',
       ['properties', 'count', '--body', '{"saved_search_id":"ss_other"}'],
       'saved_search_id',
@@ -452,11 +677,18 @@ describe('--saved-search: a saved search as the source', () => {
     expect(lastRequest()?.body).toMatchObject({ saved_search_id: 'ss_absentee' });
   });
 
-  it('refuses an empty ID', async () => {
-    const result = await dm('properties', 'count', '--saved-search', '  ');
+  it.each([
+    ['', ['properties', 'count']],
+    ['  ', ['properties', 'count']],
+    ['', ['people', 'export']],
+    ['', ['lists', 'build', 'list_123']],
+    ['', ['lists', 'create', '--name', 'No search']],
+  ])('refuses the empty ID %j on dm %j, and says what is missing', async (id, command) => {
+    const result = await dm(...command, '--saved-search', id);
 
     expect(result.code).toBe(1);
-    expect(result.stderr).toContain('--saved-search needs a saved search ID');
+    expect(result.stderr).toContain('Error: --saved-search needs a saved search ID');
+    expect(result.stderr).not.toContain('No request body provided');
     expect(api.requests).toEqual([]);
   });
 

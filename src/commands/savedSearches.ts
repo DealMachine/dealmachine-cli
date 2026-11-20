@@ -13,7 +13,12 @@
 
 import chalk from 'chalk';
 
-import { apiRequest, formatDate } from '../lib/client.js';
+import {
+  apiRequest,
+  formatDate,
+  type ApiError,
+  type ApiErrorDescription,
+} from '../lib/client.js';
 import {
   createSpinner,
   printHeader,
@@ -71,6 +76,29 @@ interface SavedSearchResponse {
   data: SavedSearch;
 }
 
+/**
+ * A 404 for the route itself, not for a saved search. The API names a saved search it cannot
+ * find ("No saved search found with ID ..."); an API released before saved searches answers
+ * "No route found for ..." instead, and the usual hint to check the ID would send the person
+ * looking for a mistake they did not make.
+ */
+function describeMissingRoute(status: number, error: ApiError): ApiErrorDescription | undefined {
+  if (status !== 404) return undefined;
+  const message = error.error?.message;
+  if (message && !/^No route found/i.test(message)) return undefined;
+  return {
+    message: 'This API does not have saved searches yet.',
+    hints: [
+      'The saved search Commands need a newer API than the one this CLI is talking to.',
+      'Nothing was changed. Try again once the API is updated.',
+    ],
+  };
+}
+
+/** Every saved search request, with that one refusal put in plain words. */
+const request = <T>(path: string, options: Parameters<typeof apiRequest>[1] = {}) =>
+  apiRequest<T>(path, { ...options, describeError: describeMissingRoute });
+
 const yesNo = (value: boolean) => (value ? 'yes' : 'no');
 const owner = (search: SavedSearch) => (search.is_owner ? 'you' : search.shared_by || 'teammate');
 const count = (value: unknown[] | undefined) => (Array.isArray(value) ? value.length : 0);
@@ -102,7 +130,7 @@ export async function savedSearchesList(options: {
   json?: boolean;
 }): Promise<void> {
   const spinner = createSpinner('Fetching saved searches...').start();
-  const data = await apiRequest<SavedSearchListResponse>('/saved-searches', {
+  const data = await request<SavedSearchListResponse>('/saved-searches', {
     query: {
       ...(options.search && { search: options.search }),
       ...(options.kind && { kind: options.kind }),
@@ -153,7 +181,7 @@ export async function savedSearchesList(options: {
 
 export async function savedSearchesGet(id: string, options: { json?: boolean }): Promise<void> {
   const spinner = createSpinner('Fetching saved search...').start();
-  const data = await apiRequest<SavedSearchResponse>(`/saved-searches/${encodeURIComponent(id)}`);
+  const data = await request<SavedSearchResponse>(`/saved-searches/${encodeURIComponent(id)}`);
   spinner.stop();
 
   if (options.json) {
@@ -185,17 +213,24 @@ export async function savedSearchesGet(id: string, options: { json?: boolean }):
   });
 
   const unsupported = search.unsupported ?? [];
-  if (unsupported.length > 0) {
-    console.log();
-    console.log(chalk.yellow('  This search has parts the API cannot run, so it cannot be used with --saved-search:'));
-    for (const part of unsupported) {
-      console.log(chalk.yellow(`    ${part.label}: ${part.reason}`));
-    }
-  } else {
+  if (search.complete === true && unsupported.length === 0) {
     const hint = runHint(search);
     if (hint) {
       console.log();
       console.log(chalk.dim(`  Run it with: ${hint}`));
+    }
+  } else {
+    // Only a search the API says is complete can run. Anything else gets no hint to run it.
+    console.log();
+    console.log(
+      chalk.yellow(
+        unsupported.length > 0
+          ? '  This search has parts the API cannot run, so it cannot be used with --saved-search:'
+          : '  The API does not say this search is complete, so it cannot be used with --saved-search.'
+      )
+    );
+    for (const part of unsupported) {
+      console.log(chalk.yellow(`    ${part.label}: ${part.reason}`));
     }
   }
   console.log(chalk.dim('  Add --json for the full filters and locations.'));
@@ -218,7 +253,7 @@ export async function savedSearchesRename(
   }
 
   const spinner = createSpinner('Renaming saved search...').start();
-  const data = await apiRequest<SavedSearchResponse>(`/saved-searches/${encodeURIComponent(id)}`, {
+  const data = await request<SavedSearchResponse>(`/saved-searches/${encodeURIComponent(id)}`, {
     method: 'PATCH',
     body: { name: trimmed },
   });
@@ -250,7 +285,7 @@ async function change(
   options: { json?: boolean }
 ): Promise<void> {
   const spinner = createSpinner(CHANGES[action].doing).start();
-  const data = await apiRequest<SavedSearchResponse>(
+  const data = await request<SavedSearchResponse>(
     `/saved-searches/${encodeURIComponent(id)}/${action}`,
     { method: 'POST' }
   );
@@ -280,7 +315,7 @@ export const savedSearchesUnshare = (id: string, options: { json?: boolean }) =>
 
 export async function savedSearchesDuplicate(id: string, options: { json?: boolean }): Promise<void> {
   const spinner = createSpinner('Duplicating saved search...').start();
-  const data = await apiRequest<SavedSearchResponse>(
+  const data = await request<SavedSearchResponse>(
     `/saved-searches/${encodeURIComponent(id)}/duplicate`,
     { method: 'POST' }
   );
@@ -307,7 +342,7 @@ export async function savedSearchesDuplicate(id: string, options: { json?: boole
 
 export async function savedSearchesRemove(id: string, options: { json?: boolean }): Promise<void> {
   const spinner = createSpinner('Removing saved search...').start();
-  const data = await apiRequest<{ data: { removed: boolean; still_shared?: boolean } }>(
+  const data = await request<{ data: { removed: boolean; still_shared?: boolean } }>(
     `/saved-searches/${encodeURIComponent(id)}`,
     { method: 'DELETE' }
   );
