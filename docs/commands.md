@@ -1358,6 +1358,23 @@ The **Playbook** at `packages/playbooks/playbook/` uses `dm` commands to execute
 
 Both `dm properties export` and `dm people export` accept `--active-phones-only`. It combines with existing phone-type and Do Not Call controls.
 
+## End mail for one prospect
+
+Stop every campaign from mailing one prospect, without archiving it:
+
+```bash
+dm prospects end-mail prospect_8812
+dm prospects end-mail prospect_8812 --yes --json
+```
+
+Uses `POST /v1/prospects/{id}/mail/end`. Unsent pieces and scheduled sends for
+the prospect are cancelled and it is removed from each campaign it is in; those
+campaigns carry on for their other prospects. Mail already printed still
+delivers. The prospect keeps its lifecycle, status and tags. The summary counts
+the campaigns it left and the pieces and scheduled sends cancelled. A prospect
+with no mail answers with zeros, so the Command is safe to repeat. Agents,
+scripts and `--json` need `--yes`.
+
 ## Bulk prospect lifecycle
 
 Archive or restore prospects by their underlying record IDs:

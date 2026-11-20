@@ -112,6 +112,7 @@ import {
   prospectsGetByRecord,
   prospectsAdd,
   prospectsArchive,
+  prospectsEndMail,
   prospectsRemove,
   prospectsReactivate,
   prospectsOpportunity,
@@ -1789,6 +1790,26 @@ prospectsCmd
   .option('--json', 'Output as JSON')
   .action(async (id, options) => {
     await prospectsRemove(id, { json: options.json, noCascade: options.cascade === false });
+  });
+
+prospectsCmd
+  .command('end-mail <id>')
+  .description('End mail for one prospect without archiving it')
+  .option('--yes', 'Skip the confirmation (required for agents, scripts and --json)')
+  .option('--json', 'Output as JSON')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  dm prospects end-mail prospect_8812
+  dm prospects end-mail prospect_8812 --yes --json
+
+Unsent mail for the prospect is cancelled and it leaves every campaign it is in.
+Those campaigns carry on for their other prospects. Mail already printed still delivers.
+The prospect keeps its lifecycle, status and tags.`
+  )
+  .action(async (id, options) => {
+    await prospectsEndMail(id, { yes: options.yes, json: options.json });
   });
 
 prospectsCmd

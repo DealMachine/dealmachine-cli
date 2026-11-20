@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { prospectsList, prospectsArchive, prospectsReactivate, prospectsGet } from '../../src/commands/prospects.js';
+import { prospectsList, prospectsArchive, prospectsReactivate, prospectsGet, prospectsEndMail } from '../../src/commands/prospects.js';
 
 vi.mock('../../src/lib/config.js', () => ({
   readConfig: () => ({ apiKey: 'fixture-only', apiEnvironment: 'staging' }),
@@ -107,6 +107,43 @@ describe('dm prospects archive', () => {
     await expect(prospectsArchive(undefined, {})).rejects.toThrow(ExitSignal);
     expect(error).toHaveBeenCalledWith(expect.stringContaining('pass a prospect ID, or --ids'));
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('dm prospects end-mail', () => {
+  const ended = { data: { recipients_removed: 2, pieces_cancelled: 1, scheduled_sends_cancelled: 3, campaigns_ended: ['camp_9'] } };
+
+  it('posts to the prospect\'s end-mail Endpoint and says what was stopped', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, ended));
+
+    await prospectsEndMail('prospect_8812', { yes: true });
+
+    const request = lastRequest();
+    expect(request.url).toMatch(/\/prospects\/prospect_8812\/mail\/end$/);
+    expect(request.method).toBe('POST');
+    const printed = log.mock.calls.join(' ');
+    expect(printed).toContain('Removed from 2 campaign(s)');
+    expect(printed).toContain('Cancelled 1 unsent piece(s) and 3 scheduled send(s)');
+    expect(printed).toContain('1 campaign(s) ended');
+  });
+
+  it('says so when the prospect had no mail', async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse(200, { data: { recipients_removed: 0, pieces_cancelled: 0, scheduled_sends_cancelled: 0, campaigns_ended: [] } })
+    );
+
+    await prospectsEndMail('prospect_8812', { yes: true });
+
+    expect(log.mock.calls.join(' ')).toContain('had no mail to end');
+  });
+
+  it('refuses for an agent or script without --yes, and cancels nothing', async () => {
+    await prospectsEndMail('prospect_8812', { json: true });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(process.exitCode).toBe(1);
+    expect(error.mock.calls.join(' ')).toContain('with --yes');
+    process.exitCode = 0;
   });
 });
 

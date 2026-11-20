@@ -716,6 +716,7 @@ dm mail campaigns list --accepting-properties --json      # Campaigns that can t
 dm mail campaigns estimate-add <id> --count 25 --json     # Charge due today and later (FREE)
 dm mail campaigns add-properties <id> --property-ids 101 102 --recipient owner --yes --json
 dm mail campaigns end <id> --yes                          # Permanent
+dm prospects end-mail <prospect_id> --yes --json           # Stop mail for one prospect only; the prospect is not archived
 ```
 
 - Statuses: `draft`, `ready`, `active`, `paused`, `ended`. Completed and Cancelled show as `ended`.
