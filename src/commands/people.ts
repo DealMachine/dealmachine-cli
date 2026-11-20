@@ -18,7 +18,10 @@ import {
   createSpinner,
 } from '../lib/output.js';
 import {
+  applySavedSearchSource,
   applySearchProtocolOptions,
+  readCriteriaBody,
+  type SavedSearchSourceCliOptions,
   type SearchProtocolCliOptions,
 } from '../lib/searchProtocol.js';
 import {
@@ -111,10 +114,12 @@ export async function peopleSearch(
     file?: string;
     json?: boolean;
   } & SearchProtocolCliOptions &
+    SavedSearchSourceCliOptions &
     CreditSafetyOptions
 ): Promise<void> {
-  const requestBody = await parseRequestBody(options);
+  const requestBody = await readCriteriaBody(options);
   applySearchProtocolOptions(requestBody, options, 'people');
+  applySavedSearchSource(requestBody, options);
   const creditSafety = applyCreditSafety(requestBody, options);
 
   const spinner = createSpinner(
@@ -189,10 +194,12 @@ export async function peopleCount(
     body?: string;
     file?: string;
     json?: boolean;
-  } & SearchProtocolCliOptions
+  } & SearchProtocolCliOptions &
+    SavedSearchSourceCliOptions
 ): Promise<void> {
-  const requestBody = await parseRequestBody(options);
+  const requestBody = await readCriteriaBody(options);
   applySearchProtocolOptions(requestBody, options, 'people');
+  applySavedSearchSource(requestBody, options);
 
   const spinner = createSpinner('Counting people...').start();
   const data = await apiRequest<CountResponse>('/people/search/count', {
@@ -359,10 +366,12 @@ export async function peopleExport(
     scrubDnc?: boolean;
     activePhonesOnly?: boolean;
   } & SearchProtocolCliOptions &
+    SavedSearchSourceCliOptions &
     ExportColumnCliOptions
 ): Promise<void> {
-  const requestBody = await parseRequestBody(options);
+  const requestBody = await readCriteriaBody(options);
   applySearchProtocolOptions(requestBody, options, 'people');
+  applySavedSearchSource(requestBody, options);
 
   // Merge CLI contact filter flags into the request body
   if (options.requirePhone) requestBody.require_phone = true;

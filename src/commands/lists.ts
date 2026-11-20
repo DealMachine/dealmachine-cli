@@ -14,6 +14,11 @@ import {
   truncate,
   createSpinner,
 } from '../lib/output.js';
+import {
+  applySavedSearchSource,
+  readCriteriaBody,
+  type SavedSearchSourceCliOptions,
+} from '../lib/searchProtocol.js';
 
 // ============================================================================
 // Types
@@ -143,7 +148,7 @@ export async function listsCreate(options: {
   json?: boolean;
   /** Commander's `--no-prospects` sets this false; undefined means the API default (true). */
   prospects?: boolean;
-}): Promise<void> {
+} & SavedSearchSourceCliOptions): Promise<void> {
   let requestBody: Record<string, unknown> = { name: options.name };
 
   if (options.sourceType) {
@@ -163,6 +168,8 @@ export async function listsCreate(options: {
     const extra = await parseRequestBody(options);
     requestBody = { ...requestBody, ...extra };
   }
+  // The list is filled from the saved search's results, in place of filters or record IDs.
+  applySavedSearchSource(requestBody, options);
 
   const spinner = createSpinner('Creating list...').start();
   const data = await apiRequest<SingleListResponse>('/lists', {
@@ -287,9 +294,15 @@ export async function listsDelete(
 
 export async function listsBuild(
   listId: string,
-  options: { body?: string; file?: string; json?: boolean; prospects?: boolean }
+  options: {
+    body?: string;
+    file?: string;
+    json?: boolean;
+    prospects?: boolean;
+  } & SavedSearchSourceCliOptions
 ): Promise<void> {
-  const requestBody = await parseRequestBody(options);
+  const requestBody = await readCriteriaBody(options);
+  applySavedSearchSource(requestBody, options);
   if (options.prospects === false) {
     requestBody.add_as_prospects = false;
   }

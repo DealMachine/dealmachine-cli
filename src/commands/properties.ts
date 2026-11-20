@@ -19,7 +19,10 @@ import {
   createSpinner,
 } from '../lib/output.js';
 import {
+  applySavedSearchSource,
   applySearchProtocolOptions,
+  readCriteriaBody,
+  type SavedSearchSourceCliOptions,
   type SearchProtocolCliOptions,
 } from '../lib/searchProtocol.js';
 import {
@@ -112,10 +115,12 @@ export async function propertiesSearch(
     file?: string;
     json?: boolean;
   } & SearchProtocolCliOptions &
+    SavedSearchSourceCliOptions &
     CreditSafetyOptions
 ): Promise<void> {
-  const requestBody = await parseRequestBody(options);
+  const requestBody = await readCriteriaBody(options);
   applySearchProtocolOptions(requestBody, options, 'properties');
+  applySavedSearchSource(requestBody, options);
   const creditSafety = applyCreditSafety(requestBody, options);
 
   const spinner = createSpinner(
@@ -193,10 +198,12 @@ export async function propertiesCount(
     body?: string;
     file?: string;
     json?: boolean;
-  } & SearchProtocolCliOptions
+  } & SearchProtocolCliOptions &
+    SavedSearchSourceCliOptions
 ): Promise<void> {
-  const requestBody = await parseRequestBody(options);
+  const requestBody = await readCriteriaBody(options);
   applySearchProtocolOptions(requestBody, options, 'properties');
+  applySavedSearchSource(requestBody, options);
 
   const spinner = createSpinner('Counting properties...').start();
   const data = await apiRequest<CountResponse>('/properties/search/count', {
@@ -337,10 +344,12 @@ export async function propertiesExport(
     contactAudience?: string;
     anchor?: string;
   } & SearchProtocolCliOptions &
+    SavedSearchSourceCliOptions &
     ExportColumnCliOptions
 ): Promise<void> {
-  const requestBody = await parseRequestBody(options);
+  const requestBody = await readCriteriaBody(options);
   applySearchProtocolOptions(requestBody, options, 'properties');
+  applySavedSearchSource(requestBody, options);
 
   if (options.contactAudience) requestBody.contact_audience = options.contactAudience;
   if (options.anchor) requestBody.anchor = options.anchor;

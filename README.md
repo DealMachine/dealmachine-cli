@@ -79,6 +79,7 @@ npx skills add DealMachine/dealmachine-cli
   - [People](#people-commands) -- `search`, `count`, `get`, `ids`, `export`
   - [Enrich](#enrich-commands) -- `address`, `latlng`, `apn`, `email`, `phone`, `name`
   - [Comps](#comps-commands) -- comparable property analysis
+  - [Saved Searches](#saved-searches-commands) -- `list`, `get`, `rename`, `pin`, `unpin`, `share`, `unshare`, `duplicate`, `remove`, and `--saved-search` on search, count, export and list builds
   - [Lists](#lists-commands) -- `search`, `create`, `get`, `update`, `delete`, `build`, `import`, `items`, `add`, `remove`, `export`
   - [Filters](#filters-commands) -- list available search filters
   - [Fields](#fields-commands) -- list available data fields
@@ -478,6 +479,7 @@ dm properties search --include-lists 123,456 --exclude-previously-exported --bod
 | `--include-lists <ids>`           | Comma-separated list IDs to include                                           |
 | `--exclude-lists <ids>`           | Comma-separated list IDs to exclude                                           |
 | `--exclude-previously-exported`   | Exclude records already exported by your organization                         |
+| `--saved-search <id>`             | Run a saved search in place of filters and locations                          |
 | `--bigquery-data-environment <n>` | Query Builder data environment (`1` production, `2` staging, `3` development) |
 | `--estimate-cost`                  | Preview counts and credit cost without consuming credits                     |
 | `--yes`                            | Confirm approved credit spend for non-interactive execution                  |
@@ -490,6 +492,7 @@ Count properties matching filters without consuming credits.
 ```bash
 dm properties count --body '{"locations": [{"type": "state", "code": "TX"}]}'
 dm properties count -f filters.json --json
+dm properties count --saved-search <id>
 ```
 
 #### `dm properties get <id>`
@@ -549,6 +552,7 @@ dm properties export --body '{"locations": [...]}' --mobile-only --json
 | ------------------- | ----------------------------------------------------------- |
 | `--body <json>`     | Request body as JSON string                                 |
 | `-f, --file <path>` | Read request body from a JSON file                          |
+| `--saved-search <id>` | Export a saved search in place of filters and locations |
 | `--require-phone`   | Only include records where the contact has a phone number   |
 | `--require-email`   | Only include records where the contact has an email address |
 | `--mobile-only`     | Only include wireless phone numbers                         |
@@ -584,7 +588,10 @@ Count people matching filters without consuming credits.
 
 ```bash
 dm people count -f filters.json
+dm people count --saved-search <id>
 ```
+
+`dm people search`, `count` and `export` take `--saved-search <id>` for a saved people search. See [Run a saved search](#run-a-saved-search).
 
 #### `dm people get <id>`
 
@@ -795,6 +802,114 @@ Output includes subject property details, value estimation with confidence inter
 
 ---
 
+### Saved Searches Commands
+
+A saved search is a search someone saved in the app: its filters, locations and lists under a name. These Commands find and manage the ones you can see, which are your own and the ones shared with your team. To run one, pass its ID with `--saved-search <id>` to a Command that takes filters (see [Run a saved search](#run-a-saved-search)).
+
+Only the person who saved a search can rename, pin, share, duplicate or remove it. That person or a workspace admin can stop sharing it. An API key that is not tied to a person reads the searches shared with the team and cannot change any. A search you cannot see is reported as not found.
+
+#### `dm saved-searches list`
+
+List your saved searches and the ones shared with your team, most recently changed first. Alias: `ls`.
+
+```bash
+dm saved-searches list
+dm saved-searches list --search "austin" --kind properties
+dm saved-searches list --pinned --json
+dm saved-searches list --shared --page 2 --per-page 50
+dm saved-searches list --include-filters --json
+```
+
+| Option              | Description                                                             |
+| ------------------- | ----------------------------------------------------------------------- |
+| `--search <term>`   | Search saved searches by name                                           |
+| `--kind <kind>`     | `properties`, `people` or `companies`                                   |
+| `--pinned`          | Only searches you pinned                                                |
+| `--no-pinned`       | Only searches you have not pinned                                       |
+| `--shared`          | Only searches shared with your team                                     |
+| `--no-shared`       | Only your own searches that are not shared                              |
+| `--include-filters` | Include each search's filters and locations (one more read per search)  |
+| `-p, --page <n>`    | Page number                                                             |
+| `--per-page <n>`    | Results per page (default 25, max 100)                                  |
+| `--json`            | Output as JSON                                                          |
+
+With `--json` each search has `saved_search_id`, `name`, `kind`, `pinned`, `shared`, `is_owner`, `shared_by`, `result_count`, `created_at`, `updated_at` and `app_path`, and the response has `pagination` with `page`, `per_page`, `total` and `has_more`.
+
+#### `dm saved-searches get <id>`
+
+Show one saved search with what it holds.
+
+```bash
+dm saved-searches get <id>
+dm saved-searches get <id> --json
+```
+
+With `--json` the search also has `filters`, `filter_groups`, `locations`, `include_lists`, `exclude_lists` and `exclude_previously_exported`, in the shape `dm properties search` takes, so you can change them and send them yourself. A part of the search the API cannot run is listed under `unsupported` with a reason, and `complete` is then `false`: that search cannot be used with `--saved-search` until it is changed in the app.
+
+#### `dm saved-searches rename <id> <name>`
+
+Rename a saved search. The name is 1 to 255 characters.
+
+```bash
+dm saved-searches rename <id> "Austin absentee owners"
+```
+
+#### `dm saved-searches pin <id>` and `unpin <id>`
+
+Pin a saved search in your history, or unpin it.
+
+```bash
+dm saved-searches pin <id>
+dm saved-searches unpin <id>
+```
+
+#### `dm saved-searches share <id>` and `unshare <id>`
+
+Share a saved search with your team, or stop sharing it.
+
+```bash
+dm saved-searches share <id>
+dm saved-searches unshare <id>
+```
+
+#### `dm saved-searches duplicate <id>`
+
+Copy a saved search into a new private, unpinned one named `<name> (copy)`.
+
+```bash
+dm saved-searches duplicate <id>
+```
+
+#### `dm saved-searches remove <id>`
+
+Remove a saved search from your history. Nothing is deleted: the search still opens by its link, and one shared with your team stays shared until you run `dm saved-searches unshare <id>`.
+
+```bash
+dm saved-searches remove <id>
+dm saved-searches remove <id> --dry-run
+```
+
+#### Run a saved search
+
+`--saved-search <id>` runs a saved search in place of filters and locations. It works on eight Commands:
+
+```bash
+dm properties count --saved-search <id>
+dm properties search --saved-search <id> --estimate-cost
+dm properties export --saved-search <id> --require-phone
+dm people count --saved-search <id>
+dm people search --saved-search <id> --estimate-cost
+dm people export --saved-search <id>
+dm lists create --name "Absentee owners" --saved-search <id>
+dm lists build <listId> --saved-search <id>
+```
+
+- No `--body` or `-f` is needed. You may still pass one for output options such as `fields` or `pagination`. Piped input is not read with `--saved-search`.
+- Use a saved search or your own criteria, not both. `--saved-search` with filters, filter groups, locations, record IDs, `--include-lists`, `--exclude-lists` or `--exclude-previously-exported` is refused before any request. To change what a saved search finds, read it with `dm saved-searches get <id> --json` and send its filters and locations yourself.
+- The search has to be of the Command's kind: a people search runs on `dm people` Commands and a property search on `dm properties` Commands.
+- Credits, estimates and export limits are the same as for the same filters and locations sent directly.
+- A list build takes a saved search made of filters and locations. One that also uses filter groups, lists or an export history rule is refused with what it uses named.
+
 ### Lists Commands
 
 #### `dm lists search`
@@ -828,6 +943,9 @@ dm lists create --name "Hot Leads" --source-type properties --ids 123,456,789
 
 # With search filters for a list build
 dm lists create --name "TX SFR" -f search-filters.json
+
+# Filled from a saved search
+dm lists create --name "Absentee owners" --saved-search <id>
 ```
 
 | Option                 | Description                                          |
@@ -837,6 +955,7 @@ dm lists create --name "TX SFR" -f search-filters.json
 | `--ids <csv>`          | Comma-separated record IDs to pre-populate (max 250) |
 | `--body <json>`        | Request body as JSON (filters/locations)             |
 | `-f, --file <path>`    | Read request body from a JSON file                   |
+| `--saved-search <id>`  | Fill the list from a saved search                    |
 
 #### `dm lists get <id>`
 
@@ -868,7 +987,10 @@ Build a list from search filters. This is an asynchronous operation -- poll with
 
 ```bash
 dm lists build list_abc123 -f search-filters.json
+dm lists build list_abc123 --saved-search <id>
 ```
+
+`--saved-search <id>` builds from a saved search in place of filters and locations. See [Run a saved search](#run-a-saved-search).
 
 #### `dm lists import <id>`
 
@@ -1173,6 +1295,7 @@ dealmachine-cli/
       enrich.ts               # dm enrich    -- address, latlng, apn, email, phone, name
       comps.ts                # dm comps     -- comparable properties
       lists.ts                # dm lists     -- full CRUD + build, import, export
+      savedSearches.ts        # dm saved-searches -- list, get, rename, pin, share, duplicate, remove
       filters.ts              # dm filters   -- list available filters
       fields.ts               # dm fields    -- list available fields
       activity.ts             # dm activity  -- search, get

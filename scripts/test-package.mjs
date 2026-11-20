@@ -31,6 +31,8 @@ try {
   assert.match(dm(['--help']), /properties/);
   assert.match(dm(['prospects', '--help']), /add/);
   assert.match(dm(['webhooks', '--help']), /events/);
+  assert.match(dm(['saved-searches', '--help']), /duplicate/);
+  assert.match(dm(['properties', 'count', '--help']), /--saved-search <id>/);
   const playbook = JSON.parse(dm(['agents', 'playbook', '--json']));
   assert.match(playbook.content, /name: dealmachine/);
   assert.match(playbook.content, /specific name always uses person enrichment/);
@@ -94,6 +96,29 @@ try {
         assert.equal(request.headers['user-agent'], `dm-cli/${version}`);
         assert.equal(request.headers['x-dealmachine-source'], 'cli');
       }
+    }
+    // Saved searches (APP-21731): the installed binary sends each Command's own method and
+    // path, and --saved-search stands in for a request body.
+    for (const [args, method, path, body] of [
+      [['saved-searches', 'list', '--search', 'austin', '--no-pinned'], 'GET', '/saved-searches?search=austin&pinned=false', null],
+      [['saved-searches', 'get', 'ss_1'], 'GET', '/saved-searches/ss_1', null],
+      [['saved-searches', 'rename', 'ss_1', 'Renamed'], 'PATCH', '/saved-searches/ss_1', { name: 'Renamed' }],
+      [['saved-searches', 'share', 'ss_1'], 'POST', '/saved-searches/ss_1/share', null],
+      [['saved-searches', 'remove', 'ss_1'], 'DELETE', '/saved-searches/ss_1', null],
+      [['properties', 'count', '--saved-search', 'ss_1'], 'POST', '/properties/search/count', { saved_search_id: 'ss_1' }],
+      [['lists', 'build', '123', '--saved-search', 'ss_1'], 'POST', '/lists/123/build', { saved_search_id: 'ss_1' }],
+    ]) {
+      await execute(process.execPath, ['--import', pathToFileURL(credentialIsolation).href, binary, ...args, '--json'], {
+        cwd: temporary,
+        timeout: 10000,
+        env: { ...process.env, DM_API_URL: `http://127.0.0.1:${server.address().port}/v1`, DM_API_KEY: 'unrelated-environment-key' },
+      });
+      const request = requests.pop();
+      assert.equal(request.method, method);
+      assert.equal(request.path, `/v1${path}`);
+      assert.deepEqual(request.body, body);
+      assert.equal(request.headers.authorization, 'Bearer dm-package-test');
+      assert.equal(request.headers['x-dealmachine-source'], 'cli');
     }
     // Exercise the same live-smoke entry point with the packed consumer's
     // protocol fixture. This proves command wiring, not deployed API behavior.
