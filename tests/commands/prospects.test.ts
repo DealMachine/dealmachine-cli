@@ -138,12 +138,28 @@ describe('dm prospects end-mail', () => {
   });
 
   it('refuses for an agent or script without --yes, and cancels nothing', async () => {
-    await prospectsEndMail('prospect_8812', { json: true });
+    try {
+      await prospectsEndMail('prospect_8812', { json: true });
 
-    expect(fetchMock).not.toHaveBeenCalled();
-    expect(process.exitCode).toBe(1);
-    expect(error.mock.calls.join(' ')).toContain('with --yes');
-    process.exitCode = 0;
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(process.exitCode).toBe(1);
+      expect(error.mock.calls.join(' ')).toContain('with --yes');
+    } finally {
+      process.exitCode = 0;
+    }
+  });
+
+  it('still reports what a repeat run stopped when no campaign was left to leave', async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse(200, { data: { recipients_removed: 0, pieces_cancelled: 2, scheduled_sends_cancelled: 0, campaigns_ended: [] } })
+    );
+
+    await prospectsEndMail('prospect 88/12', { yes: true });
+
+    expect(lastRequest().url).toMatch(/\/prospects\/prospect%2088%2F12\/mail\/end$/);
+    const printed = log.mock.calls.join(' ');
+    expect(printed).not.toContain('had no mail to end');
+    expect(printed).toContain('Cancelled 2 unsent piece(s)');
   });
 });
 

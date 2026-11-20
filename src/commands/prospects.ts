@@ -409,7 +409,13 @@ export async function prospectsEndMail(
   }
 
   const result = data.data;
-  if (result.recipients_removed === 0) {
+  // "No mail" only when nothing at all was stopped: a repeat run can still cancel what the first left.
+  const nothingStopped =
+    result.recipients_removed === 0 &&
+    result.pieces_cancelled === 0 &&
+    result.scheduled_sends_cancelled === 0 &&
+    result.campaigns_ended.length === 0;
+  if (nothingStopped) {
     console.log(chalk.dim(`  ${id} had no mail to end.`));
     console.log();
     return;
