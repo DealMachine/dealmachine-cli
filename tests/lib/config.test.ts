@@ -55,7 +55,8 @@ describe('CLI config', () => {
       vi.mocked(fs.existsSync).mockReturnValue(true);
       vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify(sampleConfig));
       const config = readConfig();
-      expect(config).toEqual(sampleConfig);
+      // A sign-in saved without an environment is the production sign-in (APP-22684).
+      expect(config).toEqual({ ...sampleConfig, apiEnvironment: 'production' });
     });
 
     it('returns null on invalid JSON', () => {

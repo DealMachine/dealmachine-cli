@@ -167,23 +167,25 @@ The key is verified against `GET /v1/account` before being stored. If verificati
 
 If you do not have an API key yet, use `dm signup <email> --login` or `dm login`. Free accounts can count matches and estimate costs before paying. Public plan checkout only accepts self-serve Basic and Pro prices from the shared plan catalog and is capped at 60,000 monthly data credits.
 
-### Switching Environments
+### Signing In to Several Environments
 
-If you are already logged in, you can switch the target API environment without logging out:
+The CLI keeps one sign-in per environment. Signing in to one keeps the others:
 
 ```bash
-dm login --env local       # Switch to http://localhost:3001/v1
-dm login --env staging     # Switch to https://api-staging.v2.dealmachine.com/v1
-dm login --env production  # Switch to https://api.v2.dealmachine.com/v1
+dm login --env staging      # Sign in to https://api-staging.v2.dealmachine.com/v1
+dm login --env production   # Sign in to https://api.v2.dealmachine.com/v1, staging stays signed in
+dm whoami --env staging     # Any Command can use one environment's sign-in with --env or DM_ENV
 ```
+
+Without `--env`, Commands use the environment you signed in to or chose most recently, or your only sign-in. See the [Command reference](docs/commands.md#signing-in-to-several-environments).
 
 ### Logout
 
 ```bash
-dm logout
+dm logout                   # Sign out of the environment Commands use now
+dm logout --env staging     # Sign out of staging only
+dm logout --all             # Sign out of every environment
 ```
-
-Removes the config file at `~/.dealmachine/config.json`.
 
 ---
 

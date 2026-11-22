@@ -113,23 +113,34 @@ The key is verified against `GET /v1/account` before being stored. If verificati
 
 If you do not have an API key yet, use `dm signup <email> --login` or `dm login`. Counts and estimates work before payment. Public plan checkout only accepts self-serve Basic and Pro prices from the shared plan catalog and is capped at 60,000 monthly data credits.
 
-### Switching Environments
+### Signing In to Several Environments
 
-If you are already logged in, you can switch the target API environment without logging out:
+The CLI keeps one sign-in per environment. Signing in to one environment keeps your sign-ins to the others:
 
 ```bash
-dm login --env local       # Switch to http://localhost:3001/v1
-dm login --env staging     # Switch to https://api-staging.v2.dealmachine.com/v1
-dm login --env production  # Switch to https://api.v2.dealmachine.com/v1
+dm login --env staging      # Sign in to https://api-staging.v2.dealmachine.com/v1
+dm login --env production   # Sign in to https://api.v2.dealmachine.com/v1, staging stays signed in
+dm login --env staging      # Already signed in: make staging the one commands use
 ```
+
+Any Command can choose its environment for one run with `--env` or `DM_ENV`. Without either, Commands use the environment you signed in to or chose most recently. If you only have one sign-in, Commands always use it, so you never need `--env`.
+
+```bash
+dm whoami --env staging     # Uses your staging sign-in
+dm account --env production # Uses your production sign-in
+```
+
+A Command for an environment you have not signed in to stops before calling the API and tells you to run `dm login --env <environment>`.
 
 ### Logout
 
 ```bash
-dm logout
+dm logout                   # Sign out of the environment Commands use now
+dm logout --env staging     # Sign out of staging, keep the others
+dm logout --all             # Sign out of every environment
 ```
 
-Removes the config file at `~/.dealmachine/config.json`.
+When you sign out and exactly one sign-in is left, Commands use it.
 
 ---
 
@@ -139,16 +150,26 @@ Credentials are stored at `~/.dealmachine/config.json` with file permissions `06
 
 ### Config File Schema
 
+Each environment's API key is kept in the macOS keychain, Windows DPAPI or an encrypted file next to the config, never in the config file itself. The file names where each environment's key is stored. The current environment's sign-in is also kept at the top level, so older CLI versions keep working with it:
+
 ```json
 {
-  "apiKey": "dm_sk_live_...",
+  "configVersion": 3,
   "keyId": "key_abc123",
   "organizationId": 42,
   "organizationName": "Acme Corp",
   "organizationSlug": "acme-corp",
-  "apiEnvironment": "production"
+  "apiEnvironment": "production",
+  "currentEnvironment": "production",
+  "credentialStore": "macos-keychain",
+  "profiles": {
+    "production": { "keyId": "key_abc123", "organizationId": 42, "credentialStore": "macos-keychain" },
+    "staging": { "keyId": "key_def456", "organizationId": 42, "credentialStore": "macos-keychain" }
+  }
 }
 ```
+
+A config file from an earlier version is read as one sign-in for its saved `apiEnvironment`, or production when it has none. Nobody signs in again after updating.
 
 ### Environment Variables
 
@@ -159,7 +180,7 @@ The CLI checks these environment variables for API URL resolution (in priority o
 | `DM_API_URL` / `DEALMACHINE_API_URL` | Direct URL override | `http://localhost:3001/v1`          |
 | `DM_ENV` / `DEALMACHINE_ENVIRONMENT` | Environment name    | `local`, `staging`, or `production` |
 
-If none are set, the CLI falls back to the `apiEnvironment` field in the config file, then defaults to `production`.
+`--env` on a Command sets `DM_ENV` for that run. `DM_ENV` also chooses which saved sign-in a Command uses. If neither is set, the CLI uses the environment you signed in to or chose most recently, then your only sign-in, then `production`.
 
 ### API Environments
 
@@ -269,21 +290,23 @@ Authenticate with your DealMachine account.
 dm login                            # Device auth flow (opens browser)
 dm login --no-browser               # Device auth, manual code entry
 dm login --key dm_sk_live_abc123    # Direct API key
-dm login --env local                # Target local API
+dm login --env local                # Sign in to the local API, keeping other sign-ins
 ```
 
-| Option                | Description                                          |
-| --------------------- | ---------------------------------------------------- |
-| `--no-browser`        | Do not automatically open the browser                |
-| `--key <api-key>`     | Login directly with an API key (skips browser)       |
-| `--env <environment>` | API environment: `local`, `staging`, or `production` |
+| Option                | Description                                                                                       |
+| --------------------- | ------------------------------------------------------------------------------------------------- |
+| `--no-browser`        | Do not automatically open the browser                                                             |
+| `--key <api-key>`     | Login directly with an API key (skips browser)                                                    |
+| `--env <environment>` | Sign in to `local`, `staging`, or `production`. If already signed in there, Commands switch to it |
 
 #### `dm logout`
 
-Remove stored credentials.
+Remove stored credentials for one environment, or all of them.
 
 ```bash
-dm logout
+dm logout                   # The environment Commands use now
+dm logout --env staging     # Staging only
+dm logout --all             # Every environment
 ```
 
 #### `dm whoami`
@@ -317,7 +340,7 @@ Available keys: `organizationName`, `organizationSlug`, `organizationId`, `apiEn
 
 #### `dm config set <key> <value>`
 
-Set a configuration value. Only `apiEnvironment` is editable.
+Set a configuration value. Only `apiEnvironment` is editable. Setting it chooses which saved sign-in Commands use; it never moves a key between environments.
 
 ```bash
 dm config set apiEnvironment local
