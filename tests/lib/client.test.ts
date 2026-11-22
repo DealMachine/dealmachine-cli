@@ -1,7 +1,10 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 const readConfig = vi.hoisted(() => vi.fn());
-vi.mock('../../src/lib/config.js', () => ({ readConfig }));
+vi.mock('../../src/lib/config.js', () => ({
+  readConfig,
+  notSignedInMessage: () => 'Not logged in. Run `dm login` first.',
+}));
 import { apiRequest } from '../../src/lib/client.js';
 
 beforeEach(() => {

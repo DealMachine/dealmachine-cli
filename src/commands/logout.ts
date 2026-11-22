@@ -3,25 +3,56 @@
  */
 
 import chalk from 'chalk';
-import { deleteConfig, readConfig, getConfigPath } from '../lib/config.js';
+import {
+  activeEnvironment,
+  deleteConfig,
+  deleteEnvironmentConfig,
+  getConfigPath,
+  readConfig,
+  savedEnvironments,
+} from '../lib/config.js';
 
-export async function logout(): Promise<void> {
-  const config = readConfig();
+interface LogoutOptions {
+  /** Sign out of every environment instead of only the current one. */
+  all?: boolean;
+}
 
-  if (!config) {
-    console.log(chalk.yellow('You are not currently logged in.'));
+export async function logout(options: LogoutOptions = {}): Promise<void> {
+  if (options.all) {
+    const saved = savedEnvironments();
+    if (!saved.length) {
+      console.log(chalk.yellow('You are not currently logged in.'));
+      return;
+    }
+    if (!deleteConfig()) {
+      console.log(chalk.red('Failed to remove credentials.'));
+      console.log(`Try manually deleting: ${getConfigPath()}`);
+      process.exit(1);
+    }
+    console.log(chalk.green(`Logged out of ${saved.join(', ')}.`));
+    console.log(chalk.dim(`Removed credentials from ${getConfigPath()}`));
     return;
   }
 
-  const orgName = config.organizationName;
-  const deleted = deleteConfig();
+  const config = readConfig();
+  const env = activeEnvironment();
 
-  if (deleted) {
-    console.log(chalk.green(`Logged out from ${chalk.cyan(orgName)}.`));
-    console.log(chalk.dim(`Removed credentials from ${getConfigPath()}`));
-  } else {
+  if (!config || !env) {
+    console.log(chalk.yellow(env ? `You are not logged in to ${env}.` : 'You are not currently logged in.'));
+    return;
+  }
+
+  if (!deleteEnvironmentConfig(env)) {
     console.log(chalk.red('Failed to remove credentials.'));
     console.log(`Try manually deleting: ${getConfigPath()}`);
     process.exit(1);
+  }
+
+  console.log(chalk.green(`Logged out of ${env} from ${chalk.cyan(config.organizationName)}.`));
+  const left = savedEnvironments();
+  if (left.length) {
+    console.log(chalk.dim(`Still logged in to ${left.join(', ')}. Run dm logout --all to sign out everywhere.`));
+  } else {
+    console.log(chalk.dim(`Removed credentials from ${getConfigPath()}`));
   }
 }

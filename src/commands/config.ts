@@ -3,7 +3,7 @@
  */
 
 import chalk from 'chalk';
-import { readConfig, getConfigPath, setConfigValue, type DealMachineConfig, type ApiEnvironment } from '../lib/config.js';
+import { readConfig, getConfigPath, savedEnvironments, setConfigValue, type DealMachineConfig, type ApiEnvironment } from '../lib/config.js';
 
 type ConfigKey = keyof DealMachineConfig;
 
@@ -84,6 +84,9 @@ export async function configSet(key: string, value: string): Promise<void> {
 
   if (success) {
     console.log(chalk.green(`Set ${key} = ${value}`));
+    if (key === 'apiEnvironment' && !savedEnvironments().includes(value as ApiEnvironment)) {
+      console.log(`Not logged in to ${value} yet. Run ${chalk.cyan(`dm login --env ${value}`)}.`);
+    }
   } else {
     console.log(chalk.red('Failed to update configuration'));
     process.exit(1);

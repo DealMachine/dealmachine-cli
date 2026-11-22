@@ -9,6 +9,7 @@ import { login } from './commands/login.js';
 import { logout } from './commands/logout.js';
 import { whoami } from './commands/whoami.js';
 import { configGet, configSet, configPath } from './commands/config.js';
+import { isApiEnvironment } from './lib/config.js';
 import { account } from './commands/account.js';
 import { usage } from './commands/usage.js';
 import {
@@ -178,6 +179,18 @@ program
   .description('DealMachine CLI - Property intelligence from the command line')
   .version(CLI_VERSION)
   .option('--quiet', 'Suppress spinners and decorative output (agent-friendly, also DM_QUIET=1)')
+  .option(
+    '--env <environment>',
+    'Use your sign-in for local, staging or production for this command (also DM_ENV)'
+  )
+  .hook('preAction', (_program, action) => {
+    // Every Command reads its environment from DM_ENV, so `--env` on any Command picks that
+    // environment's saved sign-in and API (APP-22684).
+    const env = action.opts().env ?? program.opts().env;
+    if (env === undefined) return;
+    if (!isApiEnvironment(env)) program.error('--env must be local, staging or production.');
+    process.env.DM_ENV = env;
+  })
   .addHelpText(
     'after',
     `
@@ -186,6 +199,11 @@ Examples:
   dm properties search -f query.json     Search properties from a file
   dm enrich address "123 Main St"        Enrich a single address
   dm lists search --json                 List all lists as JSON
+
+Environments:
+  dm login --env staging                 Sign in to staging too; other sign-ins are kept
+  dm whoami --env staging                Run one command with your staging sign-in
+  dm logout --env staging                Sign out of staging only (dm logout --all for every one)
 
 Tip: Every subcommand supports --help with examples.
      Use --json on any command for machine-readable output.
@@ -312,7 +330,7 @@ program
   .option('--key <api-key>', 'Login directly with an API key (skips browser)')
   .option(
     '--env <environment>',
-    'API environment: local, staging, or production (default: production)'
+    'Sign in to local, staging, or production (default: production). Other sign-ins are kept'
   )
   .addHelpText(
     'after',
@@ -321,26 +339,33 @@ Examples:
   dm login                               Interactive browser login
   dm login --key dm_sk_live_abc123       Login with an API key (non-interactive)
   dm login --env staging --no-browser    Login to staging without opening browser
-  dm login --env local --no-browser      Login to local env without opening browser`
+  dm login --env local --no-browser      Login to local env without opening browser
+  dm login --env production              Sign in to production too, or switch to it if signed in`
   )
   .action(async (options) => {
-    if (options.env) {
-      process.env.DM_ENV = options.env;
+    // `dm login --env x` can land on the program's own --env; the preAction hook already checked it.
+    const env = options.env ?? program.opts().env;
+    if (env) {
+      process.env.DM_ENV = env;
     }
-    await login({ noBrowser: options.browser === false, key: options.key, env: options.env });
+    await login({ noBrowser: options.browser === false, key: options.key, env });
   });
 
 program
   .command('logout')
-  .description('Remove stored credentials')
+  .description('Remove stored credentials for the current environment')
+  .option('--env <environment>', 'Sign out of this environment: local, staging, or production')
+  .option('--all', 'Sign out of every environment')
   .addHelpText(
     'after',
     `
 Examples:
-  dm logout                              Remove stored API key and config`
+  dm logout                              Sign out of the environment commands use now
+  dm logout --env staging                Sign out of staging and keep other sign-ins
+  dm logout --all                        Remove every stored API key and the config`
   )
-  .action(async () => {
-    await logout();
+  .action(async (options: { all?: boolean }) => {
+    await logout({ all: options.all });
   });
 
 program
@@ -369,7 +394,7 @@ program
   .option('--json', 'Output as JSON')
   .option(
     '--env <environment>',
-    'API environment: local, staging, or production (default: production)'
+    'Sign in to local, staging, or production (default: production). Other sign-ins are kept'
   )
   .addHelpText(
     'after',
@@ -390,7 +415,7 @@ program
   .option('--json', 'Output as JSON')
   .option(
     '--env <environment>',
-    'API environment: local, staging, or production (default: production)'
+    'Sign in to local, staging, or production (default: production). Other sign-ins are kept'
   )
   .addHelpText(
     'after',

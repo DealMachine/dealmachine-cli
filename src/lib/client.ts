@@ -3,7 +3,7 @@
  */
 
 import chalk from 'chalk';
-import { readConfig, type ApiEnvironment } from './config.js';
+import { notSignedInMessage, readConfig, type ApiEnvironment } from './config.js';
 import { CLI_USER_AGENT } from '../version.js';
 
 const API_URLS: Record<ApiEnvironment, string> = {
@@ -42,7 +42,7 @@ export function getApiBaseUrl(): string {
 export function getApiKey(): string {
   const config = readConfig();
   if (!config?.apiKey) {
-    console.error(chalk.red('Not logged in. Run `dm login` first.'));
+    console.error(chalk.red(notSignedInMessage()));
     process.exit(1);
   }
   return config.apiKey;

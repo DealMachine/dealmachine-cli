@@ -4,7 +4,7 @@
 
 import chalk from 'chalk';
 import { createSpinner } from '../lib/output.js';
-import { readConfig, getConfigPath } from '../lib/config.js';
+import { readConfig, getConfigPath, loginCommand, requestedEnvironment, savedEnvironments } from '../lib/config.js';
 import { verifyCredentials } from '../lib/api.js';
 
 interface WhoamiOptions {
@@ -15,9 +15,10 @@ export async function whoami(options: WhoamiOptions): Promise<void> {
   const config = readConfig();
 
   if (!config) {
-    console.log(chalk.yellow('Not logged in.'));
+    const env = requestedEnvironment();
+    console.log(chalk.yellow(env ? `Not logged in to ${env}.` : 'Not logged in.'));
     console.log('');
-    console.log(`Run ${chalk.cyan('dm login')} to authenticate.`);
+    console.log(`Run ${chalk.cyan(loginCommand())} to authenticate.`);
     process.exit(1);
   }
 
@@ -28,6 +29,9 @@ export async function whoami(options: WhoamiOptions): Promise<void> {
     : config.organizationName;
   console.log(`  Organization: ${chalk.cyan(organizationLabel)}`);
   console.log(`  Org ID:       ${chalk.dim(String(config.organizationId))}`);
+  console.log(`  Environment:  ${chalk.cyan(config.apiEnvironment || 'production')}`);
+  const others = savedEnvironments().filter((env) => env !== config.apiEnvironment);
+  if (others.length) console.log(`  Also signed in to: ${chalk.dim(others.join(', '))}`);
   console.log(`  API Key:      ${chalk.dim(config.apiKey.slice(0, 20) + '...')}`);
   console.log(`  Key ID:       ${chalk.dim(config.keyId)}`);
   console.log('');

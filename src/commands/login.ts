@@ -6,7 +6,7 @@ import chalk from 'chalk';
 import { createSpinner } from '../lib/output.js';
 import open from 'open';
 import os from 'os';
-import { writeConfig, readConfig, setConfigValue } from '../lib/config.js';
+import { writeConfig, readConfig, selectEnvironment } from '../lib/config.js';
 import { requestDeviceCode, pollForToken, verifyCredentials } from '../lib/api.js';
 import { getApiBaseUrl } from '../lib/client.js';
 
@@ -19,17 +19,20 @@ interface LoginOptions {
 }
 
 export async function login(options: LoginOptions): Promise<void> {
+  // `--env` arrives as DM_ENV, so this is the sign-in for the environment asked for, if it has one.
   const existingConfig = readConfig();
   if (existingConfig) {
-    // If --env was passed, just update the environment without requiring logout
     if (options.env) {
-      setConfigValue('apiEnvironment', options.env);
+      // Already signed in to that environment: make it the one commands use, and keep the others.
+      selectEnvironment(options.env);
       console.log(chalk.green(`Switched to ${chalk.bold(options.env)} environment`));
+      console.log(`  Organization: ${chalk.cyan(existingConfig.organizationName)}`);
       console.log(`  API: ${chalk.dim(getApiBaseUrl())}`);
       return;
     }
     console.log(chalk.yellow('You are already logged in as:'));
     console.log(`  Organization: ${chalk.cyan(existingConfig.organizationName)}`);
+    console.log(`  Environment:  ${chalk.cyan(existingConfig.apiEnvironment || 'production')}`);
     console.log('');
     console.log(`Run ${chalk.cyan('dm logout')} first to switch accounts.`);
     return;
