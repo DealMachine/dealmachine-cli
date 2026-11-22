@@ -37,6 +37,7 @@ vi.mock('node:child_process', () => ({
 const {
   activeEnvironment,
   deleteEnvironmentConfig,
+  selectEnvironment,
   readConfig,
   savedEnvironments,
   writeConfig,
@@ -220,6 +221,24 @@ describe('one saved sign-in per environment (APP-22684)', () => {
     expect(savedEnvironments()).toEqual([]);
     expect(fs.existsSync(CONFIG_FILE)).toBe(false);
     expect([...keychain.keys()]).toEqual([]);
+  });
+
+  it('plain login signs in against the same environment it saves the key under', async () => {
+    // Sign-ins to production and local, with staging chosen and not signed in to yet.
+    await signIn('production', 'dm_sk_live_production');
+    writeConfig(account('local', 'dm_sk_test_local', 'local' as 'staging'));
+    selectEnvironment('staging');
+    const fetch = vi.fn(async (_url: string) =>
+      new Response(JSON.stringify({ data: { organization: { id: 145, name: 'staging workspace' } } }), { status: 200 })
+    );
+    vi.stubGlobal('fetch', fetch);
+
+    await login({ key: 'dm_sk_test_new_staging' });
+    delete process.env.DM_ENV;
+
+    expect(String(fetch.mock.calls[0][0])).toContain('api-staging');
+    expect(withEnv('staging', () => readConfig()?.apiKey)).toBe('dm_sk_test_new_staging');
+    expect(withEnv('production', () => readConfig()?.apiKey)).toBe('dm_sk_live_production');
   });
 
   it('AC-6: with one sign-in, commands use it without choosing an environment', async () => {

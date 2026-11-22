@@ -6,7 +6,7 @@ import chalk from 'chalk';
 import { createSpinner } from '../lib/output.js';
 import open from 'open';
 import os from 'os';
-import { writeConfig, readConfig, selectEnvironment } from '../lib/config.js';
+import { activeEnvironment, writeConfig, readConfig, selectEnvironment } from '../lib/config.js';
 import { requestDeviceCode, pollForToken, verifyCredentials } from '../lib/api.js';
 import { getApiBaseUrl } from '../lib/client.js';
 
@@ -19,7 +19,12 @@ interface LoginOptions {
 }
 
 export async function login(options: LoginOptions): Promise<void> {
-  // `--env` arrives as DM_ENV, so this is the sign-in for the environment asked for, if it has one.
+  // Settle on one environment before anything else, so the API this signs in against and the
+  // environment the new key is saved under are always the same (APP-22684).
+  const env = options.env ?? activeEnvironment() ?? 'production';
+  process.env.DM_ENV = env;
+
+  // This is the sign-in for that environment, if it has one.
   const existingConfig = readConfig();
   if (existingConfig) {
     if (options.env) {
@@ -40,7 +45,7 @@ export async function login(options: LoginOptions): Promise<void> {
 
   // Direct API key login (for local dev / CI)
   if (options.key) {
-    await loginWithKey(options.key, options.env);
+    await loginWithKey(options.key, env);
     return;
   }
 
@@ -95,7 +100,7 @@ export async function login(options: LoginOptions): Promise<void> {
           organizationId: result.data.organization.id,
           organizationName: result.data.organization.name,
           organizationSlug: result.data.organization.slug,
-          ...(options.env && { apiEnvironment: options.env }),
+          apiEnvironment: env,
         });
 
         console.log('');
@@ -144,7 +149,7 @@ export async function login(options: LoginOptions): Promise<void> {
  * Login with a raw API key (skips browser flow).
  * Verifies the key against the API, then stores it.
  */
-async function loginWithKey(apiKey: string, env?: 'local' | 'staging' | 'production'): Promise<void> {
+async function loginWithKey(apiKey: string, env: 'local' | 'staging' | 'production'): Promise<void> {
   const baseUrl = getApiBaseUrl();
   console.log(chalk.dim(`Verifying key against ${baseUrl}...`));
 
@@ -166,7 +171,7 @@ async function loginWithKey(apiKey: string, env?: 'local' | 'staging' | 'product
     organizationId: result.organization.id,
     organizationName: result.organization.name,
     organizationSlug: result.organization.slug || '',
-    ...(env && { apiEnvironment: env }),
+    apiEnvironment: env,
   });
 
   console.log('');

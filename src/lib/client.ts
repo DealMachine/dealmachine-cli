@@ -3,7 +3,7 @@
  */
 
 import chalk from 'chalk';
-import { notSignedInMessage, readConfig, type ApiEnvironment } from './config.js';
+import { loginCommand, notSignedInMessage, readConfig, type ApiEnvironment } from './config.js';
 import { CLI_USER_AGENT } from '../version.js';
 
 const API_URLS: Record<ApiEnvironment, string> = {
@@ -121,7 +121,7 @@ export async function apiRequest<T>(
       }
     }
     if (response.status === 401) {
-      console.error(chalk.dim('  Run `dm login` to re-authenticate.'));
+      console.error(chalk.dim(`  Run \`dm logout && ${loginCommand()}\` to sign in again.`));
     } else if (error.error?.code === 'subscription_required') {
       console.error(chalk.dim('  Free counts and cost estimates remain available. Run dm plans to see options.'));
       console.error(chalk.dim('  Review with dm checkout --price-id <id>; add --yes only after customer approval.'));
