@@ -133,6 +133,8 @@ export async function pollForToken(
 
 export async function verifyCredentials(apiKey: string): Promise<{
   valid: boolean;
+  /** True when the API answered and refused the key (expired, revoked or unknown). */
+  rejected?: boolean;
   organization?: { id: number; name: string; slug?: string };
 }> {
   try {
@@ -147,7 +149,7 @@ export async function verifyCredentials(apiKey: string): Promise<{
     });
 
     if (!response.ok) {
-      return { valid: false };
+      return { valid: false, rejected: response.status === 401 || response.status === 403 };
     }
 
     const data = await response.json() as {

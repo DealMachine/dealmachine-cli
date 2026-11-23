@@ -83,6 +83,9 @@ function withEnv<T>(env: string | undefined, run: () => T): T {
   }
 }
 
+// File level, so every describe block below still has the throwaway home.
+afterAll(() => fs.rmSync(home, { recursive: true, force: true }));
+
 describe('one saved sign-in per environment (APP-22684)', () => {
   beforeEach(() => {
     fs.rmSync(CONFIG_DIR, { recursive: true, force: true });
@@ -96,7 +99,6 @@ describe('one saved sign-in per environment (APP-22684)', () => {
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });
-  afterAll(() => fs.rmSync(home, { recursive: true, force: true }));
 
   it('AC-1: signing in to production keeps the staging sign-in', async () => {
     await signIn('staging', 'dm_sk_test_staging');
@@ -254,5 +256,109 @@ describe('one saved sign-in per environment (APP-22684)', () => {
     expect(deleteEnvironmentConfig('production')).toBe(true);
 
     expect(withEnv(undefined, () => readConfig()?.apiKey)).toBe('dm_sk_test_staging');
+  });
+});
+
+/**
+ * A stand-in for the API's sign-in Endpoints. The saved key's check answers with `accountStatus`;
+ * the browser sign-in hands back `newKey` on its first poll.
+ */
+function fakeSignInApi(accountStatus: number | 'offline', newKey = 'dm_sk_test_device_staging') {
+  const fetch = vi.fn(async (url: string) => {
+    if (url.endsWith('/account')) {
+      if (accountStatus === 'offline') throw new TypeError('fetch failed');
+      if (accountStatus !== 200) {
+        return new Response(JSON.stringify({ error: { code: 'invalid_api_key', message: 'API key has expired' } }), {
+          status: accountStatus,
+        });
+      }
+      return new Response(JSON.stringify({ data: { organization: { id: 145, name: 'staging workspace', slug: 'staging' } } }), {
+        status: 200,
+      });
+    }
+    if (url.endsWith('/auth/device/code')) {
+      return new Response(
+        JSON.stringify({
+          device_code: 'device-code',
+          user_code: 'ABCD-1234',
+          verification_uri: 'https://example.test/device',
+          verification_uri_complete: 'https://example.test/device?code=ABCD-1234',
+          expires_in: 60,
+          interval: 0,
+        }),
+        { status: 200 }
+      );
+    }
+    if (url.endsWith('/auth/device/token')) {
+      return new Response(
+        JSON.stringify({ api_key: newKey, key_id: 'key_device', organization: { id: 145, name: 'staging workspace', slug: 'staging' } }),
+        { status: 200 }
+      );
+    }
+    throw new Error(`unexpected request ${url}`);
+  });
+  vi.stubGlobal('fetch', fetch);
+  return fetch;
+}
+
+const requested = (fetch: ReturnType<typeof fakeSignInApi>, suffix: string) =>
+  fetch.mock.calls.some(([url]) => String(url).endsWith(suffix));
+
+describe('login replaces a sign-in that no longer works', () => {
+  beforeEach(() => {
+    fs.rmSync(CONFIG_DIR, { recursive: true, force: true });
+    keychain.clear();
+    delete process.env.DM_ENV;
+    delete process.env.DEALMACHINE_ENVIRONMENT;
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+  afterEach(() => {
+    delete process.env.DM_ENV;
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it('login --key saves the new key even when the environment already has a sign-in', async () => {
+    // Before this fix, an existing staging sign-in made `login --env staging --key` only switch
+    // environments, so an expired key could never be replaced without `dm logout` first.
+    await signIn('staging', 'dm_sk_test_expired');
+    fakeSignInApi(200);
+
+    await login({ key: 'dm_sk_test_replacement', env: 'staging' });
+
+    expect(withEnv('staging', () => readConfig()?.apiKey)).toBe('dm_sk_test_replacement');
+  });
+
+  it('login starts a new sign-in when the API rejects the saved key', async () => {
+    await signIn('staging', 'dm_sk_test_expired');
+    const fetch = fakeSignInApi(401);
+
+    await login({ env: 'staging', noBrowser: true });
+
+    expect(requested(fetch, '/auth/device/code')).toBe(true);
+    expect(withEnv('staging', () => readConfig()?.apiKey)).toBe('dm_sk_test_device_staging');
+  });
+
+  it('login with a working saved key only switches to it', async () => {
+    await signIn('staging', 'dm_sk_test_staging');
+    await signIn('production', 'dm_sk_live_production');
+    const fetch = fakeSignInApi(200);
+
+    await login({ env: 'staging', noBrowser: true });
+
+    expect(requested(fetch, '/auth/device/code')).toBe(false);
+    expect(withEnv(undefined, () => readConfig()?.apiEnvironment)).toBe('staging');
+    expect(withEnv('staging', () => readConfig()?.apiKey)).toBe('dm_sk_test_staging');
+  });
+
+  it('login keeps the saved key when the API cannot be reached to check it', async () => {
+    await signIn('staging', 'dm_sk_test_staging');
+    const fetch = fakeSignInApi('offline');
+
+    await login({ env: 'staging', noBrowser: true });
+
+    expect(requested(fetch, '/auth/device/code')).toBe(false);
+    expect(withEnv('staging', () => readConfig()?.apiKey)).toBe('dm_sk_test_staging');
   });
 });

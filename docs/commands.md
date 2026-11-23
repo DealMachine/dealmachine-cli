@@ -111,6 +111,8 @@ dm login --key dm_sk_live_abc123...
 
 The key is verified against `GET /v1/account` before being stored. If verification fails, the CLI exits with a non-zero code.
 
+A key passed with `--key` replaces the saved sign-in for that environment, so you do not need `dm logout` first. Without `--key`, `dm login` checks the saved key and starts a new sign-in when the API no longer accepts it (expired or revoked).
+
 If you do not have an API key yet, use `dm signup <email> --login` or `dm login`. Counts and estimates work before payment. Public plan checkout only accepts self-serve Basic and Pro prices from the shared plan catalog and is capped at 60,000 monthly data credits.
 
 ### Signing In to Several Environments
