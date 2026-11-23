@@ -24,9 +24,14 @@ export async function login(options: LoginOptions): Promise<void> {
   const env = options.env ?? activeEnvironment() ?? 'production';
   process.env.DM_ENV = env;
 
-  // This is the sign-in for that environment, if it has one.
-  const existingConfig = readConfig();
-  if (existingConfig) {
+  // This is the sign-in for that environment, if it has one. An explicit --key always replaces it.
+  const existingConfig = options.key ? null : readConfig();
+  if (existingConfig && (await verifyCredentials(existingConfig.apiKey)).rejected) {
+    // The saved key expired or was revoked. Returning here would leave no way to replace it short
+    // of `dm logout`, even though every rejected request tells people to run `dm login`.
+    console.log(chalk.yellow(`The saved ${env} sign-in no longer works, so signing in again.`));
+    console.log('');
+  } else if (existingConfig) {
     if (options.env) {
       // Already signed in to that environment: make it the one commands use, and keep the others.
       selectEnvironment(options.env);
