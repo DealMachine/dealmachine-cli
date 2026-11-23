@@ -243,6 +243,46 @@ describe('dm prospects list attribution filters', () => {
 });
 
 
+// APP-22808: the same Mail filter as the web Prospects page, sent as the API's query values.
+describe('dm prospects list mail filters', () => {
+  // A fresh program each time: Commander keeps parsed option values between runs.
+  async function listWith(args: string[]) {
+    vi.resetModules();
+    const { program } = await import('../../src/index.js');
+    fetchMock.mockResolvedValue(
+      jsonResponse(200, {
+        data: [],
+        pagination: { page: 1, per_page: 25, total: 0, has_more: false },
+      })
+    );
+    await program.parseAsync(['node', 'dm', 'prospects', 'list', ...args, '--json']);
+    const [url] = fetchMock.mock.calls.at(-1) as [string, RequestInit];
+    return Object.fromEntries(new URL(url).searchParams);
+  }
+
+  it('sends returned to sender, mailing state and times mailed', async () => {
+    expect(
+      await listWith([
+        '--mail-returned',
+        '--mail-activity', 'idle',
+        '--mailed-more-than', '0',
+        '--mailed-fewer-than', '4',
+      ])
+    ).toEqual({
+      mail_returned: 'true',
+      mail_activity: 'idle',
+      mailed_more_than: '0',
+      mailed_fewer_than: '4',
+    });
+  });
+
+  it('sends only the mail values that were given', async () => {
+    const params = await listWith(['--mail-activity', 'never']);
+    expect(params).toEqual({ mail_activity: 'never' });
+  });
+});
+
+
 it('sends included and excluded tags in the same prospects request', async () => {
   fetchMock.mockResolvedValue(jsonResponse(200, { data: [], pagination: { page: 1, per_page: 25, total: 0, has_more: false } }));
   await prospectsList({ includeTags: 'tag_3,tag_4', excludeTags: 'tag_9', json: true });

@@ -1894,6 +1894,13 @@ prospectsCmd
   .option('--added-after <date>', 'Added on or after this date or ISO date-time (dates are UTC)')
   .option('--added-before <date>', 'Added before this date or ISO date-time (dates are UTC)')
   .option('--status <statuses>', 'Comma-separated: hot, warm, cold, follow_up, do_not_contact, none')
+  .option('--mail-returned', 'Only prospects that had a postcard returned to sender')
+  .option(
+    '--mail-activity <state>',
+    'never (no postcard ever went out), active (being mailed now), or idle (nothing scheduled)'
+  )
+  .option('--mailed-more-than <n>', 'Only prospects mailed more than this many times (0 to 999)')
+  .option('--mailed-fewer-than <n>', 'Only prospects mailed fewer than this many times (1 to 999)')
   .option('--favorites', 'Only starred prospects')
   .option('--list <listId>', 'Only members of this list')
   .option('--tag <tagId>', 'Only prospects with this tag, e.g. tag_31')
@@ -1911,6 +1918,8 @@ Examples:
   dm prospects list
   dm prospects list --source driving
   dm prospects list --source-group d4d --added-after 2026-10-01 --status hot,warm
+  dm prospects list --mail-activity never
+  dm prospects list --mail-returned --mailed-more-than 2
   dm prospects list --lifecycle opportunity --tag tag_31
   dm prospects list --record-type person --search "austin" --json`
   )

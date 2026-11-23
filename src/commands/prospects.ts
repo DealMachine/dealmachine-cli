@@ -105,6 +105,10 @@ export async function prospectsList(options: {
   addedAfter?: string;
   addedBefore?: string;
   status?: string;
+  mailReturned?: boolean;
+  mailActivity?: string;
+  mailedMoreThan?: string;
+  mailedFewerThan?: string;
   favorites?: boolean;
   list?: string;
   tag?: string;
@@ -127,6 +131,10 @@ export async function prospectsList(options: {
       added_after: options.addedAfter,
       added_before: options.addedBefore,
       status: options.status,
+      mail_returned: options.mailReturned ? 'true' : undefined,
+      mail_activity: options.mailActivity,
+      mailed_more_than: options.mailedMoreThan,
+      mailed_fewer_than: options.mailedFewerThan,
       favorites_only: options.favorites ? 'true' : undefined,
       list_id: options.list,
       tag_id: options.tag,
