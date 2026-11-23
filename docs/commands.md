@@ -1041,7 +1041,7 @@ dm prospects list --source-group d4d --added-by 7 --added-after 2026-10-01
 
 Drive history is read-only. Use `dm prospects` for lifecycle, notes, and tags on linked Prospects.
 
-`dm prospects list` also filters by how and when a Prospect was added:
+`dm prospects list` also filters by how and when a Prospect was added, its status and its mail:
 
 | Option | Description |
 | --- | --- |
@@ -1050,6 +1050,17 @@ Drive history is read-only. Use `dm prospects` for lifecycle, notes, and tags on
 | `--added-after <date>` | Added on or after this ISO date or date-time. A date means midnight UTC |
 | `--added-before <date>` | Added before this ISO date or date-time (not inclusive) |
 | `--status <statuses>` | Comma-separated: `hot`, `warm`, `cold`, `follow_up`, `do_not_contact`, `none` |
+| `--mail-returned` | Only Prospects that had a postcard returned to sender |
+| `--mail-activity <state>` | `never` (no postcard ever went out), `active` (being mailed now: in a running campaign with a postcard on its way or scheduled; paused campaigns and failed postcards do not count) or `idle` (nothing scheduled, including Prospects mailed before) |
+| `--mailed-more-than <n>` | Only Prospects mailed more than this many times, 0 to 999. A postcard counts once it went out: sent, in transit, delivered or returned |
+| `--mailed-fewer-than <n>` | Only Prospects mailed fewer than this many times, 1 to 999. Never mailed counts as 0 |
+
+These match the Mail filter on the Prospects page in the app:
+
+```bash
+dm prospects list --mail-activity never
+dm prospects list --mail-returned --mailed-more-than 2 --mailed-fewer-than 6
+```
 
 Property and person records from `dm properties` and `dm people` include `is_prospect`, `prospect_source`, `prospect_added_by` and `prospect_added_at`.
 
