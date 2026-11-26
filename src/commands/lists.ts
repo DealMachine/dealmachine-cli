@@ -59,6 +59,8 @@ interface ListItemRecord {
   internal_person_id: number | null;
   /** per_<id>, exact for every id. internal_person_id is null past 2^53 - 1. */
   dm_person_id?: string | null;
+  /** Set only on a company list's items. */
+  internal_company_id?: number | null;
   created_at: string;
 }
 
@@ -75,10 +77,11 @@ interface ListItemsResponse {
 /**
  * One --ids entry for a request body. A safe integer stays a JSON number (the
  * shape the API has always taken); a larger id goes as its decimal string so
- * a 64-bit person id is not rounded. Accepts a per_ prefix for person ids.
+ * a 64-bit person id is not rounded. Accepts a per_ prefix for person ids and
+ * a co_ prefix for company ids.
  */
 function parseRecordIdArg(raw: string): number | string {
-  const text = raw.trim().replace(/^per_/, '');
+  const text = raw.trim().replace(/^(per|co)_/, '');
   if (!/^\d+$/.test(text)) return parseInt(text, 10);
   const numeric = Number(text);
   return Number.isSafeInteger(numeric) ? numeric : text;
@@ -417,13 +420,22 @@ export async function listsItems(
   console.log();
 
   if (data.data.length > 0) {
+    // Only a company list's items carry a company id, so other lists keep
+    // the same columns they always had.
+    const hasCompanies = data.data.some((item) => item.internal_company_id != null);
     const rows = data.data.map((item) => ({
       item_id: truncate(item.list_item_id, 16),
       property_id: item.internal_property_id ?? '—',
       person_id: item.internal_person_id ?? item.dm_person_id ?? '—',
+      ...(hasCompanies && { company_id: item.internal_company_id ?? '—' }),
       added: formatDate(item.created_at),
     }));
-    printTable(rows, ['item_id', 'property_id', 'person_id', 'added']);
+    printTable(
+      rows,
+      hasCompanies
+        ? ['item_id', 'property_id', 'person_id', 'company_id', 'added']
+        : ['item_id', 'property_id', 'person_id', 'added']
+    );
   } else {
     console.log(chalk.dim('  No items found.'));
   }
