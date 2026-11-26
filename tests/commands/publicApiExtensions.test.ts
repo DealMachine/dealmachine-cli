@@ -576,6 +576,47 @@ describe('CLI public API extensions', () => {
     });
   });
 
+  it('lets a co_ or per_ prefix set the id type when --id-type is not given (APP-24378)', async () => {
+    mockApiRequest.mockResolvedValue({ data: { added: 1, removed: 1 } });
+
+    await listsAdd('list_co', { ids: 'co_42' });
+    expect(mockApiRequest).toHaveBeenLastCalledWith('/lists/list_co/items', {
+      method: 'POST',
+      body: { ids: [42], id_type: 'internal_company_id' },
+    });
+
+    await listsRemove('list_pe', { ids: 'per_7,8' });
+    expect(mockApiRequest).toHaveBeenLastCalledWith('/lists/list_pe/items', {
+      method: 'DELETE',
+      body: { ids: [7, 8], id_type: 'internal_person_id' },
+    });
+  });
+
+  it.each([
+    ['co_42', 'internal_property_id', 'co_ ids are internal_company_id ids'],
+    ['per_42', 'internal_company_id', 'per_ ids are internal_person_id ids'],
+    ['co_42,per_43', undefined, 'mixes co_ and per_ ids'],
+  ])(
+    'refuses --ids %s with --id-type %s before calling the API (APP-24378)',
+    async (ids, idType, message) => {
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const exit = vi.spyOn(process, 'exit').mockImplementation(() => {
+        throw new Error('exit');
+      });
+
+      try {
+        for (const command of [listsAdd, listsRemove]) {
+          await expect(command('list_abc', { ids, idType })).rejects.toThrow('exit');
+        }
+      } finally {
+        exit.mockRestore();
+      }
+
+      expect(error).toHaveBeenCalledWith(expect.stringContaining(message));
+      expect(mockApiRequest).not.toHaveBeenCalled();
+    }
+  );
+
 });
 
 describe('CLI phone carrier (DEA-2144)', () => {

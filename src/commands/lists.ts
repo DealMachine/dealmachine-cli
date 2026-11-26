@@ -87,6 +87,42 @@ function parseRecordIdArg(raw: string): number | string {
   return Number.isSafeInteger(numeric) ? numeric : text;
 }
 
+/** The id type an --ids prefix names: co_ is a company id, per_ a person id. */
+const PREFIX_ID_TYPES: Record<string, string> = {
+  co: 'internal_company_id',
+  per: 'internal_person_id',
+};
+
+/**
+ * --ids for add and remove, with the id type they go as. A prefix names the
+ * id type, so it sets --id-type when that is not given, and ids whose prefix
+ * disagrees with --id-type or with each other are refused before anything is
+ * sent: taking the prefix off alone would add property 42 for co_42.
+ */
+function parseItemIds(
+  text: string,
+  idType: string | undefined
+): { ids: Array<number | string>; idType: string | undefined } | { error: string } {
+  const raw = text.split(',').map((id) => id.trim());
+  const named = new Set(
+    raw.map((id) => /^(co|per)_/.exec(id)?.[1]).filter((prefix): prefix is string => !!prefix)
+  );
+  if (named.size > 1) {
+    return { error: 'Error: --ids mixes co_ and per_ ids. Add companies and people in separate commands.' };
+  }
+  const [prefix] = [...named];
+  if (prefix) {
+    const prefixType = PREFIX_ID_TYPES[prefix]!;
+    if (idType && idType !== prefixType) {
+      return {
+        error: `Error: ${prefix}_ ids are ${prefixType} ids, but --id-type is ${idType}. Drop the ${prefix}_ prefix or set --id-type ${prefixType}.`,
+      };
+    }
+    idType = prefixType;
+  }
+  return { ids: raw.map(parseRecordIdArg), idType };
+}
+
 // ============================================================================
 // Search (GET /lists)
 // ============================================================================
@@ -459,9 +495,13 @@ export async function listsAdd(
     process.exit(1);
   }
 
-  const ids = options.ids.split(',').map(parseRecordIdArg);
-  const requestBody: Record<string, unknown> = { ids };
-  if (options.idType) requestBody.id_type = options.idType;
+  const parsed = parseItemIds(options.ids, options.idType);
+  if ('error' in parsed) {
+    console.error(chalk.red(parsed.error));
+    process.exit(1);
+  }
+  const requestBody: Record<string, unknown> = { ids: parsed.ids };
+  if (parsed.idType) requestBody.id_type = parsed.idType;
   if (options.prospects === false) requestBody.add_as_prospects = false;
 
   const spinner = createSpinner('Adding items...').start();
@@ -493,9 +533,13 @@ export async function listsRemove(
     process.exit(1);
   }
 
-  const ids = options.ids.split(',').map(parseRecordIdArg);
-  const requestBody: Record<string, unknown> = { ids };
-  if (options.idType) requestBody.id_type = options.idType;
+  const parsed = parseItemIds(options.ids, options.idType);
+  if ('error' in parsed) {
+    console.error(chalk.red(parsed.error));
+    process.exit(1);
+  }
+  const requestBody: Record<string, unknown> = { ids: parsed.ids };
+  if (parsed.idType) requestBody.id_type = parsed.idType;
 
   const spinner = createSpinner('Removing items...').start();
   const data = await apiRequest<{ data: { removed: number } }>(`/lists/${listId}/items`, {
