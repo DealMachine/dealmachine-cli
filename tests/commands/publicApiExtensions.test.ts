@@ -45,7 +45,7 @@ import {
 import { addressesAutocomplete, locationsAutocomplete } from '../../src/commands/locations.js';
 import { drivingGet, drivingList } from '../../src/commands/driving.js';
 import { prospectsList } from '../../src/commands/prospects.js';
-import { listsExport, listsItems } from '../../src/commands/lists.js';
+import { listsAdd, listsExport, listsItems, listsRemove } from '../../src/commands/lists.js';
 import { phonesDnc } from '../../src/commands/phones.js';
 import { comps } from '../../src/commands/comps.js';
 
@@ -536,6 +536,86 @@ describe('CLI public API extensions', () => {
       expect.objectContaining({ person_id: 'per_9007199254740993' }),
     ], ['item_id', 'property_id', 'person_id', 'added']);
   });
+
+  it('shows a company list item with its company id (APP-24378)', async () => {
+    mockApiRequest.mockResolvedValue({
+      data: [
+        {
+          list_item_id: '77',
+          internal_property_id: null,
+          internal_person_id: null,
+          dm_person_id: null,
+          internal_company_id: 51234,
+          created_at: '2026-11-01T00:00:00.000Z',
+        },
+      ],
+      pagination: { page: 1, total: 1, has_more: false },
+    });
+
+    await listsItems('list_co', {});
+
+    expect(printTable).toHaveBeenCalledWith(
+      [expect.objectContaining({ company_id: 51234 })],
+      ['item_id', 'property_id', 'person_id', 'company_id', 'added']
+    );
+  });
+
+  it('passes company ids through for add and remove (APP-24378)', async () => {
+    mockApiRequest.mockResolvedValue({ data: { added: 2, removed: 1 } });
+
+    await listsAdd('list_co', { ids: 'co_42,43', idType: 'internal_company_id' });
+    expect(mockApiRequest).toHaveBeenLastCalledWith('/lists/list_co/items', {
+      method: 'POST',
+      body: { ids: [42, 43], id_type: 'internal_company_id' },
+    });
+
+    await listsRemove('list_co', { ids: 'co_42', idType: 'internal_company_id' });
+    expect(mockApiRequest).toHaveBeenLastCalledWith('/lists/list_co/items', {
+      method: 'DELETE',
+      body: { ids: [42], id_type: 'internal_company_id' },
+    });
+  });
+
+  it('lets a co_ or per_ prefix set the id type when --id-type is not given (APP-24378)', async () => {
+    mockApiRequest.mockResolvedValue({ data: { added: 1, removed: 1 } });
+
+    await listsAdd('list_co', { ids: 'co_42' });
+    expect(mockApiRequest).toHaveBeenLastCalledWith('/lists/list_co/items', {
+      method: 'POST',
+      body: { ids: [42], id_type: 'internal_company_id' },
+    });
+
+    await listsRemove('list_pe', { ids: 'per_7,8' });
+    expect(mockApiRequest).toHaveBeenLastCalledWith('/lists/list_pe/items', {
+      method: 'DELETE',
+      body: { ids: [7, 8], id_type: 'internal_person_id' },
+    });
+  });
+
+  it.each([
+    ['co_42', 'internal_property_id', 'co_ ids are internal_company_id ids'],
+    ['per_42', 'internal_company_id', 'per_ ids are internal_person_id ids'],
+    ['co_42,per_43', undefined, 'mixes co_ and per_ ids'],
+  ])(
+    'refuses --ids %s with --id-type %s before calling the API (APP-24378)',
+    async (ids, idType, message) => {
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const exit = vi.spyOn(process, 'exit').mockImplementation(() => {
+        throw new Error('exit');
+      });
+
+      try {
+        for (const command of [listsAdd, listsRemove]) {
+          await expect(command('list_abc', { ids, idType })).rejects.toThrow('exit');
+        }
+      } finally {
+        exit.mockRestore();
+      }
+
+      expect(error).toHaveBeenCalledWith(expect.stringContaining(message));
+      expect(mockApiRequest).not.toHaveBeenCalled();
+    }
+  );
 
 });
 
